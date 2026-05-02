@@ -1,47 +1,45 @@
 "use client";
 
 /**
- * Interactive devices table (AC 40203, Sub-AC 3 + AC 9, Sub-AC 3).
+ * 인터랙티브 디바이스 테이블 (AC 40203, Sub-AC 3 + AC 9, Sub-AC 3).
  *
- * Goal:
+ * 목표:
  *   "Implement mapping change handler that calls backend API to update
  *    device-to-restaurant mapping and refreshes the list."
  *
- *   AC 9, Sub-AC 3 update: "Wire the admin device list remap UI to call
- *   PATCH /api/devices/{deviceId} via the API client and handle success /
- *   error states with list refresh." This sub-AC swaps the underlying call
- *   from the legacy `PUT /api/devices/{id}/assignment` route to the generic
- *   `PATCH /api/devices/{deviceId}` umbrella route owned by AC 9, Sub-AC 1.
- *   The user-visible flow (operator clicks Edit → picks restaurant → Save →
- *   list refreshes) is unchanged; only the wire call moves.
+ *   AC 9, Sub-AC 3 업데이트: "어드민 디바이스 목록 재할당 UI를 API 클라이언트
+ *   를 통해 PATCH /api/devices/{deviceId}를 호출하도록 와이어업하고 목록
+ *   새로고침과 함께 성공/오류 상태를 처리." 이 sub-AC는 underlying 호출을
+ *   레거시 `PUT /api/devices/{id}/assignment` 라우트에서 AC 9, Sub-AC 1이
+ *   소유한 일반 `PATCH /api/devices/{deviceId}` 우산 라우트로 교체한다.
+ *   사용자에게 보이는 흐름(운영자가 Edit 클릭 → 음식점 선택 → Save → 목록
+ *   새로고침)은 동일; 와이어 호출만 이동.
  *
- * What this component does:
- *   1. Receives an initial server-fetched [DeviceListItem] list and a
- *      [RestaurantListItem] list as props (the Devices page Server Component
- *      fetches both before render). This lets us paint the table immediately
- *      with no client spinner.
- *   2. Renders one row per device with an inline "Reassign" affordance —
- *      clicking it expands a per-row editor (a <select> dropdown of
- *      restaurants + Save / Cancel) without leaving the page.
- *   3. Owns the **mapping change handler** ([handleMappingChange] below) which
- *      is the centerpiece of this Sub-AC:
- *        a) calls the backend `PATCH /api/devices/{deviceId}` via
- *           [patchDevice] (lib/devices.ts) with `{ restaurantId }`;
- *        b) optimistically merges the new restaurant into the row so the
- *           operator sees the change instantly even before the next refresh;
- *        c) calls `router.refresh()` so the Server Component re-fetches
- *           `GET /api/devices` and the list reflects the authoritative
- *           backend state — i.e. "refreshes the list" per the AC verbatim.
- *      On error, the row falls back to its previous state and the operator
- *      sees an inline error notice; nothing is silently swallowed.
+ * 이 컴포넌트가 하는 일:
+ *   1. props로 초기 서버 fetch된 [DeviceListItem] 목록과 [RestaurantListItem]
+ *      목록을 받음(디바이스 페이지 서버 컴포넌트가 렌더 전에 둘을 fetch).
+ *      덕분에 클라이언트 스피너 없이 즉시 테이블을 그릴 수 있다.
+ *   2. 디바이스 당 한 행을 인라인 "Reassign" 컨트롤과 함께 렌더 — 클릭하면
+ *      페이지를 떠나지 않고 행별 에디터(음식점 <select> 드롭다운 + Save /
+ *      Cancel)가 펼쳐진다.
+ *   3. 이 Sub-AC의 핵심인 **매핑 변경 핸들러** ([handleMappingChange] 아래)를
+ *      소유:
+ *        a) [patchDevice](lib/devices.ts)를 통해 백엔드 `PATCH /api/devices/{deviceId}`
+ *           를 `{ restaurantId }`로 호출;
+ *        b) 운영자가 다음 새로고침 전에도 즉시 변경을 보도록 새 음식점을
+ *           행에 낙관적으로 병합;
+ *        c) `router.refresh()`를 호출해 서버 컴포넌트가 `GET /api/devices`를
+ *           재 fetch하고 목록이 권위 있는 백엔드 상태를 반영 — 즉 AC가
+ *           명시한 "목록 새로고침".
+ *      오류 시 행이 이전 상태로 폴백하고 운영자는 인라인 오류 알림을 본다 —
+ *      어떤 것도 조용히 삼키지 않음.
  *
- * Why a client component table (vs. a per-row link to a detail page):
- *   The acceptance criterion explicitly says "refreshes the list" — i.e. the
- *   change must be reflected on the list view itself, not on a separate
- *   detail page. Operators behind a bar will be remapping multiple devices in
- *   sequence; round-tripping through a detail page per device would be
- *   painful. An inline editor keeps them on the list and combined with
- *   `router.refresh()` gives us authoritative server data after each change.
+ * 왜 클라이언트 컴포넌트 테이블인가(상세 페이지로의 행별 링크 대비):
+ *   AC가 명시적으로 "목록 새로고침"을 말한다 — 즉 변경은 별도 상세 페이지가
+ *   아닌 목록 뷰 자체에서 반영되어야 한다. 바 뒤에 있는 운영자는 여러
+ *   디바이스를 연속으로 재할당할 것이고, 디바이스마다 상세 페이지를 왕복하면
+ *   고통스럽다. 인라인 에디터는 운영자를 목록에 머무르게 하고 `router.refresh()`
+ *   와 결합하면 매 변경 후 권위 있는 서버 데이터를 얻는다.
  */
 
 import { useCallback, useState, useTransition } from "react";
@@ -59,27 +57,27 @@ import type { RestaurantListItem } from "@/lib/restaurants";
 import { DeviceRemapModal } from "./DeviceRemapModal";
 
 export interface DevicesTableClientProps {
-  /** Server-fetched device rows. Used as the initial table state. */
+  /** 서버 fetch된 디바이스 행. 초기 테이블 상태로 사용. */
   initialDevices: DeviceListItem[];
   /**
-   * Restaurant list for the inline reassign dropdowns. If empty, rows render
-   * without an editor and surface a hint that no restaurants are available.
+   * 인라인 재할당 드롭다운용 음식점 목록. 비어있으면 행은 에디터 없이
+   * 렌더링되며 사용 가능한 음식점이 없다는 힌트를 노출한다.
    */
   restaurants: RestaurantListItem[];
 }
 
-/** Per-row UI state for the inline editor / async submission. */
+/** 인라인 에디터/비동기 제출용 행별 UI 상태. */
 type RowSubmitState =
   | { kind: "idle" }
   | { kind: "submitting" }
   | { kind: "success"; result: DevicePatchResponse; at: number }
   | { kind: "error"; message: string };
 
-/** Per-row editor state (which row is currently "open" for editing, etc). */
+/** 행별 에디터 상태(어떤 행이 현재 편집을 위해 "열려" 있는지 등). */
 interface RowEditState {
-  /** Currently selected restaurant id in the dropdown for this row. */
+  /** 이 행의 드롭다운에서 현재 선택된 음식점 id. */
   selectedId: string;
-  /** Whether the inline editor is expanded. */
+  /** 인라인 에디터가 펼쳐졌는지. */
   open: boolean;
 }
 
@@ -89,31 +87,30 @@ export function DevicesTableClient(props: DevicesTableClientProps) {
   const { initialDevices, restaurants } = props;
   const router = useRouter();
 
-  // Local mirror of the server-rendered list. We optimistically update this
-  // immediately on a successful PUT so the operator sees the change without
-  // waiting for the round-trip back to `GET /api/devices`. The mirror is then
-  // overwritten on the next render after `router.refresh()` brings in fresh
-  // server data — which is the authoritative source.
+  // 서버 렌더링 목록의 로컬 미러. 성공한 PUT 직후 낙관적으로 업데이트해서
+  // 운영자가 `GET /api/devices` 왕복을 기다리지 않고 변경을 본다. 이 미러는
+  // `router.refresh()`가 신선한 서버 데이터를 가져온 후 다음 렌더에서
+  // 덮어쓰기 — 그것이 권위 있는 출처.
   const [devices, setDevices] = useState<DeviceListItem[]>(initialDevices);
 
-  // Per-row editor + submission state, keyed by deviceId. We store these
-  // outside the device list so that re-rendering after a server refresh does
-  // not wipe out a transient "Saved" notice the operator is still reading.
+  // 행별 에디터 + 제출 상태, deviceId로 키. 디바이스 목록 밖에 저장하므로
+  // 서버 새로고침 후 재렌더링이 운영자가 아직 읽고 있는 일시적 "Saved"
+  // 알림을 지우지 않는다.
   const [editStates, setEditStates] = useState<Record<string, RowEditState>>({});
   const [submitStates, setSubmitStates] = useState<Record<string, RowSubmitState>>({});
 
-  // Modal-based remap (AC 9, Sub-AC 2). The list page now exposes an explicit
-  // "Edit" action per row that opens a focused modal dialog instead of (or in
-  // addition to) the existing inline editor. We track which device the modal
-  // is currently editing — null means closed.
+  // 모달 기반 재할당(AC 9, Sub-AC 2). 목록 페이지가 이제 행별로 명시적
+  // "Edit" 액션을 노출해 기존 인라인 에디터 대신(또는 추가로) 집중된 모달
+  // 다이얼로그를 연다. 모달이 현재 편집 중인 디바이스를 추적 — null이면
+  // 닫힘.
   const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
   const editingDevice = editingDeviceId
     ? devices.find((d) => d.deviceId === editingDeviceId) ?? null
     : null;
 
-  // `useTransition` lets us call `router.refresh()` without blocking the UI;
-  // we surface `isRefreshing` next to the table header so the operator knows
-  // the list is being re-fetched after a successful change.
+  // `useTransition`은 UI를 막지 않고 `router.refresh()`를 호출하게 해준다;
+  // 운영자가 성공한 변경 후 목록이 다시 fetch되고 있음을 알도록 테이블
+  // 헤더 옆에 `isRefreshing`을 노출한다.
   const [isRefreshing, startRefresh] = useTransition();
 
   const setEdit = useCallback(
@@ -134,25 +131,25 @@ export function DevicesTableClient(props: DevicesTableClientProps) {
   );
 
   /**
-   * The mapping change handler — this is the function the AC is asking for.
-   * Called when the operator confirms a restaurant pick for a device.
+   * 매핑 변경 핸들러 — AC가 요구하는 함수. 운영자가 디바이스에 대한
+   * 음식점 선택을 확인하면 호출된다.
    *
-   * Flow:
-   *   1. Mark the row as submitting (disables the form).
-   *   2. PATCH /api/devices/{deviceId} with `{ restaurantId }` via
-   *      [patchDevice]. Using the umbrella PATCH route (AC 9, Sub-AC 1)
-   *      means the same wire call will absorb future device-level fields
-   *      (screenName, groupName, …) without an extra controller hop.
-   *   3. On success:
-   *      - optimistically patch the row's `currentRestaurant` so the table
-   *        reflects the change before the next server fetch lands;
-   *      - close the inline editor and the modal (if open) so the operator
-   *        falls back to the list with the new mapping visible;
-   *      - kick off `router.refresh()` so the Server Component re-runs
-   *        `listDevices()` and the list is replaced with authoritative
-   *        backend data ("refreshes the list").
-   *   4. On error: keep the editor / modal open, show an inline error so the
-   *      operator can correct + retry without losing context.
+   * 흐름:
+   *   1. 행을 submitting으로 표시(폼 비활성화).
+   *   2. [patchDevice]를 통해 PATCH /api/devices/{deviceId}를 `{ restaurantId }`
+   *      로. 우산 PATCH 라우트(AC 9, Sub-AC 1)를 사용하면 동일한 와이어
+   *      호출이 미래의 디바이스 레벨 필드(screenName, groupName, …)를 추가
+   *      컨트롤러 홉 없이 흡수한다.
+   *   3. 성공:
+   *      - 다음 서버 fetch가 도착하기 전에 테이블이 변경을 반영하도록
+   *        행의 `currentRestaurant`를 낙관적으로 패치;
+   *      - 인라인 에디터와 모달(열려 있다면)을 닫아 운영자가 새 매핑이
+   *        보이는 목록으로 폴백;
+   *      - 서버 컴포넌트가 `listDevices()`를 재실행하고 목록이 권위 있는
+   *        백엔드 데이터로 교체되도록 `router.refresh()`를 시작("목록
+   *        새로고침").
+   *   4. 오류: 운영자가 컨텍스트 손실 없이 수정+재시도할 수 있도록 에디터/
+   *      모달을 열어 두고 인라인 오류를 표시.
    */
   const handleMappingChange = useCallback(
     async (deviceId: string, restaurantId: string) => {
@@ -167,14 +164,13 @@ export function DevicesTableClient(props: DevicesTableClientProps) {
       try {
         const result = await patchDevice(deviceId, { restaurantId });
 
-        // Optimistic local update: replace this device's currentRestaurant
-        // with the just-assigned one so the row reflects the new mapping
-        // before `router.refresh()` round-trips. We use the dropdown's
-        // restaurant metadata (name/address) for the labels — the backend
-        // result only carries ids/timestamps. If the PATCH response unexpectedly
-        // omits the resolved restaurantId (e.g. an unassign-style response in
-        // a future sub-AC), we fall back to the operator-selected id so the
-        // row still reflects what the operator just clicked.
+        // 낙관적 로컬 업데이트: 이 디바이스의 currentRestaurant를 방금
+        // 할당된 것으로 교체하여 `router.refresh()` 왕복 전에 행이 새 매핑을
+        // 반영하게 한다. 라벨용으로 드롭다운의 음식점 메타데이터(name/address)
+        // 사용 — 백엔드 결과는 ids/timestamps만 담는다. PATCH 응답이 결정된
+        // restaurantId를 예기치 않게 누락하면(예: 미래 sub-AC의 unassign
+        // 스타일 응답) 운영자가 방금 클릭한 것을 행이 여전히 반영하도록
+        // 운영자 선택 id로 폴백한다.
         setDevices((prev) =>
           prev.map((d) =>
             d.deviceId === deviceId
@@ -192,11 +188,11 @@ export function DevicesTableClient(props: DevicesTableClientProps) {
         setSubmit(deviceId, { kind: "success", result, at: Date.now() });
         setEdit(deviceId, { open: false });
 
-        // If the change came from the modal path, close the modal too so the
-        // operator falls back to the list with the new mapping visible.
+        // 변경이 모달 경로에서 왔다면 모달도 닫아 운영자가 새 매핑이
+        // 보이는 목록으로 폴백.
         setEditingDeviceId((cur) => (cur === deviceId ? null : cur));
 
-        // Refresh the Server Component so the list shows authoritative data.
+        // 목록이 권위 있는 데이터를 보이도록 서버 컴포넌트 새로고침.
         startRefresh(() => {
           router.refresh();
         });
@@ -211,8 +207,8 @@ export function DevicesTableClient(props: DevicesTableClientProps) {
   );
 
   /**
-   * Modal entry point — opens the dedicated remap dialog for `deviceId`.
-   * Clears any stale per-row error so the modal opens in a clean state.
+   * 모달 진입점 — `deviceId`에 대한 전용 재할당 다이얼로그를 연다.
+   * 모달이 깨끗한 상태에서 열리도록 stale 행별 오류를 지운다.
    */
   const openRemapModal = useCallback(
     (deviceId: string) => {
@@ -267,8 +263,8 @@ export function DevicesTableClient(props: DevicesTableClientProps) {
                 onToggleEdit={(open) =>
                   setEdit(device.deviceId, {
                     open,
-                    // when opening, preselect the current restaurant so the
-                    // dropdown is in a sensible default state.
+                    // 열 때, 드롭다운이 합리적 기본 상태에 있도록 현재
+                    // 음식점을 미리 선택.
                     selectedId: open
                       ? device.currentRestaurant?.restaurantId ?? ""
                       : "",
@@ -288,10 +284,9 @@ export function DevicesTableClient(props: DevicesTableClientProps) {
         </tbody>
       </table>
 
-      {/* Modal-based remap surface (AC 9, Sub-AC 2). Renders only while
-          `editingDevice` is non-null. The modal calls `handleMappingChange`
-          via its onSave so it shares the same PUT + refresh path as the
-          inline editor. */}
+      {/* 모달 기반 재할당 표면(AC 9, Sub-AC 2). `editingDevice`가 non-null일
+          때만 렌더링. 모달은 onSave를 통해 `handleMappingChange`를 호출하므로
+          인라인 에디터와 동일한 PUT + 새로고침 경로를 공유한다. */}
       <DeviceRemapModal
         device={editingDevice}
         restaurants={restaurants}
@@ -327,7 +322,7 @@ interface DeviceRowProps {
   onSelectRestaurant: (id: string) => void;
   onSave: () => void;
   onClearStatus: () => void;
-  /** Open the modal-based remap dialog for this row (AC 9, Sub-AC 2). */
+  /** 이 행에 대한 모달 기반 재할당 다이얼로그를 연다(AC 9, Sub-AC 2). */
   onOpenModal: () => void;
 }
 
@@ -347,9 +342,8 @@ function DeviceRow(props: DeviceRowProps) {
   const current = device.currentRestaurant;
   const submitting = submit.kind === "submitting";
 
-  // The operator can only save if they picked a *different* restaurant than
-  // the one currently assigned. Saving the same id would just be a no-op
-  // round-trip to the backend.
+  // 운영자가 현재 할당된 것과 *다른* 음식점을 골랐을 때만 저장 가능.
+  // 같은 id로 저장하는 것은 백엔드로의 무동작 왕복일 뿐.
   const isDirty = !!edit.selectedId && edit.selectedId !== (current?.restaurantId ?? "");
   const saveDisabled =
     !edit.selectedId || !isDirty || submitting || restaurants.length === 0;
@@ -393,9 +387,8 @@ function DeviceRow(props: DeviceRowProps) {
         <td>
           {!edit.open && (
             <div className="toolbar" style={{ flexWrap: "wrap" }}>
-              {/* Primary edit action — opens the dedicated remap modal
-                  (AC 9, Sub-AC 2). Uses the pencil glyph to read as an
-                  "edit" affordance at a glance. */}
+              {/* 주요 편집 액션 — 전용 재할당 모달 열기(AC 9, Sub-AC 2).
+                  연필 글리프를 사용해 한눈에 "edit" 컨트롤로 읽힌다. */}
               <button
                 type="button"
                 className="btn"
@@ -410,8 +403,8 @@ function DeviceRow(props: DeviceRowProps) {
               >
                 <span aria-hidden="true">✎</span> Edit
               </button>
-              {/* Secondary inline editor — kept for power users who prefer
-                  to stay in the table without opening a dialog. */}
+              {/* 보조 인라인 에디터 — 다이얼로그를 열지 않고 테이블에
+                  머무르고 싶은 파워 유저용. */}
               <button
                 type="button"
                 className="btn"
@@ -549,10 +542,10 @@ function DeviceRow(props: DeviceRowProps) {
 /* ------------------------------------------------------------ helpers */
 
 /**
- * Builds the optimistic [CurrentRestaurant] entry to splice into a row after a
- * successful PATCH, before the server-side refresh round-trip lands. Falls
- * back gracefully if the dropdown row metadata is missing or the backend
- * omitted `assignedAt` (older response shapes).
+ * 성공한 PATCH 후, 서버 측 새로고침 왕복이 도착하기 전에 행에 끼워 넣을
+ * 낙관적 [CurrentRestaurant] 항목을 만든다. 드롭다운 행 메타데이터가
+ * 누락됐거나 백엔드가 `assignedAt`(오래된 응답 형태)을 생략한 경우 우아하게
+ * 폴백한다.
  */
 function buildOptimisticAssignment(
   result: { restaurantId: string | null; assignedAt: string | null },

@@ -14,49 +14,47 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * AC 9, Sub-AC 1 — `PATCH /api/devices/{deviceId}`.
  *
- * Generic, partial-update entry point for the device record. Whereas the
- * sibling [DeviceRestaurantController] (PATCH …/restaurant) is purpose-built
- * for the single restaurant-remap use case, this controller is the umbrella
- * route the admin UI hits when it wants to change *any* mutable device field
- * — current and future. The same controller will absorb new fields (display
- * orientation, daypart override, screen label, group tag, …) as they land,
- * so the admin-side fetch shape stays a single PATCH instead of fanning out
- * into one named-subresource per field.
+ * 디바이스 레코드를 위한 일반적이고 부분적 업데이트 진입점. 형제
+ * [DeviceRestaurantController](PATCH …/restaurant)가 단일 음식점 리매핑
+ * 사용 사례 전용으로 만들어진 반면, 이 컨트롤러는 관리자 UI가 *모든*
+ * 가변 디바이스 필드(현재와 미래)를 변경하려 할 때 도달하는 우산 라우트.
+ * 같은 컨트롤러가 새 필드(디스플레이 방향, daypart 오버라이드, 화면
+ * 레이블, 그룹 태그 등)가 도착할 때마다 흡수할 것이므로 관리자 측 fetch
+ * 모양은 필드당 하나의 명명된 하위 리소스로 분기하지 않고 단일 PATCH로
+ * 유지됨.
  *
- * Why a sibling controller (vs. extending [DeviceRestaurantController])?
- * That controller pins its class-level mapping at
- * `/api/devices/{deviceId}/restaurant` for the partial-update-of-the-named-
- * subresource shape. This route is *not* a subresource — it targets the
- * device entity itself. Spring's `@RequestMapping` does not let one
- * controller class fan out to multiple base paths cleanly, so we keep each
- * route's contract self-contained.
+ * 왜 ([DeviceRestaurantController]를 확장하지 않고) 형제 컨트롤러인가?
+ * 그 컨트롤러는 명명된 하위 리소스의 부분 업데이트 모양을 위해 클래스
+ * 수준 매핑을 `/api/devices/{deviceId}/restaurant`에 고정함. 이 라우트는
+ * 하위 리소스가 *아님* — 디바이스 엔터티 자체를 대상으로 함. 스프링의
+ * `@RequestMapping`은 한 컨트롤러 클래스가 여러 기본 경로로 깔끔하게
+ * 분기하는 것을 허용하지 않으므로 각 라우트의 계약을 자기 완결적으로
+ * 유지함.
  *
- * HTTP contract:
- *  - 200 OK on success — body = the post-patch [DeviceResponse]
- *  - 400 Bad Request when the request body validates but contains no
- *    actionable fields, or when an individual field fails its own validation
- *    (delegated to [me.owldev.adsignage.web.GlobalExceptionHandler])
- *  - 404 Not Found if the deviceId or referenced restaurantId is unknown
+ * HTTP 계약:
+ *  - 200 OK 성공 시 — 본문 = 패치 후 [DeviceResponse]
+ *  - 400 Bad Request 요청 본문은 유효하지만 실행 가능한 필드가 없거나,
+ *    개별 필드가 자체 검증에 실패할 때
+ *    ([me.owldev.adsignage.web.GlobalExceptionHandler]에 위임)
+ *  - 404 Not Found deviceId 또는 참조된 restaurantId가 알려지지 않은 경우
  *
- * Behavior:
- *  - The request body is partial: only fields the caller actually wants to
- *    change appear. An absent key leaves the corresponding device field
- *    untouched. A blank string is rejected at validation time (clients
- *    should omit a key, not send `""`, to mean "no change").
- *  - When [UpdateDeviceRequest.restaurantId] is present, the service
- *    delegates to [DeviceAssignmentService.updateAssignment], which
- *    atomically deactivates any existing active row and inserts a new one,
- *    then publishes a `DeviceMappingChangedEvent` consumed by the SSE
- *    bridge — the same wire flow that powers demo scenario #3.
- *  - The response always echoes the device's current active assignment (if
- *    any) so callers can confirm the post-patch state in a single round
- *    trip without a follow-up GET.
+ * 동작:
+ *  - 요청 본문은 부분적: 호출자가 실제로 변경하려는 필드만 나타남. 키가
+ *    없으면 해당 디바이스 필드는 변경되지 않음. 빈 문자열은 검증 시점에
+ *    거부됨(클라이언트는 "변경 없음"을 의미할 때 `""`를 보내지 말고 키를
+ *    생략해야 함).
+ *  - [UpdateDeviceRequest.restaurantId]가 있으면 서비스는
+ *    [DeviceAssignmentService.updateAssignment]에 위임하고, 이는 기존 활성
+ *    행을 원자적으로 비활성화하고 새 행을 삽입한 다음 SSE 브리지가 소비하는
+ *    `DeviceMappingChangedEvent`를 발행함 — 데모 시나리오 #3을 동작시키는
+ *    동일한 와이어 흐름.
+ *  - 응답은 항상 디바이스의 현재 활성 할당(있다면)을 에코하므로 호출자는
+ *    후속 GET 없이 단일 왕복으로 패치 후 상태를 확인할 수 있음.
  *
- * Authorization: the route is permitted in [SecurityConfig] alongside the
- * sibling `…/restaurant` and `…/assignment` carve-outs as a transitional
- * measure for the hackathon build. The auth-and-isolation pass that gates
- * the `/api/devices` admin CRUD prefix behind `ROLE_ADVERTISER` will pick
- * up this route too — no controller changes required.
+ * 인가: 이 라우트는 해커톤 빌드를 위한 과도기 조치로 형제 `…/restaurant`
+ * 및 `…/assignment` 예외와 함께 [SecurityConfig]에서 허용됨. `/api/devices`
+ * 관리자 CRUD 접두사를 `ROLE_ADVERTISER` 뒤로 잠그는 auth-and-isolation
+ * 패스가 이 라우트도 가져갈 것 — 컨트롤러 변경은 필요 없음.
  */
 @RestController
 @RequestMapping("/api/devices/{deviceId}")
@@ -67,14 +65,12 @@ class DeviceController(
     private val log = LoggerFactory.getLogger(DeviceController::class.java)
 
     /**
-     * Applies the partial-update [body] to the device whose path id is
-     * [deviceId]. Returns the post-patch [DeviceResponse], including the
-     * resolved current active assignment so the admin UI can render the
-     * outcome without a follow-up GET.
+     * 경로 id가 [deviceId]인 디바이스에 부분 업데이트 [body]를 적용.
+     * 패치 후 [DeviceResponse]를 반환하며 해석된 현재 활성 할당을 포함하므로
+     * 관리자 UI가 후속 GET 없이 결과를 렌더링할 수 있음.
      *
-     * The PATCH verb is chosen rather than PUT because the request body
-     * carries an arbitrary subset of mutable fields — the route is partial
-     * by design.
+     * PUT이 아닌 PATCH 동사가 선택된 이유는 요청 본문이 가변 필드의 임의
+     * 부분 집합을 운반 — 라우트는 설계상 부분적임.
      */
     @PatchMapping
     fun update(
@@ -86,11 +82,10 @@ class DeviceController(
             deviceId, body.restaurantId, body.screenName, body.groupName,
         )
 
-        // Reject a syntactically valid but semantically empty body up
-        // front. A zero-field PATCH is almost certainly a client bug
-        // (e.g. an admin form submitted before any input). Returning 400
-        // surfaces that immediately rather than silently 200ing with the
-        // unchanged current state.
+        // 구문은 유효하지만 시맨틱이 비어 있는 본문을 미리 거부. 0필드
+        // PATCH는 거의 확실히 클라이언트 버그(예: 어떤 입력도 없이 제출된
+        // 관리자 폼). 변경되지 않은 현재 상태로 조용히 200을 반환하지 않고
+        // 즉시 400으로 표면화함.
         if (body.isEmpty()) {
             throw IllegalArgumentException(
                 "PATCH body must include at least one updatable field " +

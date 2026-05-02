@@ -1,26 +1,24 @@
 /**
- * Ad detail / edit page (`/ads/[id]`).
+ * 광고 상세/편집 페이지 (`/ads/[id]`).
  *
  * AC 3, Sub-AC 3:
  *   "Build Next.js admin schedule form UI with datetime pickers and play
  *    count input on ad detail/edit page."
  *
- * Implementation notes:
- *   - Server Component shell — renders the page chrome, the ad id banner,
- *     and a Client Component [AdScheduleForm] for the actual interactive
- *     form. No JS is required to render the shell, but the form itself
- *     hydrates into a controlled-input client component.
- *   - There is no GET /api/ads/{id} endpoint yet (out of Sub-AC 3 scope —
- *     only the PUT/PATCH /schedule verb exists), so the page does NOT
- *     attempt to pre-fetch the current schedule. The form starts empty
- *     and submits a complete replacement, matching the PUT semantics
- *     documented on `AdController.putSchedule`.
- *   - When the backend later exposes a single-ad read endpoint, this page
- *     should server-side-fetch it and pass the values via
- *     [AdScheduleForm.initialValues]; the form is already wired for that
- *     prop.
- *   - `dynamic = "force-dynamic"` so each visit reads live data when a GET
- *     endpoint is added later, instead of caching a stale snapshot.
+ * 구현 메모:
+ *   - 서버 컴포넌트 셸 — 페이지 크롬, 광고 id 배너, 그리고 실제 인터랙티브
+ *     폼인 클라이언트 컴포넌트 [AdScheduleForm]을 렌더링한다. 셸 자체는
+ *     JS 없이 렌더링되지만, 폼은 컨트롤드 입력을 가진 클라이언트
+ *     컴포넌트로 하이드레이트된다.
+ *   - 아직 GET /api/ads/{id} 엔드포인트가 없으므로(Sub-AC 3 범위 밖 —
+ *     PUT/PATCH /schedule 동사만 존재), 페이지는 현재 스케줄을 사전
+ *     fetch하지 *않는다*. 폼은 비어 시작하고 완전한 교체를 제출하며,
+ *     이는 `AdController.putSchedule`에 문서화된 PUT 시맨틱과 일치한다.
+ *   - 추후 백엔드가 단일 광고 read 엔드포인트를 노출하면 이 페이지는
+ *     서버 측 fetch 후 [AdScheduleForm.initialValues]로 값을 전달해야
+ *     하며 — 폼은 이미 그 prop을 와이어업 해두었다.
+ *   - `dynamic = "force-dynamic"`이므로 추후 GET 엔드포인트가 추가되면
+ *     매 방문마다 stale 스냅샷을 캐싱하지 않고 라이브 데이터를 읽는다.
  */
 
 import Link from "next/link";

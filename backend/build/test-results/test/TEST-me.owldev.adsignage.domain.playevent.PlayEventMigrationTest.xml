@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="me.owldev.adsignage.domain.playevent.PlayEventMigrationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-05-02T14:50:31" hostname="Jinsuui-MacBookAir.local" time="0.007">
-  <properties/>
-  <testcase name="V100 accepts STARTED and FINISHED event types()" classname="me.owldev.adsignage.domain.playevent.PlayEventMigrationTest" time="0.004"/>
-  <testcase name="V100 creates play_events table with the columns the entity expects()" classname="me.owldev.adsignage.domain.playevent.PlayEventMigrationTest" time="0.002"/>
-  <testcase name="V100 rejects unknown event_type via CHECK constraint()" classname="me.owldev.adsignage.domain.playevent.PlayEventMigrationTest" time="0.001"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

@@ -1,5 +1,5 @@
 /**
- * Videos admin page (`/videos`).
+ * 영상 어드민 페이지 (`/videos`).
  *
  * AC 40104, Sub-AC 3:
  *   "Build Next.js admin upload page with file input form, MP4 client-side
@@ -10,23 +10,21 @@
  *   "Frontend - Implement uploaded videos list view in admin UI that fetches
  *    and displays video metadata from backend GET /api/videos endpoint."
  *
- * Implementation notes:
- *   - Server Component shell: fetches `GET /api/videos` on the server so the
- *     operator gets an immediately-rendered table with no client-side
- *     loading spinners. The interactive upload form is delegated to
- *     [VideoUploadForm], a Client Component.
- *   - `dynamic = "force-dynamic"` so we don't serve a stale Static page from
- *     the Next data cache between deploys.
- *   - Errors from the list endpoint are caught and surfaced inline so the
- *     upload form below stays usable for the rest of the admin workflow
- *     even if the list endpoint is down.
- *   - The list intentionally lives *above* the upload form so a scrolling
- *     operator sees the historical roster first; after a successful upload
- *     the form clears its file input but the list does not auto-refresh
- *     (router.refresh is a Client Component concern). In practice the
- *     success notice surfaces the new id + streaming link immediately, and
- *     a manual page reload pulls the new row to the top — sufficient for
- *     the hackathon demo.
+ * 구현 메모:
+ *   - 서버 컴포넌트 셸: `GET /api/videos`를 서버에서 fetch하므로 운영자는
+ *     클라이언트 측 로딩 스피너 없이 즉시 렌더링된 테이블을 본다.
+ *     인터랙티브 업로드 폼은 클라이언트 컴포넌트 [VideoUploadForm]에 위임.
+ *   - `dynamic = "force-dynamic"`이므로 배포 사이에 Next 데이터 캐시에서
+ *     stale Static 페이지를 서빙하지 않는다.
+ *   - 목록 엔드포인트의 오류는 캐치되어 인라인으로 노출되므로, 목록
+ *     엔드포인트가 다운되어도 아래 업로드 폼이 나머지 어드민 워크플로에서
+ *     사용 가능한 상태를 유지한다.
+ *   - 목록은 의도적으로 업로드 폼 *위*에 위치하여 스크롤하는 운영자가
+ *     역사적 명단을 먼저 본다. 성공한 업로드 후 폼은 파일 입력을
+ *     비우지만 목록은 자동 새로고침하지 않는다(router.refresh는 클라이언트
+ *     컴포넌트의 관심사). 실무적으로 성공 알림이 즉시 새 id + 스트리밍
+ *     링크를 노출하고, 수동 페이지 리로드가 새 행을 맨 위로 가져오므로
+ *     해커톤 데모에 충분하다.
  */
 
 import { ApiError } from "@/lib/api";

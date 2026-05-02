@@ -1,35 +1,32 @@
 "use client";
 
 /**
- * Restaurant assignment UI component (AC 40202, Sub-AC 2).
+ * 음식점 할당 UI 컴포넌트 (AC 40202, Sub-AC 2).
  *
- * Goal:
+ * 목표:
  *   "Build restaurant assignment UI component with dropdown/selector to choose
  *    target restaurant for a device."
  *
- * What this component does:
- *   1. Fetches the full restaurant list on mount via [listRestaurants].
- *   2. Renders a native <select> dropdown so the operator can pick a target
- *      restaurant for the given [deviceId]. We use a native select (not a
- *      custom widget) because (a) it works without any extra deps in the
- *      hackathon stack and (b) it is fully keyboard accessible, mobile
- *      friendly, and gives us long-list virtualisation for free on touch
- *      devices the operator might use behind a bar.
- *   3. Shows the current assignment (if known) so the operator can see what
- *      they're about to change before they change it. The dropdown is
- *      pre-selected to that restaurant.
- *   4. Submits the change via [assignDeviceToRestaurant] (PUT
- *      /api/devices/{id}/assignment), which is the entry point that triggers
- *      the SSE remap broadcast on the backend (demo scenario #3).
- *   5. Surfaces inline loading / error / success feedback so the operator
- *      knows the SSE remap actually happened — without forcing a page reload.
+ * 이 컴포넌트가 하는 일:
+ *   1. 마운트 시 [listRestaurants]를 통해 전체 음식점 목록을 fetch.
+ *   2. 운영자가 주어진 [deviceId]에 대해 대상 음식점을 고를 수 있도록
+ *      네이티브 <select> 드롭다운 렌더. 네이티브 select(커스텀 위젯이 아님)
+ *      를 쓰는 이유: (a) 해커톤 스택에서 추가 의존성 없이 동작하고
+ *      (b) 완전히 키보드 접근 가능, 모바일 친화, 그리고 운영자가 바 뒤에서
+ *      쓸 수도 있는 터치 디바이스에서 긴 목록 가상화를 무료로 제공.
+ *   3. (알려진 경우) 현재 할당을 보여줘서 운영자가 변경 전에 무엇을
+ *      변경하려는지 볼 수 있게 한다. 드롭다운은 그 음식점으로 미리 선택됨.
+ *   4. [assignDeviceToRestaurant](PUT /api/devices/{id}/assignment)를 통해
+ *      변경을 제출 — 이것이 백엔드에서 SSE 재할당 브로드캐스트를
+ *      트리거하는 진입점(데모 시나리오 #3).
+ *   5. 인라인 로딩/오류/성공 피드백을 노출해 운영자가 페이지 리로드 없이도
+ *      SSE 재할당이 실제 발생했음을 알 수 있게 한다.
  *
- * Composition:
- *   This component is intentionally self-contained and prop-driven so it can
- *   be embedded into the device detail page (Sub-AC 3, owned in a sibling AC)
- *   without further refactoring. Server-side data (the device row + its
- *   current restaurant) is passed down as props; the restaurant list is
- *   fetched client-side because it changes independently of the device row.
+ * 합성:
+ *   이 컴포넌트는 의도적으로 자기 완결적이고 prop 주도이므로 추가 리팩토링
+ *   없이 디바이스 상세 페이지(Sub-AC 3, 형제 AC가 소유)에 임베드 가능.
+ *   서버 측 데이터(디바이스 행 + 현재 음식점)는 props로 내려오고, 음식점
+ *   목록은 디바이스 행과 독립적으로 변경되므로 클라이언트 측에서 fetch한다.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -43,26 +40,25 @@ import {
   type DeviceAssignmentResult,
 } from "@/lib/assignments";
 
-/** Props for [RestaurantAssignmentSelector]. */
+/** [RestaurantAssignmentSelector]의 props. */
 export interface RestaurantAssignmentSelectorProps {
-  /** UUID of the device whose assignment is being edited. Required. */
+  /** 할당이 편집되는 디바이스의 UUID. 필수. */
   deviceId: string;
-  /** Optional human-readable label for display ("Fridge #2"). */
+  /** 표시용 사람이 읽을 수 있는 라벨(선택, 예: "Fridge #2"). */
   deviceName?: string;
-  /** Current restaurant id, if any — used to preselect the dropdown. */
+  /** 현재 음식점 id(있으면) — 드롭다운을 미리 선택하는 데 사용. */
   currentRestaurantId?: string | null;
-  /** Current restaurant name, if any — shown in the "Currently assigned" line. */
+  /** 현재 음식점 이름(있으면) — "Currently assigned" 라인에 표시. */
   currentRestaurantName?: string | null;
   /**
-   * Optional pre-fetched restaurant list. If supplied, the component skips the
-   * client-side fetch — useful when the parent page already has the data
-   * (e.g. a Server Component rendering both the device detail and this UI).
+   * 미리 fetch된 음식점 목록(선택). 제공되면 컴포넌트는 클라이언트 측 fetch를
+   * 건너뛴다 — 부모 페이지가 이미 데이터를 가졌을 때 유용(예: 디바이스
+   * 상세와 이 UI를 둘 다 렌더링하는 서버 컴포넌트).
    */
   initialRestaurants?: RestaurantListItem[];
   /**
-   * Called after a successful assignment. The parent can use this to refresh
-   * its own state (e.g. re-fetch the device row, update a status pill) without
-   * a full page reload.
+   * 성공한 할당 후 호출됨. 부모는 이를 사용해 풀 페이지 리로드 없이 자체
+   * 상태를 새로고침(예: 디바이스 행 재 fetch, 상태 pill 업데이트) 할 수 있다.
    */
   onAssigned?: (result: DeviceAssignmentResult) => void;
 }

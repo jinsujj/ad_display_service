@@ -5,32 +5,32 @@ import me.owldev.adsignage.domain.video.Video
 import java.time.Instant
 
 /**
- * Wire-level representation of a [Video] returned by `POST /api/videos`.
+ * `POST /api/videos`가 반환하는 [Video]의 와이어 레벨 표현.
  *
- * Sub-AC 4 contract:
- *  - The controller must return a stable JSON shape independent of the JPA
- *    entity layout — Hibernate proxies and `@OneToMany` lazy collections
- *    have no business escaping the controller boundary.
- *  - Every field surfaced here corresponds to a column of the `videos` table
- *    that the admin UI / player playlist will need:
- *      - [id]           — server-generated UUID (primary key).
- *      - [filename]     — server-generated on-disk filename, also the path
- *                        segment of [url] that the player page will fetch
- *                        from the streaming endpoint.
- *      - [originalName] — advertiser-supplied filename, used by the admin
- *                        UI's "recent uploads" listing.
- *      - [mimeType]     — Content-Type (e.g. `video/mp4`); used by the
- *                        player's `<video>` element to pick a decoder.
- *      - [sizeBytes]    — re-stat-ed bytes-on-disk; useful for UI progress
- *                        indicators and Range request math.
- *      - [url]          — canonical streaming URL the player can fetch
- *                        without re-deriving the prefix; mirrors the
- *                        `urlPath` returned by the storage layer.
- *      - [uploadedAt]   — insert-time timestamp, used to sort the admin UI.
+ * Sub-AC 4 계약:
+ *  - 컨트롤러는 JPA 엔터티 레이아웃과 무관한 안정적인 JSON 형태를 반환해야
+ *    한다 — Hibernate 프록시와 `@OneToMany` 지연 컬렉션이 컨트롤러 경계
+ *    밖으로 벗어날 이유가 없다.
+ *  - 여기 노출되는 모든 필드는 어드민 UI / 플레이어 플레이리스트가 필요로
+ *    하는 `videos` 테이블의 컬럼에 대응:
+ *      - [id]           — 서버 생성 UUID(기본 키).
+ *      - [filename]     — 서버 생성 디스크 상 파일명; 플레이어 페이지가
+ *                        스트리밍 엔드포인트에서 가져올 [url]의 경로
+ *                        세그먼트이기도 함.
+ *      - [originalName] — 광고주 제공 파일명. 어드민 UI의 "최근 업로드"
+ *                        목록에 사용.
+ *      - [mimeType]     — Content-Type(예: `video/mp4`) — 플레이어의
+ *                        `<video>` 요소가 디코더를 선택하는 데 사용.
+ *      - [sizeBytes]    — 다시 stat된 디스크 상 바이트; UI 진행 표시기와
+ *                        Range 요청 계산에 유용.
+ *      - [url]          — 플레이어가 접두사를 다시 유도하지 않고 가져올
+ *                        수 있는 정식 스트리밍 URL; 스토리지 레이어가
+ *                        반환하는 `urlPath`를 미러링.
+ *      - [uploadedAt]   — 삽입 시점 타임스탬프; 어드민 UI 정렬에 사용.
  *
- * `@JsonInclude(NON_NULL)` is defensive: the schema has no nullable columns
- * today, but if a future field is added as `String?` we don't want a stray
- * `"foo": null` polluting the contract.
+ * `@JsonInclude(NON_NULL)`은 방어적: 현재 스키마에는 nullable 컬럼이
+ * 없지만, 미래에 `String?` 필드가 추가될 때 떠도는 `"foo": null`이 계약을
+ * 오염시키지 않도록 한다.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class VideoResponse(
@@ -43,14 +43,15 @@ data class VideoResponse(
     val uploadedAt: Instant,
 ) {
     companion object {
-        /** Canonical URL prefix the streaming endpoint lives at. */
+        /** 스트리밍 엔드포인트가 위치하는 정식 URL 접두사. */
         private const val URL_PREFIX = "/api/videos"
 
         /**
-         * Build the wire DTO from a persisted [Video]. The streaming URL is
-         * derived from `filename` — the same shape `LocalVideoStorageService`
-         * predicts in [me.owldev.adsignage.domain.video.storage.StoredVideo.urlPath]
-         * — so the admin UI and the player page see one canonical URL form.
+         * 영속화된 [Video]에서 와이어 DTO를 만든다. 스트리밍 URL은
+         * `filename`에서 유도된다 — `LocalVideoStorageService`가
+         * [me.owldev.adsignage.domain.video.storage.StoredVideo.urlPath]에서
+         * 예측하는 형태와 동일 — 따라서 어드민 UI와 플레이어 페이지가
+         * 단일 정식 URL 형태를 본다.
          */
         fun from(entity: Video): VideoResponse = VideoResponse(
             id = entity.id,

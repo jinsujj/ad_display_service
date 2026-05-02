@@ -14,43 +14,40 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * Sub-AC 50101.1 — `PATCH /api/devices/{deviceId}/restaurant`.
  *
- * Lightweight, partial-update entry point for remapping a device to a
- * different restaurant. The PATCH-on-named-subresource shape reads as
- * "modify the device's `restaurant` association" and is what the admin UI's
- * inline remap form targets in the demo.
+ * 디바이스를 다른 음식점으로 리매핑하기 위한 가벼운 부분 업데이트 진입점.
+ * 명명된 하위 리소스에 대한 PATCH 모양은 "디바이스의 `restaurant` 연관을
+ * 수정"으로 읽히며, 데모에서 관리자 UI의 인라인 리매핑 폼이 대상으로
+ * 하는 것임.
  *
- * Why a sibling controller (vs. an extra method on
- * [DeviceAssignmentController])? The existing controller pins its class-level
- * mapping at `/api/devices/{id}/assignment` so that POST/PUT both share the
- * same path prefix. A PATCH on `…/restaurant` lives at a *different* path,
- * and Spring's `@RequestMapping` does not let one controller class fan out
- * to multiple base paths cleanly. Splitting the controller keeps each
- * route's contract self-contained and makes it easy to add a future
- * `DELETE …/restaurant` (un-assign) without touching the assignment CRUD
- * surface.
+ * 왜 ([DeviceAssignmentController]에 추가 메서드를 두지 않고) 형제 컨트롤러인가?
+ * 기존 컨트롤러는 POST/PUT이 동일한 경로 접두사를 공유하도록 클래스 수준
+ * 매핑을 `/api/devices/{id}/assignment`에 고정함. `…/restaurant`에 대한
+ * PATCH는 *다른* 경로에 위치하며, 스프링의 `@RequestMapping`은 한
+ * 컨트롤러 클래스가 여러 기본 경로로 깔끔하게 분기하는 것을 허용하지
+ * 않음. 컨트롤러를 분리하면 각 라우트의 계약이 자기 완결적으로 유지되고
+ * 추후 할당 CRUD 표면을 건드리지 않고 `DELETE …/restaurant`(할당 해제)를
+ * 쉽게 추가할 수 있음.
  *
- * HTTP contract:
- *  - 200 OK on success — body = the new active [AssignmentResponse]
- *  - 400 Bad Request on validation failure (handled by GlobalExceptionHandler)
- *  - 404 Not Found if the deviceId or restaurantId is unknown
+ * HTTP 계약:
+ *  - 200 OK 성공 시 — 본문 = 새 활성 [AssignmentResponse]
+ *  - 400 Bad Request 검증 실패 시 (GlobalExceptionHandler가 처리)
+ *  - 404 Not Found deviceId 또는 restaurantId가 알려지지 않은 경우
  *
- * Behavior:
- *  - Delegates to [DeviceAssignmentService.updateAssignment], which
- *    atomically deactivates any existing active row and inserts a new
- *    active one in a single transaction. This means PATCH is also the
- *    correct verb when the device is currently unassigned: the service
- *    treats "no existing active row" as a no-op deactivate and then
- *    inserts the new active row.
- *  - On success, the service publishes a `DeviceMappingChangedEvent` which
- *    the SSE bridge listener turns into a `MAPPING_CHANGED` push to every
- *    player connected for that device — this is what powers demo
- *    scenario #3 (real-time remap).
+ * 동작:
+ *  - [DeviceAssignmentService.updateAssignment]에 위임하고, 이는 단일
+ *    트랜잭션에서 기존 활성 행을 원자적으로 비활성화하고 새 활성 행을
+ *    삽입함. 따라서 디바이스가 현재 할당되지 않았을 때도 PATCH가 올바른
+ *    동사: 서비스는 "기존 활성 행 없음"을 no-op 비활성화로 취급한 다음
+ *    새 활성 행을 삽입.
+ *  - 성공 시 서비스는 `DeviceMappingChangedEvent`를 발행하고, SSE 브리지
+ *    리스너가 이를 해당 디바이스에 연결된 모든 플레이어로
+ *    `MAPPING_CHANGED` 푸시로 변환 — 이것이 데모 시나리오 #3(실시간
+ *    리매핑)을 동작시킴.
  *
- * Authorization is intentionally permissive in the hackathon build —
- * SecurityConfig opens the path matcher `/api/devices/{star}/restaurant`
- * (single-segment wildcard) alongside the sibling `…/assignment` route as a
- * transitional carve-out. Finer-grained checks land in a later
- * auth-and-isolation pass.
+ * 해커톤 빌드에서 인가는 의도적으로 관대 — SecurityConfig는 형제
+ * `…/assignment` 라우트와 함께 과도기 예외로 경로 매처
+ * `/api/devices/{star}/restaurant`(단일 세그먼트 와일드카드)를 열어둠.
+ * 더 세밀한 검사는 추후 auth-and-isolation 패스에서 도착함.
  */
 @RestController
 @RequestMapping("/api/devices/{deviceId}/restaurant")
@@ -61,12 +58,11 @@ class DeviceRestaurantController(
     private val log = LoggerFactory.getLogger(DeviceRestaurantController::class.java)
 
     /**
-     * Remaps the device whose path id is [deviceId] to point at the
-     * restaurant carried by [body]. Returns the new active assignment.
+     * 경로 id가 [deviceId]인 디바이스를 [body]가 운반하는 음식점을 가리키도록
+     * 리매핑. 새 활성 할당을 반환.
      *
-     * The PATCH verb is chosen rather than PUT because the request body
-     * carries only the *one* mutable field of the device-restaurant
-     * association — the route is partial-update by intent.
+     * PUT이 아닌 PATCH 동사가 선택된 이유는 요청 본문이 device-restaurant
+     * 연관의 *유일한* 가변 필드만 운반 — 라우트는 의도적으로 부분 업데이트.
      */
     @PatchMapping
     fun updateRestaurant(

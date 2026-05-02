@@ -8,27 +8,27 @@ import me.owldev.adsignage.domain.playevent.PlayEventType
 import java.time.Instant
 
 /**
- * Request body for `POST /api/devices/{deviceId}/play-events`.
+ * `POST /api/devices/{deviceId}/play-events` 의 요청 본문.
  *
- * Wire shape:
+ * 와이어 형태:
  * ```json
  * {
  *   "adId":       "<uuid>",
  *   "eventType":  "STARTED" | "FINISHED",
- *   "occurredAt": "2026-05-02T11:21:13.000Z"   // optional
+ *   "occurredAt": "2026-05-02T11:21:13.000Z"   // 선택
  * }
  * ```
  *
- * Validation choices:
- *  - `adId` — non-blank UUID. We don't FK-validate against the `ads` table
- *    because telemetry must outlive an ad deletion (see
- *    [me.owldev.adsignage.domain.playevent.PlayEvent] docstring).
- *  - `eventType` — Jackson auto-coerces the JSON string to
- *    [PlayEventType]; the [NotNull] guard catches a missing field with the
- *    same field-error map shape the rest of the API uses.
- *  - `occurredAt` — **optional**. The player includes it for accuracy
- *    (clock-skew analysis), but the server falls back to [Instant.now] so a
- *    minimal client never has to learn ISO-8601 just to report a play.
+ * 검증 선택:
+ *  - `adId` — 비어있지 않은 UUID. 텔레메트리는 광고 삭제보다 오래
+ *    살아남아야 하므로 `ads` 테이블에 대해 FK 검증을 하지 않는다
+ *    ([me.owldev.adsignage.domain.playevent.PlayEvent] 문서 참조).
+ *  - `eventType` — Jackson이 JSON 문자열을 [PlayEventType]으로 자동 변환 —
+ *    [NotNull] 가드는 누락된 필드를 API의 다른 부분과 동일한 필드-오류
+ *    맵 형태로 잡아낸다.
+ *  - `occurredAt` — **선택**. 플레이어는 정확도(시계 편차 분석) 목적으로
+ *    포함하지만, 서버는 [Instant.now]로 폴백하므로 최소 클라이언트가 재생을
+ *    보고하기 위해 ISO-8601을 배워야 할 일이 없다.
  */
 data class CreatePlayEventRequest(
     @field:NotBlank(message = "adId must not be blank")
@@ -38,31 +38,28 @@ data class CreatePlayEventRequest(
     val eventType: PlayEventType?,
 
     /**
-     * ISO-8601 instant the event occurred at on the client. May be null —
-     * the controller stamps `Instant.now()` in that case.
+     * 클라이언트에서 이벤트가 발생한 ISO-8601 인스턴트. null 가능 —
+     * 컨트롤러가 그 경우 `Instant.now()`로 도장 찍는다.
      */
     @field:JsonFormat(shape = JsonFormat.Shape.STRING)
     val occurredAt: Instant? = null,
 )
 
 /**
- * Response body for `POST /api/devices/{deviceId}/play-events`.
+ * `POST /api/devices/{deviceId}/play-events` 의 응답 본문.
  *
- * Echoes the persisted event so the player can reconcile (e.g. log the
- * server-stamped `receivedAt` for skew detection) and so an admin probing
- * the wire by hand can see the row that was created without a follow-up
- * GET.
+ * 영속화된 이벤트를 메아리치므로 플레이어가 조정할 수 있고(예: 편차 감지를
+ * 위해 서버 도장 `receivedAt` 로깅), 어드민이 와이어를 손으로 탐사할 때
+ * 후속 GET 없이 생성된 행을 볼 수 있다.
  *
- * AC 20203 Sub-AC 3 widened this response with [serverDailyCount] — the
- * FINISHED count for the ad in the calendar day that contains
- * [occurredAt], computed in the operator-local zone configured by
- * `adsignage.daily-count.zone-id`. Returning it inline gives the player
- * an authoritative cross-device count it can compare against its
- * localStorage tally, and saves the dashboard a follow-up read after a
- * recently-recorded event. The earlier "intentionally omitted" note has
- * been superseded — the read happens inside the write transaction so it
- * is at most one extra COUNT(*) against the (`ad_id`, `event_type`,
- * `occurred_at`) covering index, well within the hot-path budget.
+ * AC 20203 Sub-AC 3가 [serverDailyCount]로 응답을 확장했다 —
+ * `adsignage.daily-count.zone-id`로 설정된 운영자 로컬 존에서 [occurredAt]을
+ * 포함하는 캘린더 일자에 광고에 대한 FINISHED 카운트. 인라인으로 반환하면
+ * 플레이어가 localStorage 집계와 비교할 수 있는 권위 있는 디바이스 간
+ * 카운트를 얻고, 대시보드는 최근 기록된 이벤트 후의 후속 read를 절약한다.
+ * 이전의 "의도적으로 생략" 노트는 대체되었다 — read는 write 트랜잭션 안에서
+ * 일어나므로 (`ad_id`, `event_type`, `occurred_at`) 커버링 인덱스에 대한
+ * 추가 COUNT(*) 1회면 충분하며 핫패스 예산 안에 충분히 들어간다.
  */
 data class PlayEventResponse(
     val id: String,
@@ -74,25 +71,24 @@ data class PlayEventResponse(
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     val receivedAt: Instant,
     /**
-     * Number of FINISHED events the server has recorded for [adId] on the
-     * calendar day containing [occurredAt] (operator-local zone). Always a
-     * non-negative `Long`; for STARTED events this is the count *as of the
-     * STARTED's occurredAt*, so two STARTEDs in a row will see the same
-     * value and a STARTED followed by a FINISHED will see N then N+1.
+     * 운영자 로컬 존 기준 [occurredAt]을 포함하는 캘린더 일자에 대해 서버가
+     * [adId]에 기록한 FINISHED 이벤트 수. 항상 비음수 `Long`; STARTED
+     * 이벤트의 경우 *해당 STARTED의 occurredAt 시점 카운트*이므로 연속된
+     * 두 STARTED는 같은 값을 보고, STARTED 뒤의 FINISHED는 N과 N+1을
+     * 본다.
      *
-     * Always present on the response — never omitted. The player uses it
-     * for cross-device reconciliation; the admin dashboard surfaces it as
-     * "N plays today (server)".
+     * 응답에 항상 존재 — 절대 생략되지 않음. 플레이어는 이 값을 디바이스
+     * 간 조정에 사용하고, 어드민 대시보드는 "오늘 N회 재생(서버)"으로
+     * 노출한다.
      */
     val serverDailyCount: Long,
 ) {
     companion object {
         /**
-         * Compose the response from a persisted entity plus the server's
-         * authoritative daily count. The count is supplied by the caller
-         * (rather than computed here) because the count read must happen
-         * inside the same transaction as the write — see
-         * [me.owldev.adsignage.domain.playevent.PlayEventService.record].
+         * 영속화된 엔터티와 서버의 권위 있는 일일 카운트로 응답을 구성한다.
+         * 카운트는 (여기서 계산하는 대신) 호출자가 공급하는데, 카운트 read
+         * 가 write와 같은 트랜잭션 안에서 일어나야 하기 때문 —
+         * [me.owldev.adsignage.domain.playevent.PlayEventService.record] 참조.
          */
         fun from(entity: PlayEvent, serverDailyCount: Long): PlayEventResponse = PlayEventResponse(
             id = entity.id,
@@ -107,21 +103,20 @@ data class PlayEventResponse(
 }
 
 /**
- * Response body for `GET /api/ads/{adId}/play-events/daily-count`.
+ * `GET /api/ads/{adId}/play-events/daily-count` 의 응답 본문.
  *
- * Read-only sibling of [PlayEventResponse.serverDailyCount] for the
- * dashboard's "show me the campaign's plays today" view. Includes the
- * resolved `date` and `zoneId` so a client can detect a config drift
- * (server says 2026-05-02 but the client is rendering 2026-05-01) before
- * the operator reads "47/200" and wonders why the player widget says
- * "0/200".
+ * 대시보드의 "이 캠페인의 오늘 재생 보여줘" 뷰를 위한 [PlayEventResponse.serverDailyCount]
+ * 의 읽기 전용 형제. 결정된 `date`와 `zoneId`를 포함하므로 클라이언트가
+ * 설정 드리프트(서버는 2026-05-02 라고 하는데 클라이언트는 2026-05-01을
+ * 렌더링)를 운영자가 "47/200"을 보고 플레이어 위젯이 "0/200"이라 표시하는
+ * 이유를 의아해하기 전에 감지할 수 있다.
  */
 data class DailyPlayCountResponse(
     val adId: String,
-    /** ISO-8601 calendar day, in [zoneId]. Format: `YYYY-MM-DD`. */
+    /** [zoneId] 기준 ISO-8601 캘린더 일자. 형식: `YYYY-MM-DD`. */
     val date: String,
-    /** IANA zone the [date] is anchored to (e.g. `Asia/Seoul`). */
+    /** [date]가 고정된 IANA 존(예: `Asia/Seoul`). */
     val zoneId: String,
-    /** FINISHED-event count for [adId] on [date]. Non-negative. */
+    /** [date] 기준 [adId]의 FINISHED 이벤트 카운트. 비음수. */
     val count: Long,
 )

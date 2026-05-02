@@ -218,14 +218,12 @@ export function rolloverIfNewDay(
 }
 
 /**
- * Returns a new [DailyCounters] with [adId]'s count incremented by one.
- * Date-rollover-aware: if the input's date is stale, the increment lands
- * in a fresh same-day bag so a play that crosses midnight doesn't
- * silently land on yesterday's counter.
+ * [adId]의 카운트가 1 증가된 새 [DailyCounters]를 반환한다.
+ * 날짜 롤오버 인식: 입력의 날짜가 stale하면 증가는 새 같은 날짜 bag에
+ * 들어가, 자정을 넘어선 재생이 어제 카운터에 조용히 들어가지 않는다.
  *
- * Pure (no I/O). The localStorage write is owned by the React layer
- * (see `useDailyCounters` / `PlayerClient`) so this helper stays
- * trivially testable.
+ * 순수(I/O 없음). localStorage 쓰기는 React 계층(`useDailyCounters` /
+ * `PlayerClient`)이 담당하므로 이 헬퍼는 손쉽게 테스트 가능하다.
  */
 export function incrementCount(
   state: DailyCounters,
@@ -239,23 +237,23 @@ export function incrementCount(
   return { date: fresh.date, counts: next };
 }
 
-/** Build an empty same-day counter bag — used as the initial state. */
+/** 빈 같은 날짜 카운터 bag을 만든다 — 초기 상태로 사용. */
 export function emptyCounters(today: string = todayKey()): DailyCounters {
   return { date: today, counts: {} };
 }
 
 /* ------------------------------------------------------------- persistence */
 
-/** Storage-key generator. Per-device so multiple WebViews can coexist. */
+/** 스토리지 키 생성기. 디바이스별이라 여러 WebView가 공존할 수 있다. */
 export function storageKey(deviceId: string): string {
   return "adsignage:dailyCount:" + deviceId;
 }
 
 /**
- * Detect whether `localStorage` is usable. SSR (Next.js build) has no
- * `window`. A WebView with cookies/storage disabled throws on access.
- * Both cases collapse to "no persistence; in-memory only" rather than
- * surfacing the error to the operator.
+ * `localStorage` 사용 가능 여부를 감지한다. SSR(Next.js 빌드)에는 `window`가
+ * 없다. 쿠키/스토리지가 비활성화된 WebView는 접근 시 throw한다. 두 경우
+ * 모두 운영자에게 에러를 노출하지 않고 "영속화 없음; 인메모리만"으로
+ * 붕괴된다.
  */
 function hasStorage(): boolean {
   try {
@@ -268,10 +266,9 @@ function hasStorage(): boolean {
 }
 
 /**
- * Load (and date-rollover) the counters bag for [deviceId]. Always
- * returns a same-day [DailyCounters] — never throws. A missing,
- * unparseable, or schema-mismatched payload collapses to a fresh empty
- * bag stamped with today's date.
+ * [deviceId]의 카운터 bag을 로드(및 날짜 롤오버)한다. 항상 같은 날짜의
+ * [DailyCounters]를 반환하며 절대 throw하지 않는다. 없거나, 파싱 불가하거나,
+ * 스키마가 일치하지 않는 페이로드는 오늘 날짜로 찍힌 새 빈 bag으로 붕괴된다.
  */
 export function loadCounters(deviceId: string): DailyCounters {
   const today = todayKey();
@@ -296,9 +293,9 @@ export function loadCounters(deviceId: string): DailyCounters {
 }
 
 /**
- * Persist [state] for [deviceId]. Best-effort — a quota error or
- * disabled-storage WebView is logged at warn level and swallowed; the
- * in-memory state stays authoritative for the rest of the session.
+ * [deviceId]의 [state]를 영속화한다. 최선 노력 — 할당량 에러나 스토리지
+ * 비활성 WebView는 warn 레벨로 로깅하고 swallow한다. 세션 나머지 동안에는
+ * 인메모리 상태가 권위 있는 상태로 유지된다.
  */
 export function saveCounters(
   deviceId: string,
@@ -309,9 +306,9 @@ export function saveCounters(
   try {
     window.localStorage.setItem(storageKey(deviceId), JSON.stringify(state));
   } catch (err) {
-    // Quota exceeded / disabled storage / private-browsing limits — not
-    // fatal. The next reload starts fresh, which at worst lets one
-    // capped ad play a few extra times.
+    // 할당량 초과 / 스토리지 비활성 / 시크릿 모드 제한 — 치명적이지 않음.
+    // 다음 리로드가 새로 시작되므로, 최악의 경우 상한 도달 광고가 몇 번 더
+    // 재생되는 정도다.
     if (typeof console !== "undefined" && console.warn) {
       console.warn("[dailyCount] saveCounters failed", err);
     }
@@ -319,11 +316,10 @@ export function saveCounters(
 }
 
 /**
- * Coerce an arbitrary `JSON.parse` result into a well-typed
- * [DailyCounters] or `null` if the shape is unrecoverable. Defensive
- * because storage is the persistence boundary — anything could land
- * there from a previous app version, a manual edit, or a corrupted
- * profile. Exported for the test mirror.
+ * 임의의 `JSON.parse` 결과를 잘 타입드된 [DailyCounters]로 강제 변환하거나,
+ * 형태 복구가 불가능하면 `null`을 반환한다. 스토리지는 영속화 경계이므로
+ * 방어적이다 — 이전 앱 버전, 수동 편집, 손상된 프로필 등 어떤 것이든 거기에
+ * 들어갈 수 있다. 테스트 미러를 위해 export.
  */
 export function normaliseStoredCounters(value: unknown): DailyCounters | null {
   if (!value || typeof value !== "object") return null;
@@ -341,7 +337,7 @@ export function normaliseStoredCounters(value: unknown): DailyCounters | null {
 }
 
 /**
- * Internal exports for the node:test mirror. Not part of the public API.
+ * node:test 미러용 내부 export. 공개 API의 일부가 아님.
  */
 export const __test__ = {
   pad2,

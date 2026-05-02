@@ -20,15 +20,7 @@ CREATE TABLE device_assignments (
     assigned_at     TIMESTAMP    NOT NULL,
     active          BOOLEAN      NOT NULL DEFAULT TRUE,
     CONSTRAINT pk_device_assignments
-        PRIMARY KEY (id),
-    CONSTRAINT fk_device_assignments_device
-        FOREIGN KEY (device_id)
-        REFERENCES devices (device_id)
-        ON DELETE CASCADE,
-    CONSTRAINT fk_device_assignments_restaurant
-        FOREIGN KEY (restaurant_id)
-        REFERENCES restaurants (restaurant_id)
-        ON DELETE CASCADE
+        PRIMARY KEY (id)
 );
 
 -- Lookup: "what is device X assigned to right now?" — covered by composite

@@ -1,7 +1,9 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
-    kotlin("jvm") version "2.1.20"
-    kotlin("plugin.spring") version "2.1.20"
-    kotlin("plugin.jpa") version "2.1.20"
+    kotlin("jvm") version "2.3.0"
+    kotlin("plugin.spring") version "2.3.0"
+    kotlin("plugin.jpa") version "2.3.0"
     id("org.springframework.boot") version "3.4.5"
     id("io.spring.dependency-management") version "1.1.6"
 }
@@ -13,8 +15,6 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
     }
-    sourceCompatibility = JavaVersion.VERSION_23
-    targetCompatibility = JavaVersion.VERSION_23
 }
 
 repositories {
@@ -56,6 +56,7 @@ dependencies {
 kotlin {
     jvmToolchain(25)
     compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_25)
         freeCompilerArgs.add("-Xjsr305=strict")
     }
 }

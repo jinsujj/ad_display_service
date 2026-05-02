@@ -138,23 +138,23 @@ class DeviceAssignmentService(
     }
 
     /**
-     * Publishes the [DeviceMappingChangedEvent] that the SSE bridge listens
-     * for. The publish call is made from inside the `@Transactional` method,
-     * but the listener
-     * ([me.owldev.adsignage.sse.DeviceMappingChangedSseListener]) is bound to
-     * [org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT]
-     * via `@TransactionalEventListener`, so the SSE broadcast does not run
-     * until the assignment row has been durably committed to the database.
+     * SSE 브리지가 수신하는 [DeviceMappingChangedEvent]를 발행. publish 호출은
+     * `@Transactional` 메서드 내부에서 이루어지지만, 리스너
+     * ([me.owldev.adsignage.sse.DeviceMappingChangedSseListener])는
+     * `@TransactionalEventListener`를 통해
+     * [org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT]에
+     * 바인딩되어 있어 SSE 브로드캐스트는 할당 행이 데이터베이스에 영구적으로
+     * 커밋된 이후에만 실행됨.
      *
-     * Sub-AC 50102.2 contract:
-     *  - Subscribers receive the remapping event **after the DB update commits**
-     *    — never before, never on a rolled-back write.
+     * Sub-AC 50102.2 계약:
+     *  - 구독자는 **DB 업데이트가 커밋된 이후에** 리매핑 이벤트를 받음
+     *    — 이전이 아님, 롤백된 쓰기에서도 아님.
      *
-     * Failures inside listeners must not affect the assignment itself. Because
-     * the listener fires after commit, the transaction is already closed when
-     * the broadcast runs — but the publish call below is still wrapped in a
-     * try/catch as a belt-and-braces guard against any pre-commit listeners
-     * that future ACs might attach to the same event type.
+     * 리스너 내부의 실패가 할당 자체에 영향을 주지 않아야 함. 리스너가
+     * 커밋 후 발생하므로 브로드캐스트 실행 시 트랜잭션은 이미 닫혀 있지만,
+     * 향후 AC가 같은 이벤트 타입에 붙일 수 있는 pre-commit 리스너에 대비한
+     * 안전 장치(belt-and-braces)로 아래의 publish 호출은 여전히 try/catch로
+     * 감쌈.
      */
     private fun publishMappingChanged(saved: DeviceAssignment) {
         try {

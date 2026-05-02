@@ -7,26 +7,23 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 /**
- * AC 9, Sub-AC 1 — service that executes the partial-update for
- * `PATCH /api/devices/{deviceId}`.
+ * AC 9, Sub-AC 1 — `PATCH /api/devices/{deviceId}`에 대한 부분 업데이트를
+ * 실행하는 서비스.
  *
- * Owns the *composition* of per-field updates, not the per-field
- * implementation. Each individual update is delegated to the existing
- * domain service that already knows how to apply it (today: only
- * [DeviceAssignmentService] for `restaurantId`; in the future: a sibling
- * service for screen/group fields once the V10 `devices` table grows those
- * columns). This keeps the PATCH endpoint free of cross-cutting
- * orchestration logic and lets the per-field flows keep their own SSE
- * publishing / audit semantics.
+ * 필드별 업데이트의 *조합*을 소유하며, 필드별 구현은 소유하지 않음. 각
+ * 개별 업데이트는 이미 적용 방법을 아는 기존 도메인 서비스에 위임됨
+ * (현재: `restaurantId`에 대한 [DeviceAssignmentService]만; 향후: V10
+ * `devices` 테이블에 해당 컬럼이 자라면 screen/group 필드를 위한 형제
+ * 서비스). 이렇게 하면 PATCH 엔드포인트가 횡단 오케스트레이션 로직에서
+ * 자유로워지고 필드별 흐름이 자체 SSE 발행/감사 시맨틱을 유지할 수 있음.
  *
- * Atomicity scope: the whole patch runs inside a single `@Transactional`
- * boundary. If the caller PATCHes `restaurantId` *and* a future
- * `screenName`, either both stick or both roll back — there is no
- * half-applied PATCH on the wire.
+ * 원자성 범위: 전체 패치는 단일 `@Transactional` 경계 내부에서 실행됨.
+ * 호출자가 `restaurantId`와 향후 `screenName`을 PATCH하면 둘 다 적용되거나
+ * 둘 다 롤백됨 — 와이어에 절반 적용된 PATCH는 없음.
  *
- * No-op semantics: the controller has already enforced "at least one
- * field present" via [UpdateDeviceRequest.isEmpty]; this service can
- * therefore assume at least one branch fires.
+ * No-op 시맨틱: 컨트롤러가 이미 [UpdateDeviceRequest.isEmpty]를 통해
+ * "적어도 하나의 필드 존재"를 강제함; 따라서 이 서비스는 적어도 하나의
+ * 분기가 실행됨을 가정할 수 있음.
  */
 @Service
 class DeviceUpdateService(
@@ -37,34 +34,31 @@ class DeviceUpdateService(
     private val log = LoggerFactory.getLogger(DeviceUpdateService::class.java)
 
     /**
-     * Applies the partial [request] to the device whose id is [deviceId].
+     * id가 [deviceId]인 디바이스에 부분 [request]를 적용.
      *
-     * Field-by-field flow:
-     *  - `restaurantId` → delegates to
-     *    [DeviceAssignmentService.updateAssignment], which atomically
-     *    deactivates any existing active row, inserts a new active row,
-     *    and publishes a `DeviceMappingChangedEvent` consumed by the SSE
-     *    bridge.
-     *  - `screenName` / `groupName` → not yet persisted at this point in
-     *    the build (the V10 `devices` table does not yet carry the
-     *    corresponding columns). The service logs the request and
-     *    raises [DeviceFieldUnsupportedException] so the controller can
-     *    surface a typed 422 instead of silently dropping the field. A
-     *    future sub-AC will add the columns and replace the throw with
-     *    an UPDATE.
+     * 필드별 흐름:
+     *  - `restaurantId` → [DeviceAssignmentService.updateAssignment]에 위임,
+     *    이는 기존 활성 행을 원자적으로 비활성화하고 새 활성 행을 삽입한
+     *    뒤 SSE 브리지가 소비하는 `DeviceMappingChangedEvent`를 발행.
+     *  - `screenName` / `groupName` → 빌드의 이 시점에서 아직 영속화되지
+     *    않음(V10 `devices` 테이블이 아직 해당 컬럼을 가지지 않음). 서비스는
+     *    요청을 로깅하고 [DeviceFieldUnsupportedException]을 발생시켜
+     *    컨트롤러가 필드를 조용히 드롭하는 대신 타입화된 422를 표면화할 수
+     *    있게 함. 향후 sub-AC에서 컬럼을 추가하고 throw를 UPDATE로 교체할
+     *    것.
      *
-     * @throws DeviceNotFoundException     if no row exists in `devices` for [deviceId]
-     * @throws RestaurantNotFoundException if [request.restaurantId] is non-null and unknown
-     * @throws DeviceFieldUnsupportedException if [request.screenName] or [request.groupName]
-     *         is non-null (transitional; see field-level flow above)
+     * @throws DeviceNotFoundException     `devices`에서 [deviceId]에 해당하는 행이 없을 때
+     * @throws RestaurantNotFoundException [request.restaurantId]가 non-null이고 알려지지 않았을 때
+     * @throws DeviceFieldUnsupportedException [request.screenName] 또는 [request.groupName]이
+     *         non-null일 때(과도기적; 위의 필드 수준 흐름 참조)
      */
     @Transactional
     fun applyPatch(deviceId: String, request: UpdateDeviceRequest): DeviceResponse {
         require(deviceId.isNotBlank()) { "deviceId must not be blank" }
 
-        // Validate parent exists up front so a PATCH that touches
-        // *only* fields we don't yet support still fails as 404 rather
-        // than 422 — "device not found" is the more useful answer.
+        // 부모가 존재함을 미리 검증하여 *아직* 지원하지 않는 필드만 건드리는
+        // PATCH가 422 대신 404로 실패하도록 함 — "device not found"가 더
+        // 유용한 답.
         if (!deviceLookup.exists(deviceId)) {
             throw DeviceNotFoundException(deviceId)
         }
@@ -72,9 +66,8 @@ class DeviceUpdateService(
         var currentAssignment: DeviceAssignment? =
             assignmentService.findCurrentAssignment(deviceId)
 
-        // 1) restaurantId: delegate to the existing remap flow so we
-        //    inherit its atomic deactivate-then-insert + SSE publish
-        //    semantics.
+        // 1) restaurantId: 기존 리매핑 흐름에 위임하여 원자적 비활성화 후
+        //    삽입 + SSE 발행 시맨틱을 상속받음.
         if (request.restaurantId != null) {
             currentAssignment = assignmentService.updateAssignment(
                 deviceId = deviceId,
@@ -86,9 +79,9 @@ class DeviceUpdateService(
             )
         }
 
-        // 2) screenName / groupName: schema not yet in place. Surface
-        //    a typed exception so the API contract distinguishes
-        //    "the route exists but the column doesn't yet" from a 500.
+        // 2) screenName / groupName: 스키마가 아직 준비되지 않음. API
+        //    계약이 "라우트는 존재하지만 컬럼은 아직 없음"을 500과 구분할 수
+        //    있도록 타입화된 예외를 표면화.
         if (request.screenName != null) {
             log.info(
                 "applyPatch: device={} screenName={} requested but column not yet provisioned",

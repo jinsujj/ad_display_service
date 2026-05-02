@@ -6,13 +6,13 @@ import me.owldev.adsignage.domain.assignment.DeviceAssignment
 import java.time.Instant
 
 /**
- * Request body for `POST /api/devices/{id}/assignment`.
+ * `POST /api/devices/{id}/assignment` 의 요청 본문.
  *
- * Carries the target restaurant for a device that does not yet have a current
- * assignment (or whose existing active assignment should be replaced — the
- * service treats create as idempotent "set current assignment").
+ * 아직 현재 매핑이 없는 디바이스(또는 기존 활성 매핑을 교체할 디바이스 —
+ * 서비스 계층은 생성 동작을 멱등하게 "현재 매핑 설정"으로 다룬다)에 대한
+ * 대상 음식점을 전달한다.
  *
- * Ontology mapping:
+ * 온톨로지 매핑:
  *  - [restaurantId] → device_restaurant_id (FK → restaurants.restaurant_id)
  */
 data class CreateAssignmentRequest(
@@ -22,15 +22,15 @@ data class CreateAssignmentRequest(
 )
 
 /**
- * Request body for `PUT /api/devices/{id}/assignment`.
+ * `PUT /api/devices/{id}/assignment` 의 요청 본문.
  *
- * Carries the new target restaurant for a device. The service deactivates the
- * previously-active row (if any) and inserts a new active row in a single
- * transaction — this is the SSE-driven remap entry point for demo scenario #3.
+ * 디바이스에 새로운 대상 음식점을 전달한다. 서비스 계층은 단일 트랜잭션에서
+ * 이전 활성 행(있다면)을 비활성화하고 새 활성 행을 삽입한다 — 이 엔드포인트가
+ * 데모 시나리오 #3의 SSE 기반 재할당 진입점이다.
  *
- * Same shape as [CreateAssignmentRequest] today; kept as a separate type so
- * that PUT-specific fields can be added later (e.g. an `expectedAssignmentId`
- * for optimistic concurrency) without breaking POST callers.
+ * 현재는 [CreateAssignmentRequest]와 형태가 같지만, PUT 전용 필드(예: 낙관적
+ * 동시성을 위한 `expectedAssignmentId`)를 추후 추가해도 POST 호출자가
+ * 깨지지 않도록 별도 타입으로 분리해 두었다.
  */
 data class UpdateAssignmentRequest(
     @field:NotBlank(message = "restaurantId must not be blank")
@@ -39,22 +39,21 @@ data class UpdateAssignmentRequest(
 )
 
 /**
- * Request body for `PATCH /api/devices/{deviceId}/restaurant` (Sub-AC 50101.1).
+ * `PATCH /api/devices/{deviceId}/restaurant` (Sub-AC 50101.1) 요청 본문.
  *
- * Carries the new target restaurant for a device under a partial-update verb.
- * Semantically identical to [UpdateAssignmentRequest] today — both ultimately
- * call the same service-layer atomic deactivate-then-insert — but the route
- * + verb pair (`PATCH …/restaurant`) is the one demanded by the AC contract:
- * the PATCH-on-a-named-subresource shape reads as "modify the device's
- * `restaurant` association" and is what the admin UI's lightweight remap form
- * targets.
+ * 부분 업데이트 동사로 디바이스의 새 대상 음식점을 전달한다. 의미적으로는
+ * [UpdateAssignmentRequest]와 동일하며 — 둘 다 결국 같은 서비스 계층의
+ * 원자적 deactivate-then-insert 를 호출 — 다만 (`PATCH …/restaurant`)
+ * 라우트+동사 조합이 AC 계약이 요구하는 형태다: 명명된 하위 리소스에
+ * PATCH를 거는 형태는 "디바이스의 `restaurant` 연관을 수정"으로 읽히고,
+ * 어드민 UI의 가벼운 재할당 폼이 타깃하는 엔드포인트다.
  *
- * Kept as a separate class (rather than reusing [UpdateAssignmentRequest]) so
- * that route-specific validation / fields (e.g. `expectedRestaurantId` for
- * optimistic concurrency, or a `null` to detach) can be added later without
- * breaking the older `PUT …/assignment` callers.
+ * 라우트별 검증/필드(예: 낙관적 동시성을 위한 `expectedRestaurantId`,
+ * 또는 detach 의미의 `null`)를 추후 추가해도 기존 `PUT …/assignment`
+ * 호출자가 깨지지 않도록 [UpdateAssignmentRequest]를 재사용하지 않고
+ * 별도 클래스로 두었다.
  *
- * Ontology mapping:
+ * 온톨로지 매핑:
  *  - [restaurantId] → device_restaurant_id (FK → restaurants.restaurant_id)
  */
 data class UpdateDeviceRestaurantRequest(
@@ -64,38 +63,35 @@ data class UpdateDeviceRestaurantRequest(
 )
 
 /**
- * Request body for `PATCH /api/devices/{deviceId}` (AC 9, Sub-AC 1).
+ * `PATCH /api/devices/{deviceId}` (AC 9, Sub-AC 1) 요청 본문.
  *
- * Generic partial-update entry point for the device record. Every field is
- * **optional** — callers send only the fields they want to change, keeping the
- * verb-route pair true to PATCH semantics. The presence of a key in the JSON
- * body is what triggers the update; an absent key leaves the corresponding
- * device field untouched.
+ * 디바이스 레코드에 대한 일반 부분 업데이트 진입점. 모든 필드는 **선택적** —
+ * 호출자는 변경하고 싶은 필드만 보내며, 동사-라우트 조합이 PATCH 시맨틱에
+ * 충실하도록 한다. JSON 본문에 키가 존재한다는 것 자체가 업데이트를
+ * 트리거하고, 키가 없으면 해당 디바이스 필드는 손대지 않는다.
  *
- * Fields supported in this sub-AC:
- *  - [restaurantId] — remap the device's active restaurant assignment. When
- *    present, the service delegates to the existing
+ * 본 sub-AC가 지원하는 필드:
+ *  - [restaurantId] — 디바이스의 활성 음식점 매핑을 재할당. 존재하면
+ *    서비스가 기존
  *    [me.owldev.adsignage.domain.assignment.DeviceAssignmentService.updateAssignment]
- *    flow (atomic deactivate-then-insert + SSE MAPPING_CHANGED publish).
- *  - [screenName]   — free-form display label for the physical screen the
- *    device is mounted on. Useful for the admin UI's grouping (e.g. "Lobby
- *    TV", "Counter Display"). Stored on the device record itself rather than
- *    on the assignment, so it survives restaurant remaps.
- *  - [groupName]    — free-form group label so the admin UI can bucket
- *    devices for bulk operations (e.g. "north-store-fleet").
+ *    경로(원자적 deactivate-then-insert + SSE MAPPING_CHANGED publish)에 위임.
+ *  - [screenName]   — 디바이스가 거치된 물리 화면을 가리키는 자유 형식
+ *    디스플레이 라벨. 어드민 UI의 그루핑 용도(예: "Lobby TV", "Counter
+ *    Display")에 유용. 매핑이 아닌 디바이스 레코드 자체에 저장되어 음식점
+ *    재할당에도 살아남는다.
+ *  - [groupName]    — 어드민 UI가 일괄 동작을 위해 디바이스를 묶을 수 있는
+ *    자유 형식 그룹 라벨(예: "north-store-fleet").
  *
- * Note on `screenName` / `groupName`: the V10 `devices` table is owned by a
- * sibling sub-AC and may not yet carry these columns. The controller +
- * service still accept the keys so the wire contract is forward-compatible;
- * a missing column on the DB side surfaces as a typed
+ * `screenName` / `groupName` 관련: V10 `devices` 테이블은 형제 sub-AC가
+ * 소유하며 아직 이 컬럼들을 가지고 있지 않을 수 있다. 컨트롤러+서비스는
+ * 와이어 계약을 미래 호환되게 유지하기 위해 키를 받아주며, DB 측 컬럼이
+ * 누락되면 JDBC 500이 아닌 타입화된
  * [me.owldev.adsignage.domain.assignment.DeviceFieldUnsupportedException]
- * (HTTP 422) rather than a 500 from JDBC. Callers in the demo build typically
- * only send `restaurantId`.
+ * (HTTP 422)로 노출된다. 데모 빌드의 호출자는 보통 `restaurantId`만 보낸다.
  *
- * Validation: every present field is independently validated. Blank string
- * values are rejected (use field omission to mean "no change") so the
- * contract distinguishes "set to empty" from "leave alone" — the latter is
- * the only supported semantic for now.
+ * 검증: 존재하는 모든 필드를 독립적으로 검증한다. 빈 문자열 값은 거절
+ * (필드 생략으로 "변경 없음"을 의미)되어 계약상 "빈 값으로 설정"과
+ * "그대로 두기"가 구분된다 — 현재는 후자만 지원한다.
  */
 data class UpdateDeviceRequest(
     @field:Size(min = 1, max = 36, message = "restaurantId must be 1..36 characters when present")
@@ -108,26 +104,25 @@ data class UpdateDeviceRequest(
     val groupName: String? = null,
 ) {
     /**
-     * `true` if the request body carried no fields the service knows how to
-     * apply — used by the controller to short-circuit a no-op PATCH with a
-     * 400 rather than silently returning the current state.
+     * 요청 본문이 서비스가 적용 방법을 아는 필드를 하나도 담지 않은 경우
+     * `true` — 컨트롤러가 무동작 PATCH를 현재 상태를 조용히 반환하는 대신
+     * 400으로 단락하기 위해 사용한다.
      */
     fun isEmpty(): Boolean =
         restaurantId == null && screenName == null && groupName == null
 }
 
 /**
- * Response body for `PATCH /api/devices/{deviceId}` (AC 9, Sub-AC 1).
+ * `PATCH /api/devices/{deviceId}` (AC 9, Sub-AC 1) 응답 본문.
  *
- * Returns the post-patch view of the device — the resolved active assignment
- * plus any device-level fields that were updated in the same request. The
- * shape is intentionally a superset of [AssignmentResponse] so existing
- * admin-UI code that already consumes assignment payloads can switch to the
- * generic PATCH endpoint without a parser rewrite.
+ * 패치 후 디바이스의 뷰를 반환한다 — 결정된 활성 매핑 + 같은 요청에서
+ * 업데이트된 디바이스 레벨 필드. 의도적으로 [AssignmentResponse]의
+ * 상위 집합 형태라, 매핑 페이로드를 이미 소비하는 어드민 UI 코드가
+ * 파서 재작성 없이 일반 PATCH 엔드포인트로 전환할 수 있다.
  *
- * `restaurantId` may be `null` if the device has no active assignment after
- * the patch (e.g. a future sub-AC adds an "unassign" path). For the current
- * sub-AC, callers that PATCH `restaurantId` will always see it echoed here.
+ * 패치 후 디바이스에 활성 매핑이 없으면(예: 미래 sub-AC가 "unassign"
+ * 경로 추가) `restaurantId`는 `null`일 수 있다. 현재 sub-AC에서는
+ * `restaurantId`를 PATCH한 호출자는 항상 여기서 메아리를 본다.
  */
 data class DeviceResponse(
     val deviceId: String,
@@ -149,12 +144,12 @@ data class DeviceResponse(
 }
 
 /**
- * Response body for both `POST` and `PUT /api/devices/{id}/assignment`,
- * as well as `PATCH /api/devices/{deviceId}/restaurant` (Sub-AC 50101.1).
+ * `POST` 와 `PUT /api/devices/{id}/assignment`,
+ * 그리고 `PATCH /api/devices/{deviceId}/restaurant` (Sub-AC 50101.1)의 응답 본문.
  *
- * Mirrors the persisted [DeviceAssignment] as a stable wire contract — keeps
- * Hibernate-managed state out of the controller boundary and lets the JSON
- * field set evolve independently of the entity column layout.
+ * 영속화된 [DeviceAssignment]를 안정적인 와이어 계약으로 미러링한다 —
+ * Hibernate 관리 상태를 컨트롤러 경계 밖으로 두고, JSON 필드 집합이
+ * 엔터티 컬럼 레이아웃과 독립적으로 진화하도록 한다.
  */
 data class AssignmentResponse(
     val assignmentId: String,

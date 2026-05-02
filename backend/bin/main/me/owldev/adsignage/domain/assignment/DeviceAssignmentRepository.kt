@@ -8,50 +8,50 @@ import org.springframework.stereotype.Repository
 import java.util.Optional
 
 /**
- * Spring Data JPA repository for [DeviceAssignment].
+ * [DeviceAssignment]를 위한 Spring Data JPA repository.
  *
- * The "current" assignment for a device is the row where [DeviceAssignment.active] is true.
- * Historic (deactivated) rows remain in the table for audit purposes.
+ * 디바이스의 "현재" 할당은 [DeviceAssignment.active]가 true인 행. 과거의
+ * (비활성화된) 행들은 감사 목적으로 테이블에 남아 있음.
  *
- * Hot paths supported:
- *  - Resolve the current assignment for one device          → [findByDeviceIdAndActiveTrue]
- *  - List the current assignments for many devices in bulk  → [findAllByActiveTrue] / [findAllByRestaurantIdAndActiveTrue]
- *  - Atomic remap: deactivate any current assignment for a
- *    device before inserting a new active row                → [deactivateCurrentForDevice]
+ * 지원되는 핫패스:
+ *  - 한 디바이스의 현재 할당 해석                            → [findByDeviceIdAndActiveTrue]
+ *  - 여러 디바이스의 현재 할당을 일괄 나열                  → [findAllByActiveTrue] / [findAllByRestaurantIdAndActiveTrue]
+ *  - 원자적 리매핑: 새 활성 행 삽입 전 디바이스의 현재
+ *    할당을 비활성화                                          → [deactivateCurrentForDevice]
  */
 @Repository
 interface DeviceAssignmentRepository : JpaRepository<DeviceAssignment, String> {
 
     /**
-     * Returns the current (active) assignment for [deviceId], if any.
-     * A device has at most one active assignment at a time.
+     * [deviceId]의 현재(활성) 할당을 반환하며, 있는 경우에만. 디바이스는
+     * 한 번에 최대 하나의 활성 할당을 가짐.
      */
     fun findByDeviceIdAndActiveTrue(deviceId: String): Optional<DeviceAssignment>
 
     /**
-     * Returns all currently active assignments — useful when the admin UI
-     * needs to render the device → restaurant map across the fleet.
+     * 현재 활성 모든 할당을 반환 — 관리자 UI가 전체 fleet의 디바이스 →
+     * 음식점 맵을 렌더링해야 할 때 유용함.
      */
     fun findAllByActiveTrue(): List<DeviceAssignment>
 
     /**
-     * Returns all devices currently assigned to [restaurantId] — used when
-     * building a restaurant-scoped view or pushing playlist updates to every
-     * device at a single venue.
+     * 현재 [restaurantId]에 할당된 모든 디바이스를 반환 — 음식점 범위 뷰를
+     * 구성하거나 단일 매장의 모든 디바이스로 플레이리스트 업데이트를 푸시할
+     * 때 사용.
      */
     fun findAllByRestaurantIdAndActiveTrue(restaurantId: String): List<DeviceAssignment>
 
     /**
-     * Returns the full audit trail of assignments for [deviceId], newest first.
+     * [deviceId]의 전체 할당 감사 추적을 최신 순으로 반환.
      */
     fun findAllByDeviceIdOrderByAssignedAtDesc(deviceId: String): List<DeviceAssignment>
 
     /**
-     * Bulk-deactivate every currently-active row for [deviceId] in a single
-     * UPDATE — avoids a load-then-save round trip when remapping a device.
+     * [deviceId]에 대해 현재 활성 모든 행을 단일 UPDATE로 일괄 비활성화 —
+     * 디바이스를 리매핑할 때 load-then-save 왕복을 회피.
      *
-     * Returns the number of rows affected (0 if the device had no active
-     * assignment, 1 in the normal case).
+     * 영향받은 행의 수를 반환(디바이스가 활성 할당이 없으면 0, 일반적인
+     * 경우 1).
      */
     @Modifying
     @Query(

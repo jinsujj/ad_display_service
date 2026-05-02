@@ -1,44 +1,43 @@
 "use client";
 
 /**
- * Video upload form (AC 40104, Sub-AC 3).
+ * 영상 업로드 폼 (AC 40104, Sub-AC 3).
  *
- * Goal:
+ * 목표:
  *   "Build Next.js admin upload page with file input form, MP4 client-side
  *    validation, and multipart POST request to backend upload API with
  *    progress indication."
  *
- * What this component does:
+ * 이 컴포넌트가 하는 일:
  *
- *   1. Renders a file input restricted to `video/mp4,.mp4` (the OS file
- *      picker filter is hint-only — the server is the source of truth, and
- *      [validateMp4File] runs the same checks before we hit the network).
+ *   1. `video/mp4,.mp4`로 제한된 파일 입력을 렌더링(OS 파일 피커 필터는
+ *      힌트 전용 — 서버가 진실의 원천이고, [validateMp4File]가 네트워크에
+ *      도달하기 전에 동일한 검사를 수행).
  *
- *   2. On file selection:
- *        - shows the picked file's name + size + MIME type;
- *        - runs synchronous MP4 / size validation via [validateMp4File] so
- *          the operator gets an immediate "wrong type" / "too large" / "0 B"
- *          error without waiting for an upload round-trip.
+ *   2. 파일 선택 시:
+ *        - 선택된 파일의 이름 + 크기 + MIME 타입을 표시;
+ *        - [validateMp4File]로 동기 MP4/크기 검증을 실행해 운영자가 업로드
+ *          왕복 없이 즉시 "잘못된 타입" / "너무 큼" / "0 B" 오류를 받는다.
  *
- *   3. On submit:
- *        - calls [uploadVideo] (which uses XMLHttpRequest to expose the
- *          per-tick upload progress that `fetch()` does not);
- *        - renders a determinate <progress> bar plus a "X% — N MiB of M MiB"
- *          textual indicator;
- *        - allows the operator to cancel an in-flight upload (AbortSignal);
- *        - on success: shows the persisted video's id, server filename,
- *          uploaded size, and a "Play in browser" link to the streaming URL.
- *          Clears the form so the operator can upload another in sequence.
- *        - on failure: surfaces the backend's `ApiError.message` (so a 415
- *          says "Unsupported video MIME type", a 413 says "Uploaded file
- *          exceeds the maximum allowed size", etc.) and keeps the file
- *          selected so the operator can retry without re-picking.
+ *   3. 제출 시:
+ *        - [uploadVideo](XMLHttpRequest를 사용해 `fetch()`가 노출하지 않는
+ *          틱 단위 업로드 진행률을 노출) 호출;
+ *        - 결정적 <progress> 바와 "X% — N MiB of M MiB" 텍스트 표시기를
+ *          렌더링;
+ *        - 진행 중 업로드를 취소할 수 있게 함(AbortSignal);
+ *        - 성공: 영속화된 영상의 id, 서버 파일명, 업로드된 크기, 그리고
+ *          스트리밍 URL로의 "Play in browser" 링크를 표시. 운영자가 다음
+ *          업로드를 진행할 수 있도록 폼을 비운다.
+ *        - 실패: 백엔드의 `ApiError.message`를 노출(415는 "Unsupported
+ *          video MIME type", 413은 "Uploaded file exceeds the maximum
+ *          allowed size" 등)하고 파일을 그대로 두어 운영자가 다시 고를
+ *          필요 없이 재시도할 수 있게 한다.
  *
- * Why a Client Component:
- *   File input, drag-and-drop, validation, progress, and abort all need
- *   browser APIs (`File`, `FormData`, `XMLHttpRequest`, `AbortController`).
- *   The wrapper page (app/videos/page.tsx) stays a Server Component so the
- *   nav, page title, and shell render with no JS.
+ * 왜 클라이언트 컴포넌트인가:
+ *   파일 입력, 드래그 앤 드롭, 검증, 진행률, 중단 모두 브라우저 API
+ *   (`File`, `FormData`, `XMLHttpRequest`, `AbortController`)가 필요하다.
+ *   래퍼 페이지(app/videos/page.tsx)는 서버 컴포넌트로 유지되어 내비게이션,
+ *   페이지 제목, 셸이 JS 없이 렌더링된다.
  */
 
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -54,7 +53,7 @@ import {
   type VideoUploadResponse,
 } from "@/lib/videos";
 
-/* ------------------------------------------------------ state types */
+/* ------------------------------------------------------ 상태 타입 */
 
 type UploadState =
   | { kind: "idle" }
@@ -64,14 +63,14 @@ type UploadState =
   | { kind: "succeeded"; file: File; result: VideoUploadResponse }
   | { kind: "failed"; file: File | null; message: string; status: number | null };
 
-/* ------------------------------------------------------ component */
+/* ------------------------------------------------------ 컴포넌트 */
 
 export function VideoUploadForm() {
   const [state, setState] = useState<UploadState>({ kind: "idle" });
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  /* -------- file pick handler */
+  /* -------- 파일 선택 핸들러 */
 
   const handleFileChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,8 +87,8 @@ export function VideoUploadForm() {
           message: result.message,
           status: null,
         });
-        // Drop the picked file from the input so the same file can be re-picked
-        // after the user fixes whatever was wrong (e.g. picks a smaller MP4).
+        // 사용자가 잘못된 점을 고치면(예: 더 작은 MP4 선택) 같은 파일을
+        // 다시 고를 수 있도록 입력에서 선택된 파일을 제거.
         if (fileInputRef.current) fileInputRef.current.value = "";
         return;
       }
@@ -98,7 +97,7 @@ export function VideoUploadForm() {
     [],
   );
 
-  /* -------- submit handler */
+  /* -------- 제출 핸들러 */
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -124,7 +123,7 @@ export function VideoUploadForm() {
         const result = await uploadVideo(current.file, {
           signal: controller.signal,
           onProgress: (p) => {
-            // Ignore late ticks if the user already cancelled / failed elsewhere.
+            // 사용자가 이미 다른 곳에서 취소/실패한 경우 늦은 틱 무시.
             setState((s) =>
               s.kind === "uploading" && s.file === current.file
                 ? { ...s, progress: p }
@@ -164,7 +163,7 @@ export function VideoUploadForm() {
     [state],
   );
 
-  /* -------- cancel / reset handlers */
+  /* -------- 취소/리셋 핸들러 */
 
   const handleCancel = useCallback(() => {
     abortRef.current?.abort();
@@ -178,7 +177,7 @@ export function VideoUploadForm() {
     setState({ kind: "idle" });
   }, []);
 
-  /* -------- derived UI bits */
+  /* -------- 파생 UI 비트 */
 
   const uploading = state.kind === "uploading";
   const succeeded = state.kind === "succeeded";
@@ -200,7 +199,7 @@ export function VideoUploadForm() {
     return `${pct}% — ${formatBytes(loaded)} of ${formatBytes(total)}`;
   }, [state]);
 
-  /* -------- render */
+  /* -------- 렌더 */
 
   return (
     <form className="upload-form" onSubmit={handleSubmit} noValidate>
@@ -318,7 +317,7 @@ export function VideoUploadForm() {
   );
 }
 
-/* ------------------------------------------------------ subcomponents */
+/* ------------------------------------------------------ 하위 컴포넌트 */
 
 function FilePreview({ file }: { file: File }) {
   return (

@@ -1,32 +1,32 @@
 "use client";
 
 /**
- * Ad-id lookup form (AC 3, Sub-AC 3 — companion to [AdScheduleForm]).
+ * 광고 id 조회 폼 (AC 3, Sub-AC 3 — [AdScheduleForm]의 동반자).
  *
- * Until the backend exposes a `GET /api/ads` listing, this is the entry
- * point that takes the operator from the `/ads` index to an ad-specific
- * schedule editor at `/ads/{id}`. It is intentionally minimal:
+ * 백엔드가 `GET /api/ads` 목록을 노출할 때까지, 이것은 운영자를 `/ads`
+ * 인덱스에서 `/ads/{id}`의 광고별 스케줄 에디터로 데려가는 진입점이다.
+ * 의도적으로 최소한:
  *
- *   - one text input for the ad UUID,
- *   - synchronous trim + non-empty + UUID-shape validation so an obviously
- *     bad id doesn't 404 on the next page,
- *   - on submit, `router.push("/ads/{trimmed-id}")` — the destination page
- *     hosts the actual form.
+ *   - 광고 UUID를 위한 텍스트 입력 1개,
+ *   - 동기 trim + 비-empty + UUID 형태 검증 — 명백히 잘못된 id가 다음
+ *     페이지에서 404가 나지 않도록,
+ *   - 제출 시 `router.push("/ads/{trimmed-id}")` — 대상 페이지가 실제 폼을
+ *     호스팅.
  *
- * Why a Client Component:
- *   We need `useRouter` to navigate after validation, and a controlled
- *   input for the trim/validate UX. The wrapper page (`app/ads/page.tsx`)
- *   stays a Server Component.
+ * 왜 클라이언트 컴포넌트인가:
+ *   검증 후 내비게이션을 위해 `useRouter`가 필요하고, trim/validate UX를
+ *   위해 컨트롤드 입력이 필요하다. 래퍼 페이지(`app/ads/page.tsx`)는 서버
+ *   컴포넌트로 유지된다.
  */
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 /**
- * Loose UUID-ish guard. We do not require a strict v4 because the server
- * also accepts any 36-char string as the ad id (UUIDs are produced by
- * `UUID.randomUUID()` on the server but the column is just `varchar(36)`).
- * The check is purely a UX layer to catch obvious paste-os.
+ * 느슨한 UUID 형태 가드. 서버도 광고 id로 36자 문자열 무엇이든 받아들이므로
+ * 엄격한 v4를 요구하지 않는다(UUID는 서버에서 `UUID.randomUUID()`로
+ * 생성되지만 컬럼은 단순 `varchar(36)`). 이 검사는 명백한 붙여넣기 실수를
+ * 잡기 위한 순수 UX 레이어.
  */
 const ADID_REGEX = /^[0-9a-fA-F-]{8,40}$/;
 

@@ -1,50 +1,48 @@
 "use client";
 
 /**
- * usePlayerSse — React hook for the player page's SSE subscription.
+ * usePlayerSse — 플레이어 페이지의 SSE 구독을 위한 React 훅.
  *
  * AC 5, Sub-AC 4 (Player/Android):
- *   "Implement SSE subscription on player page so device reloads schedule
- *    immediately when remapped without manual refresh."
+ *   "플레이어 페이지에 SSE 구독을 구현하여, 재매핑 시 수동 새로고침 없이
+ *    디바이스가 즉시 스케줄을 다시 로드하도록 한다."
  *
- * What this hook does:
- *   1. Opens a long-lived `EventSource` against
+ * 이 훅이 하는 일:
+ *   1. 다음 엔드포인트에 대해 장수명 `EventSource`를 연다:
  *        GET /api/devices/{deviceId}/stream
- *      (served by Spring `DeviceStreamController`, which keeps the connection
- *      open with timeout=0 and emits a `CONNECTED` handshake event.)
- *      The legacy `/api/devices/{deviceId}/events` controller is still
- *      mounted backend-side for already-deployed Android WebViews; new
- *      players use `/stream` per AC 1.
- *   2. Listens for the wire events defined in the backend's `SseEventNames`:
- *        - `CONNECTED`        — handshake; we just flip status to "open".
- *        - `MAPPING_CHANGED`  — the device was just remapped to a new
- *                               restaurant; we MUST reload the schedule.
- *        - `PLAYLIST_UPDATE`  — the playlist contents changed (ad added,
- *                               schedule edited); also reload.
- *   3. Calls the consumer-supplied `onScheduleReload(reason)` callback
- *      whenever a MAPPING_CHANGED or PLAYLIST_UPDATE event arrives. The
- *      callback is what actually re-fetches `/api/devices/{id}/playlist`
- *      and swaps the active playlist on the player — without a manual
- *      refresh and without reloading the WebView.
- *   4. Auto-reconnects with exponential backoff if the EventSource errors
- *      out (network blip, nginx restart, server redeploy). The browser's
- *      native EventSource also reconnects on its own using the
- *      `retry:` field the server sends, but it gives up on hard errors —
- *      so we add an explicit reconnect loop on top to make the demo
- *      resilient on flaky restaurant WiFi.
- *   5. Cleans up the EventSource and any pending reconnect timer when the
- *      component unmounts or `deviceId` changes — preventing the leaked
- *      connections that would otherwise pile up on the backend's
- *      `DeviceSseRegistry`.
+ *      (Spring `DeviceStreamController`가 제공하며, timeout=0으로 연결을
+ *      유지하고 `CONNECTED` 핸드셰이크 이벤트를 발행한다.)
+ *      이미 배포된 Android WebView를 위해 백엔드에는 레거시
+ *      `/api/devices/{deviceId}/events` 컨트롤러도 마운트되어 있으며, 새
+ *      플레이어는 AC 1에 따라 `/stream`을 사용한다.
+ *   2. 백엔드 `SseEventNames`에 정의된 와이어 이벤트를 수신한다:
+ *        - `CONNECTED`        — 핸드셰이크; 상태를 "open"으로 전환.
+ *        - `MAPPING_CHANGED`  — 디바이스가 새 식당으로 막 재매핑되었음;
+ *                               스케줄을 *반드시* 다시 로드해야 한다.
+ *        - `PLAYLIST_UPDATE`  — 플레이리스트 내용이 변경됨(광고 추가,
+ *                               스케줄 편집); 마찬가지로 다시 로드.
+ *   3. MAPPING_CHANGED 또는 PLAYLIST_UPDATE 이벤트가 도착할 때마다
+ *      소비자가 제공한 `onScheduleReload(reason)` 콜백을 호출한다. 이
+ *      콜백이 실제로 `/api/devices/{id}/playlist`를 재조회하고 플레이어의
+ *      활성 플레이리스트를 교체한다 — 수동 새로고침이나 WebView 리로드
+ *      없이.
+ *   4. EventSource가 에러로 끊기면(네트워크 일시 단절, nginx 재시작, 서버
+ *      재배포) 지수 백오프로 자동 재연결한다. 브라우저 기본 EventSource도
+ *      서버가 보내는 `retry:` 필드로 자체 재연결하지만, 하드 에러에는
+ *      포기한다 — 그래서 그 위에 명시적 재연결 루프를 추가해 식당의
+ *      불안정한 WiFi에서도 데모가 견고하게 동작하도록 한다.
+ *   5. 컴포넌트가 언마운트되거나 `deviceId`가 변경되면 EventSource와 보류
+ *      중인 재연결 타이머를 정리한다 — 그러지 않으면 백엔드
+ *      `DeviceSseRegistry`에 누수된 연결이 쌓인다.
  *
- * Why this is a hook (not embedded in the page component):
- *   - Keeps the SSE side-effect lifecycle isolated and testable.
- *   - Lets the player page stay declarative (it just receives `status`
- *     and the hook calls `onScheduleReload` when something changed).
- *   - Sibling sub-ACs (round-robin playback, splash screens, video range
- *     player) can compose this hook without re-implementing SSE plumbing.
+ * 페이지 컴포넌트에 내장하지 않고 훅으로 만든 이유:
+ *   - SSE 부수효과 라이프사이클을 격리해 테스트 가능하게 유지.
+ *   - 플레이어 페이지를 선언적으로 유지(상태만 받고, 변경이 있으면 훅이
+ *     `onScheduleReload`를 호출).
+ *   - 형제 Sub-AC(라운드 로빈 재생, 스플래시 화면, 비디오 range 플레이어)가
+ *     SSE 배관을 다시 구현하지 않고 이 훅을 합성할 수 있다.
  *
- * Wire contract reference (kept here verbatim for cross-checking):
+ * 와이어 계약 참조(교차 검증을 위해 그대로 유지):
  *   event: CONNECTED
  *   data:  { "deviceId": "...", "serverTime": "..." }
  *
@@ -53,59 +51,59 @@
  *            "assignmentId": "...", "assignedAt": "..." }
  *
  *   event: PLAYLIST_UPDATE
- *   data:  { "deviceId": "...", ... }   // reserved; minimal shape.
+ *   data:  { "deviceId": "...", ... }   // 예약됨; 최소 형태.
  */
 
 import { useEffect, useRef, useState } from "react";
 import { apiUrl } from "@/lib/api";
 
-/** Wire event names — must match backend `SseEventNames`. */
+/** 와이어 이벤트 이름 — 백엔드 `SseEventNames`와 일치해야 함. */
 export const SSE_EVENT_CONNECTED = "CONNECTED" as const;
 export const SSE_EVENT_MAPPING_CHANGED = "MAPPING_CHANGED" as const;
 export const SSE_EVENT_PLAYLIST_UPDATE = "PLAYLIST_UPDATE" as const;
 
-/** SSE connection lifecycle for the UI to reflect. */
+/** UI에 반영할 SSE 연결 라이프사이클. */
 export type SsePlayerStatus =
-  | "idle" // hook not yet connected (e.g. deviceId blank)
-  | "connecting" // EventSource created, no handshake yet
-  | "open" // CONNECTED received OR readyState === OPEN
-  | "reconnecting" // disconnected, waiting to retry
-  | "error"; // EventSource not supported or fatal failure
+  | "idle" // 훅이 아직 연결되지 않음(예: deviceId가 빈 값)
+  | "connecting" // EventSource 생성됨, 아직 핸드셰이크 없음
+  | "open" // CONNECTED 수신 또는 readyState === OPEN
+  | "reconnecting" // 끊김, 재시도 대기
+  | "error"; // EventSource 미지원 또는 치명적 실패
 
-/** Reason the consumer's `onScheduleReload` was invoked. */
+/** 소비자의 `onScheduleReload`이 호출된 이유. */
 export type ReloadReason =
   /**
-   * Page mount — the player route just rendered. AC 7, Sub-AC 1 requires
-   * an initial playlist fetch on mount that does NOT wait for SSE. This
-   * reason is supplied by the player page's own mount effect (not by
-   * this hook) so the same `onScheduleReload` callback handles every
-   * fetch trigger. Listed here so the type stays exhaustive and tooling
-   * (switch/case, exhaustive-deps) covers it everywhere.
+   * 페이지 마운트 — 플레이어 라우트가 막 렌더된 상태. AC 7, Sub-AC 1은
+   * SSE를 기다리지 *않는* 마운트 시 초기 플레이리스트 조회를 요구한다. 이
+   * 사유는 이 훅이 아니라 플레이어 페이지의 자체 마운트 이펙트가 제공하므로,
+   * 동일한 `onScheduleReload` 콜백이 모든 조회 트리거를 처리한다. 타입을
+   * 망라적으로 유지하고 도구(switch/case, exhaustive-deps)가 모든 곳에서
+   * 커버하도록 여기 나열한다.
    */
   | { kind: "initial" }
   | { kind: "mapping_changed"; restaurantId: string; assignmentId: string }
   /**
-   * AC 60201, Sub-AC 1: PLAYLIST_UPDATE was received and parsed. The
-   * tolerant `payload` carries whatever the backend sent (currently
-   * `{ deviceId, ... }`, with an optional inline `playlist` reserved for
-   * forward-compat) so the consumer's `setState`/reducer can choose to:
-   *   - apply the inline playlist directly (fast path, no refetch), OR
-   *   - fall back to refetching `/api/devices/{id}/playlist`.
-   * `payload` is null only if the SSE `data:` line was missing or
-   * unparseable; in that case the consumer should refetch.
+   * AC 60201, Sub-AC 1: PLAYLIST_UPDATE를 수신해 파싱한 경우. 관대한
+   * `payload`는 백엔드가 보낸 무엇이든 운반한다(현재는 `{ deviceId, ... }`,
+   * 전방 호환을 위한 선택적 인라인 `playlist` 예약 포함). 따라서 소비자의
+   * `setState`/리듀서는 다음을 선택할 수 있다:
+   *   - 인라인 플레이리스트를 직접 적용(빠른 경로, 재조회 없음), 또는
+   *   - `/api/devices/{id}/playlist` 재조회로 폴백.
+   * `payload`는 SSE `data:` 라인이 누락되었거나 파싱 불가일 때만 null이며,
+   * 이 경우 소비자는 재조회해야 한다.
    */
   | { kind: "playlist_update"; payload: PlaylistUpdatePayload | null }
   /**
-   * Initial connect — fired exactly once after the first successful
-   * `CONNECTED` handshake. Acts as a belt-and-braces refetch in addition
-   * to the page's mount-time fetch, useful if the mount fetch fails and
-   * the SSE channel later confirms the backend is healthy.
+   * 초기 연결 — 첫 성공한 `CONNECTED` 핸드셰이크 이후 정확히 한 번 발생.
+   * 페이지의 마운트 시 조회에 더해 belt-and-braces 재조회 역할을 하며,
+   * 마운트 조회가 실패한 후 SSE 채널이 나중에 백엔드의 건강성을 확인할 때
+   * 유용하다.
    */
   | { kind: "connected" };
 
 /**
- * Decoded `MAPPING_CHANGED` payload. Mirrors backend `MappingChangedPayload`
- * (Kotlin) — see backend/src/main/kotlin/me/owldev/adsignage/sse/SseEvents.kt.
+ * 디코딩된 `MAPPING_CHANGED` 페이로드. 백엔드 `MappingChangedPayload`
+ * (Kotlin)와 동일 — backend/src/main/kotlin/me/owldev/adsignage/sse/SseEvents.kt 참조.
  */
 export interface MappingChangedPayload {
   deviceId: string;
@@ -115,25 +113,24 @@ export interface MappingChangedPayload {
 }
 
 /**
- * Decoded `PLAYLIST_UPDATE` payload (AC 60201 Sub-AC 1).
+ * 디코딩된 `PLAYLIST_UPDATE` 페이로드(AC 60201 Sub-AC 1).
  *
- * The backend's wire contract for this event is documented as "reserved;
- * minimal shape" — at minimum it carries `deviceId` so the player can
- * confirm the event is targeted at this connection (defence in depth: the
- * SSE emitter is per-device, but a shared channel at the proxy layer could
- * still mis-deliver).
+ * 이 이벤트의 백엔드 와이어 계약은 "예약됨; 최소 형태"로 문서화되어 있다 —
+ * 최소한 `deviceId`를 운반하므로, 플레이어가 이벤트가 이 연결을 대상으로
+ * 하는지 확인할 수 있다(다층 방어: SSE 이미터는 디바이스별이지만 프록시
+ * 계층의 공유 채널이 잘못 전달할 수 있다).
  *
- * Forward-compat optional fields:
- *   - `playlist`     → inline new playlist; if present the player can apply
- *                      it directly via `setPlaylistState` without a refetch.
- *   - `updatedAt`    → ISO-8601 timestamp of when the schedule changed; lets
- *                      the consumer ignore an out-of-order event.
- *   - `restaurantId` → echoed for correlation only; not required.
+ * 전방 호환 선택 필드:
+ *   - `playlist`     → 인라인 신규 플레이리스트; 존재하면 플레이어는 재조회
+ *                      없이 `setPlaylistState`로 직접 적용할 수 있다.
+ *   - `updatedAt`    → 스케줄 변경 시각의 ISO-8601 타임스탬프; 소비자가
+ *                      순서가 뒤바뀐 이벤트를 무시할 수 있게 한다.
+ *   - `restaurantId` → 상관관계용 에코일 뿐; 필수 아님.
  *
- * Inline `playlist` mirrors `DevicePlaylist` from `lib/playlist.ts` but is
- * intentionally typed as `unknown` here so the hook stays decoupled from
- * the playlist module — the consumer (PlayerClient) re-uses the existing
- * playlist normaliser to validate the shape before committing it to state.
+ * 인라인 `playlist`는 `lib/playlist.ts`의 `DevicePlaylist`와 형태가 같지만,
+ * 훅이 playlist 모듈과 분리되도록 의도적으로 `unknown`으로 타입을 둔다 —
+ * 소비자(PlayerClient)가 상태에 커밋하기 전에 기존 플레이리스트 정규화기로
+ * 형태를 검증해 재사용한다.
  */
 export interface PlaylistUpdatePayload {
   deviceId: string;
@@ -143,11 +140,11 @@ export interface PlaylistUpdatePayload {
 }
 
 /**
- * Loose inline-playlist shape carried by a `PLAYLIST_UPDATE` event. Mirrors
- * the JSON returned by `GET /api/devices/{id}/playlist` so the consumer can
- * pass it through the same normaliser used for the refetch path. Kept
- * `unknown`-keyed so unexpected fields don't fail parsing — the normaliser
- * downstream is responsible for trimming to the canonical `DevicePlaylist`.
+ * `PLAYLIST_UPDATE` 이벤트가 운반하는 느슨한 인라인 플레이리스트 형태.
+ * `GET /api/devices/{id}/playlist`가 반환하는 JSON과 형태가 같아, 소비자가
+ * 재조회 경로에서 사용하는 동일한 정규화기에 그대로 통과시킬 수 있다.
+ * 예상치 못한 필드가 파싱을 실패시키지 않도록 키를 `unknown`으로 유지 —
+ * 다운스트림 정규화기가 표준 `DevicePlaylist`로 다듬는 책임을 진다.
  */
 export interface InlinePlaylist {
   deviceId?: string;
@@ -158,66 +155,61 @@ export interface InlinePlaylist {
 }
 
 export interface UsePlayerSseOptions {
-  /** Required device UUID. The hook is a no-op while this is empty. */
+  /** 필수 디바이스 UUID. 이 값이 비어 있는 동안 훅은 no-op이다. */
   deviceId: string;
   /**
-   * Called when the player should re-fetch its playlist. Fired:
-   *   - once on initial connect (so the page renders something on load);
-   *   - on every MAPPING_CHANGED;
-   *   - on every PLAYLIST_UPDATE.
-   * The consumer typically does `await fetchPlaylist(deviceId)` and swaps
-   * the `<video>` source — that is the "device reloads schedule
-   * immediately when remapped without manual refresh" behaviour.
+   * 플레이어가 플레이리스트를 다시 조회해야 할 때 호출된다. 발생 시점:
+   *   - 초기 연결 시 한 번(로드 시 페이지에 뭔가 렌더링되도록);
+   *   - 매 MAPPING_CHANGED;
+   *   - 매 PLAYLIST_UPDATE.
+   * 소비자는 보통 `await fetchPlaylist(deviceId)`을 수행한 뒤 `<video>`
+   * 소스를 교체한다 — 이것이 "재매핑 시 수동 새로고침 없이 디바이스가 즉시
+   * 스케줄을 다시 로드한다"는 동작이다.
    */
   onScheduleReload: (reason: ReloadReason) => void;
   /**
-   * Optional notification when the device is remapped. Useful for the
-   * page to show a "Switching to {restaurant}…" splash without waiting
-   * on the playlist round-trip (the backend already includes the new
-   * restaurantId in the SSE payload).
+   * 디바이스가 재매핑될 때의 선택적 알림. 페이지가 플레이리스트 왕복을
+   * 기다리지 않고 "Switching to {restaurant}…" 스플래시를 표시하는 데
+   * 유용하다(백엔드는 이미 SSE 페이로드에 새 restaurantId를 포함한다).
    */
   onMappingChanged?: (payload: MappingChangedPayload) => void;
   /**
-   * Override the initial reconnect delay (ms). The hook backs off
-   * exponentially from this value up to [maxReconnectDelayMs].
-   * Default 1000 ms.
+   * 초기 재연결 지연(ms)을 덮어쓴다. 훅은 이 값에서 [maxReconnectDelayMs]까지
+   * 지수 백오프한다. 기본 1000 ms.
    */
   initialReconnectDelayMs?: number;
-  /** Cap for the exponential backoff. Default 30_000 ms. */
+  /** 지수 백오프의 상한. 기본 30_000 ms. */
   maxReconnectDelayMs?: number;
   /**
-   * Enable verbose console logging (helpful during the live demo so the
-   * operator can watch the WebView console and see remap events arrive).
-   * Default false.
+   * 자세한 콘솔 로깅 활성화(라이브 데모 중에 유용 — 운영자가 WebView 콘솔을
+   * 보며 재매핑 이벤트가 도착하는 것을 확인 가능). 기본 false.
    */
   debug?: boolean;
 }
 
 export interface UsePlayerSseResult {
-  /** Current SSE lifecycle status — drive a status pill off this. */
+  /** 현재 SSE 라이프사이클 상태 — 상태 pill을 여기에 연결. */
   status: SsePlayerStatus;
   /**
-   * Monotonically-increasing counter, bumped each time the consumer's
-   * `onScheduleReload` is invoked. Useful as a `useEffect` dependency
-   * for callers that prefer a declarative refetch pattern over the
-   * imperative callback (e.g. `useEffect(() => fetchPlaylist(), [reloadCounter])`).
+   * 단조 증가 카운터. 소비자의 `onScheduleReload`이 호출될 때마다 증가한다.
+   * 명령형 콜백보다 선언적 재조회 패턴을 선호하는 호출자에게 `useEffect`
+   * 의존성으로 유용(예: `useEffect(() => fetchPlaylist(), [reloadCounter])`).
    */
   reloadCounter: number;
-  /** Number of automatic reconnect attempts since the last success. */
+  /** 마지막 성공 이후의 자동 재연결 시도 횟수. */
   reconnectAttempts: number;
-  /** Time the last `MAPPING_CHANGED` event was received (ms epoch), or 0. */
+  /** 마지막 `MAPPING_CHANGED` 이벤트를 수신한 시각(ms epoch), 또는 0. */
   lastMappingChangeAt: number;
   /**
-   * Imperative trigger to drop the current connection and reopen — handy
-   * for a "Reconnect now" debug button on the player splash screen.
+   * 현재 연결을 끊고 다시 여는 명령형 트리거 — 플레이어 스플래시 화면의
+   * "Reconnect now" 디버그 버튼에 유용하다.
    */
   reconnectNow: () => void;
 }
 
 /**
- * Subscribes the player page to the backend SSE stream for [deviceId]
- * and invokes `onScheduleReload` whenever the schedule should be
- * re-fetched.
+ * 플레이어 페이지를 [deviceId]의 백엔드 SSE 스트림에 구독시키고, 스케줄을
+ * 다시 조회해야 할 때마다 `onScheduleReload`를 호출한다.
  */
 export function usePlayerSse(options: UsePlayerSseOptions): UsePlayerSseResult {
   const {
@@ -234,9 +226,8 @@ export function usePlayerSse(options: UsePlayerSseOptions): UsePlayerSseResult {
   const [reconnectAttempts, setReconnectAttempts] = useState<number>(0);
   const [lastMappingChangeAt, setLastMappingChangeAt] = useState<number>(0);
 
-  // Latest callbacks held in refs so we can keep the EventSource open
-  // across renders without re-subscribing every time the consumer's
-  // function identity changes.
+  // 최신 콜백을 ref에 보관해 소비자의 함수 정체성이 바뀔 때마다 재구독하지
+  // 않고 EventSource를 렌더 간에 열어둘 수 있게 한다.
   const onScheduleReloadRef = useRef(onScheduleReload);
   const onMappingChangedRef = useRef(onMappingChanged);
   useEffect(() => {
@@ -246,7 +237,7 @@ export function usePlayerSse(options: UsePlayerSseOptions): UsePlayerSseResult {
     onMappingChangedRef.current = onMappingChanged;
   }, [onMappingChanged]);
 
-  // Manual reconnect signal — bumped to force the connect-effect to re-run.
+  // 수동 재연결 신호 — connect-effect가 다시 실행되도록 증가시킨다.
   const [reconnectNonce, setReconnectNonce] = useState<number>(0);
   const reconnectNow = () => setReconnectNonce((n) => n + 1);
 
@@ -257,9 +248,9 @@ export function usePlayerSse(options: UsePlayerSseOptions): UsePlayerSseResult {
     }
 
     if (typeof window === "undefined" || typeof EventSource === "undefined") {
-      // SSR or a runtime without EventSource (extremely old WebView).
-      // The hackathon WebView (Android System WebView) supports it, so this
-      // is mostly a safety net for unit tests / build-time prerender.
+      // SSR이거나 EventSource가 없는 런타임(매우 오래된 WebView).
+      // 해커톤 WebView(Android System WebView)는 지원하므로, 이는 주로 단위
+      // 테스트 / 빌드 시 프리렌더를 위한 안전망이다.
       setStatus("error");
       return;
     }
@@ -270,10 +261,10 @@ export function usePlayerSse(options: UsePlayerSseOptions): UsePlayerSseResult {
     let attempts = 0;
     let firstConnectFired = false;
 
-    // AC 1 — subscribe to `/stream`, not `/events`. Backend exposes both
-    // routes (DeviceStreamController + legacy DeviceSseController) and the
-    // wire contract — CONNECTED handshake, MAPPING_CHANGED, PLAYLIST_UPDATE
-    // — is identical, so flipping the URL here is a one-line drop-in.
+    // AC 1 — `/events`가 아닌 `/stream`을 구독. 백엔드는 두 라우트를 모두
+    // 노출하며(DeviceStreamController + 레거시 DeviceSseController) 와이어
+    // 계약(CONNECTED 핸드셰이크, MAPPING_CHANGED, PLAYLIST_UPDATE)은 동일하다.
+    // 따라서 여기 URL만 바꾸면 한 줄 교체로 충분하다.
     const url = apiUrl(`/api/devices/${encodeURIComponent(deviceId)}/stream`);
 
     const log = (...args: unknown[]) => {
@@ -285,7 +276,7 @@ export function usePlayerSse(options: UsePlayerSseOptions): UsePlayerSseResult {
       try {
         onScheduleReloadRef.current(reason);
       } catch (err) {
-        // Never let a consumer exception kill the SSE pipeline.
+        // 소비자 예외가 SSE 파이프라인을 죽이게 두지 않는다.
         console.error("[usePlayerSse] onScheduleReload threw:", err);
       }
     };
@@ -313,21 +304,20 @@ export function usePlayerSse(options: UsePlayerSseOptions): UsePlayerSseResult {
         setStatus("connecting");
         es = new EventSource(url);
 
-        // The browser's onopen fires on TCP/HTTP-level open. We treat the
-        // CONNECTED event as the canonical "channel is healthy" signal,
-        // because it confirms the server-side handler ran. But we still
-        // listen to onopen so the status flips out of "connecting" even
-        // if the server is slow to send the handshake.
+        // 브라우저의 onopen은 TCP/HTTP 레벨 open에서 발생한다. CONNECTED
+        // 이벤트를 표준 "채널 정상" 신호로 취급하는데, 이는 서버 측 핸들러가
+        // 실행되었음을 확인해주기 때문이다. 그래도 onopen을 듣는 이유는,
+        // 서버가 핸드셰이크를 늦게 보내더라도 상태가 "connecting"에서
+        // 빠져나오게 하기 위함이다.
         es.onopen = () => {
           log("EventSource opened");
-          // Don't reset attempts here — wait for first event (CONNECTED) so
-          // we know the *server* (not just the proxy) is alive.
+          // 여기서 attempts를 리셋하지 않는다 — 첫 이벤트(CONNECTED)를
+          // 기다려 *서버*(프록시뿐 아니라)가 살아있음을 확인한다.
         };
 
         es.onerror = (ev) => {
-          // EventSource will auto-reconnect on its own for transient errors
-          // (when readyState === CONNECTING). For CLOSED or other terminal
-          // states, we need to take over.
+          // EventSource는 일시적 에러(readyState === CONNECTING일 때) 자체로
+          // 자동 재연결한다. CLOSED 같은 종결 상태에서는 우리가 인계해야 한다.
           log("EventSource error", ev, "readyState=", es?.readyState);
           if (!es) return;
           if (es.readyState === EventSource.CLOSED) {
@@ -335,15 +325,14 @@ export function usePlayerSse(options: UsePlayerSseOptions): UsePlayerSseResult {
             es = null;
             scheduleReconnect();
           }
-          // For CONNECTING (1) we let the browser try once; if it keeps
-          // failing it will eventually transition to CLOSED and the branch
-          // above takes over.
+          // CONNECTING (1)에서는 브라우저가 한 번 시도하게 둔다. 계속 실패하면
+          // 결국 CLOSED로 전이되어 위 분기가 인계받는다.
         };
 
-        // CONNECTED — handshake. Backend always sends this immediately on
-        // a new emitter. Use it to flip status -> open and to fire the
-        // initial schedule reload so the player paints something on first
-        // paint without a separate effect.
+        // CONNECTED — 핸드셰이크. 백엔드는 새 이미터에서 즉시 이를 항상 보낸다.
+        // 이를 사용해 상태를 -> open으로 전환하고 초기 스케줄 리로드를
+        // 발생시켜, 별도 이펙트 없이 플레이어가 첫 페인트에 무언가를 그리게
+        // 한다.
         es.addEventListener(SSE_EVENT_CONNECTED, (e: MessageEvent) => {
           log("CONNECTED received", e.data);
           attempts = 0;
@@ -355,11 +344,10 @@ export function usePlayerSse(options: UsePlayerSseOptions): UsePlayerSseResult {
           }
         });
 
-        // MAPPING_CHANGED — THE event sub-AC 4 exists for. Decode the
-        // payload, hand it to the optional onMappingChanged hook (so the
-        // page can paint a transition splash with the new restaurantId
-        // straight away), then trigger a full schedule reload via the
-        // primary callback.
+        // MAPPING_CHANGED — Sub-AC 4가 존재하는 이유인 바로 그 이벤트.
+        // 페이로드를 디코드해 선택적 onMappingChanged 훅에 넘긴(그래야
+        // 페이지가 새 restaurantId로 전환 스플래시를 즉시 그릴 수 있음) 뒤,
+        // 주 콜백으로 전체 스케줄 리로드를 트리거한다.
         es.addEventListener(SSE_EVENT_MAPPING_CHANGED, (e: MessageEvent) => {
           log("MAPPING_CHANGED received", e.data);
           const payload = parseMappingChangedPayload(e.data);
@@ -381,19 +369,19 @@ export function usePlayerSse(options: UsePlayerSseOptions): UsePlayerSseResult {
           });
         });
 
-        // PLAYLIST_UPDATE — schedule contents changed for any other reason
-        // (advertiser added a new ad, edited a schedule, etc.). AC 60201
-        // Sub-AC 1: parse the incoming `data:` JSON and pass the typed
-        // payload to the consumer so its setState/reducer can either apply
-        // an inline playlist directly OR refetch authoritatively.
+        // PLAYLIST_UPDATE — 다른 어떤 이유로든 스케줄 내용이 바뀜
+        // (광고주가 새 광고 추가, 스케줄 편집 등). AC 60201 Sub-AC 1:
+        // 들어오는 `data:` JSON을 파싱해 타입드 페이로드를 소비자에게 넘겨,
+        // setState/리듀서가 인라인 플레이리스트를 직접 적용하거나 권위
+        // 있게 재조회하도록 한다.
         es.addEventListener(SSE_EVENT_PLAYLIST_UPDATE, (e: MessageEvent) => {
           log("PLAYLIST_UPDATE received", e.data);
           const payload = parsePlaylistUpdatePayload(e.data);
-          // Defence in depth: if the SSE event was somehow delivered for a
-          // different device (mis-routing at a proxy, registry bug, etc.)
-          // log a warning but still trigger a reload — the refetch path
-          // hits the device-scoped `/api/devices/{thisDeviceId}/playlist`
-          // endpoint, so the wrong-device data can't leak into state.
+          // 다층 방어: SSE 이벤트가 어떤 이유로든 다른 디바이스용으로 전달된
+          // 경우(프록시 잘못된 라우팅, 레지스트리 버그 등) 경고를 로그하되
+          // 그래도 리로드를 트리거한다 — 재조회 경로가 디바이스 스코프의
+          // `/api/devices/{thisDeviceId}/playlist` 엔드포인트를 호출하므로,
+          // 잘못된 디바이스의 데이터가 상태로 새지 않는다.
           if (payload && payload.deviceId && payload.deviceId !== deviceId) {
             console.warn(
               "[usePlayerSse] PLAYLIST_UPDATE deviceId mismatch:",
@@ -424,9 +412,9 @@ export function usePlayerSse(options: UsePlayerSseOptions): UsePlayerSseResult {
       }
       setStatus("idle");
     };
-    // `reconnectNonce` lets `reconnectNow()` re-run this effect to drop
-    // and reopen the EventSource. The other deps are configuration that
-    // legitimately invalidates the open connection if they change.
+    // `reconnectNonce`는 `reconnectNow()`가 이 이펙트를 다시 실행해
+    // EventSource를 끊고 다시 열도록 한다. 나머지 의존성은 변경 시 열린
+    // 연결을 정당하게 무효화하는 구성 값이다.
   }, [
     deviceId,
     initialReconnectDelayMs,
@@ -445,10 +433,9 @@ export function usePlayerSse(options: UsePlayerSseOptions): UsePlayerSseResult {
 }
 
 /**
- * Parse the JSON body of a MAPPING_CHANGED SSE event. Tolerant: returns
- * null if the payload is malformed so the caller can still trigger a
- * schedule reload (the reload will fetch the authoritative state from
- * the backend anyway).
+ * MAPPING_CHANGED SSE 이벤트의 JSON 본문을 파싱한다. 관대함: 페이로드가
+ * 형식 오류이면 null을 반환하므로, 호출자는 그래도 스케줄 리로드를 트리거할
+ * 수 있다(리로드는 어차피 백엔드에서 권위 있는 상태를 조회한다).
  */
 function parseMappingChangedPayload(
   raw: string,
@@ -476,27 +463,26 @@ function parseMappingChangedPayload(
 }
 
 /**
- * Parse the JSON body of a PLAYLIST_UPDATE SSE event (AC 60201 Sub-AC 1).
+ * PLAYLIST_UPDATE SSE 이벤트의 JSON 본문 파싱 (AC 60201 Sub-AC 1).
  *
- * Tolerant by design — the wire contract for PLAYLIST_UPDATE is documented
- * as "reserved; minimal shape" and may evolve as sibling sub-ACs add new
- * fields (timestamps, inline playlists, change reasons). The parser:
+ * 의도적으로 관대 — PLAYLIST_UPDATE의 와이어 계약은 "예약됨; 최소 형태"로
+ * 문서화되어 있고 형제 sub-AC가 새 필드(타임스탬프, 인라인 플레이리스트,
+ * 변경 사유)를 추가하면서 진화할 수 있다. 파서는:
  *
- *   - Returns `null` if the body is empty or not valid JSON. The caller
- *     should still trigger a refetch — the backend is the source of
- *     truth, and SSE is best-effort signalling.
+ *   - 본문이 비었거나 유효한 JSON이 아니면 `null` 반환. 호출자는 그래도
+ *     재 fetch를 트리거해야 한다 — 백엔드가 진실의 원천이며 SSE는 베스트
+ *     에포트 신호링이다.
  *
- *   - Returns a typed object with at least `deviceId` if it could be
- *     extracted. Optional fields are passed through unchanged so future
- *     backend versions can add fields without a coordinated client roll.
+ *   - `deviceId`가 추출 가능하면 그것을 최소한으로 담은 타입화된 객체
+ *     반환. 선택 필드는 변경 없이 통과시켜 미래 백엔드 버전이 클라이언트
+ *     동시 배포 없이 필드를 추가할 수 있게 한다.
  *
- *   - For an inline `playlist`, only validates that it's an object — the
- *     consumer should pipe it through `lib/playlist.ts#normalisePlaylist`
- *     before committing to React state, so unknown extra keys are
- *     trimmed and missing fields default sanely.
+ *   - 인라인 `playlist`는 객체인지만 검증 — 소비자가 React 상태에
+ *     커밋하기 전에 `lib/playlist.ts#normalisePlaylist`를 통과시켜야 알 수
+ *     없는 추가 키가 잘리고 누락 필드가 합리적으로 기본값을 가진다.
  *
- * @param raw  The `data:` line from the SSE event (already utf-8 decoded
- *             by EventSource, but still a string of JSON).
+ * @param raw  SSE 이벤트의 `data:` 라인(EventSource가 이미 utf-8
+ *             디코드했지만 여전히 JSON 문자열).
  */
 function parsePlaylistUpdatePayload(
   raw: string,
@@ -546,11 +532,11 @@ function parsePlaylistUpdatePayload(
 
 /* ------------------------------------------------------ test exports */
 /**
- * Internal helpers exposed for unit testing. Not part of the public hook
- * API — consumers should not depend on these. Re-exported here (rather
- * than via a separate `__tests__` file) because the project does not yet
- * have a JS test runner configured; this keeps the parsers reachable for
- * a future jest/vitest suite without restructuring the hook.
+ * 단위 테스트용으로 노출된 내부 헬퍼. 공개 훅 API의 일부가 아님 —
+ * 소비자는 이에 의존해서는 안 된다. 프로젝트에 JS 테스트 러너가 아직
+ * 설정되지 않았기 때문에 별도 `__tests__` 파일이 아닌 여기서 재내보내며,
+ * 이는 훅을 재구성하지 않고도 미래의 jest/vitest 스위트가 파서에
+ * 접근할 수 있도록 유지한다.
  */
 export const __test__ = {
   parseMappingChangedPayload,
