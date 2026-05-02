@@ -1,0 +1,44 @@
+# end-to-end verification — captured 2026-05-02 from dev machine
+# script: deploy/scripts/verify-public-access.sh
+# exit code: 7 (= number of failed checks)
+
+
+== 1. DNS resolution ==
+  ✓ stream.owl-dev.me -> 110.8.21.243 (matches EXPECT_IP)
+
+== 2. HTTP :80 -> HTTPS redirect ==
+  ✓ http://stream.owl-dev.me/ -> 301 -> https://stream.owl-dev.me/
+
+== 3. TLS certificate ==
+      subject=CN=ai.owl-dev.me
+  issuer=C=US, O=Let's Encrypt, CN=E7
+  notBefore=Apr 25 03:26:55 2026 GMT
+  notAfter=Jul 24 03:26:54 2026 GMT
+  X509v3 Subject Alternative Name: 
+      DNS:ai.owl-dev.me
+  ✗ cert SAN does NOT include DNS:stream.owl-dev.me (run deploy/scripts/provision-tls.sh on the server)
+
+== 4. Spring Boot health ==
+  ✓ GET /actuator/health -> 200
+
+== 5. Backend API endpoints ==
+  ✗ GET /api/auth/signup (expect 405) -> 404 (want one of: 200|400|401|403|405)
+  ✗ GET /api/devices -> 404 (want one of: 200|401|403)
+  ✗ GET /api/restaurants -> 404 (want one of: 200|401|403)
+
+== 6. SSE stream (/api/sse/devices/verify-device) ==
+  ✗ SSE endpoint not streaming (code=404)
+    first response line: HTTP/1.1 404 Not Found
+
+== 7. HTTP Range video stream ==
+  ○ VIDEO_ID not set — skipping (set VIDEO_ID=<id> to test /api/videos/<id>)
+
+== 8. Next.js admin web ==
+  ✗ GET /admin -> 404 (want 200 + HTML)
+
+== 9. Next.js player page ==
+  ✗ GET /player/verify-device -> 404 (want 200 + HTML)
+
+=================================
+pass=3  fail=7  skip=1
+=================================

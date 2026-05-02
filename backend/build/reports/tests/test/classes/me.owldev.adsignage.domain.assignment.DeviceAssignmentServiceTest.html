@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - DeviceAssignmentServiceTest</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<h1>DeviceAssignmentServiceTest</h1>
+<div class="breadcrumbs">
+<a href="../index.html">all</a> &gt; 
+<a href="../packages/me.owldev.adsignage.domain.assignment.html">me.owldev.adsignage.domain.assignment</a> &gt; DeviceAssignmentServiceTest</div>
+<div id="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox" id="tests">
+<div class="counter">13</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="failures">
+<div class="counter">0</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="ignored">
+<div class="counter">0</div>
+<p>ignored</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="duration">
+<div class="counter">0.002s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="tabs">
+<ul class="tabLinks">
+<li>
+<a href="#tab0">Tests</a>
+</li>
+<li>
+<a href="#tab1">Standard output</a>
+</li>
+</ul>
+<div id="tab0" class="tab">
+<h2>Tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Duration</th>
+<th>Result</th>
+</tr>
+</thead>
+<tr>
+<td class="success">createAssignment on a device with an existing active row delegates to update()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">createAssignment over an existing active row publishes a single event for the new restaurant()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">createAssignment persists active row when device has no current assignment()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">createAssignment publishes DeviceMappingChangedEvent()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">createAssignment rejects blank ids()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">createAssignment throws DeviceNotFound when device id is unknown()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">createAssignment throws RestaurantNotFound when restaurant id is unknown()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">findCurrentAssignment returns null when device has no active row()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">getCurrentAssignment returns the active row()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">getCurrentAssignment throws AssignmentNotFound when device has no active row()</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">multiple devices each carry their own independent active assignment()</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">updateAssignment deactivates previous active row and inserts new one()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">updateAssignment publishes DeviceMappingChangedEvent for the new restaurant()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+</table>
+</div>
+<div id="tab1" class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre>2026-05-02T23:50:30.459+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : createAssignment: device=device-b23d78c5-a38f-4452-a8cb-fa20d166caca restaurant=rest-7c22d3d6-e40b-4ec0-99d2-5cc3669dd897 assignmentId=d5f8215d-af0c-4e94-bed9-ce36e02bdbde
+2026-05-02T23:50:30.459+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : createAssignment: device=device-874212d3-018e-4296-a2f9-f4db9e1b8241 restaurant=rest-4b84056f-e707-4e6c-8e23-0bd7a7649653 assignmentId=8cf2af7c-e4da-47f6-8904-6f4fbdb16fc5
+2026-05-02T23:50:30.459+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : createAssignment: device=device-4b455b5a-0c23-4204-8d20-d7e5cd00e8b8 restaurant=rest-9abb58e6-ef9c-4ff0-92df-abcd342906ff assignmentId=9b789e49-2e51-4b9e-86a2-4d8352628a93
+2026-05-02T23:50:30.460+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : createAssignment: device=device-742d5f10-35bb-429e-9cf6-319e7fc5173f restaurant=rest-fa277169-05bd-4b25-9420-4b5771c76042 assignmentId=3715fff0-b7a7-4a66-adee-6ae53f9dc99b
+2026-05-02T23:50:30.460+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : updateAssignment: device=device-742d5f10-35bb-429e-9cf6-319e7fc5173f → restaurant=rest-9bea84f8-c291-46d0-bdf7-cfc86b5afad6 (deactivatedRows=1, newAssignmentId=bf7511c3-ade7-4794-8791-285f462520e4)
+2026-05-02T23:50:30.460+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : createAssignment: device=device-a172d51f-58d2-4f6f-ba31-190df081c554 restaurant=rest-5b932090-e73b-4f15-a04f-824124947278 assignmentId=4bb6cf7c-f558-47d3-8e6f-be0613af6381
+2026-05-02T23:50:30.460+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : createAssignment: device=device-09e3b31a-3893-432a-b3c3-8eac43d0c50e restaurant=rest-dec9ba0a-786f-4122-b439-e032fb7881d0 assignmentId=15de15e0-5fe1-4908-871d-908336f38ef0
+2026-05-02T23:50:30.460+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : updateAssignment: device=device-a172d51f-58d2-4f6f-ba31-190df081c554 → restaurant=rest-dec9ba0a-786f-4122-b439-e032fb7881d0 (deactivatedRows=1, newAssignmentId=5f46bf53-38c6-47dc-94c1-7215eee526d0)
+2026-05-02T23:50:30.460+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : createAssignment: device=device-0db219aa-dbe9-4563-a8b8-ffe9ff407816 restaurant=rest-19e92cb4-9712-43f0-bc55-6d8c34be8199 assignmentId=4ee32c49-1557-4372-a3fe-f7ce68b70d6b
+2026-05-02T23:50:30.460+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : updateAssignment: device=device-0db219aa-dbe9-4563-a8b8-ffe9ff407816 → restaurant=rest-73f96aef-de4c-46d5-a1d9-77597d01f995 (deactivatedRows=1, newAssignmentId=fdda6729-4363-4578-8a63-3eede2965e60)
+2026-05-02T23:50:30.461+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : createAssignment: device=device-2e1198ae-edde-4941-a85f-bff9af8e2eab restaurant=rest-3a415570-ab8a-4a8a-8543-c95e5e8ee585 assignmentId=5bdd421a-2335-47fa-8e9f-b366a56f9f1a
+2026-05-02T23:50:30.461+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : createAssignment: device device-2e1198ae-edde-4941-a85f-bff9af8e2eab already has active assignment 5bdd421a-2335-47fa-8e9f-b366a56f9f1a → delegating to updateAssignment
+2026-05-02T23:50:30.461+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : updateAssignment: device=device-2e1198ae-edde-4941-a85f-bff9af8e2eab → restaurant=rest-cf59670d-ddae-4de1-b680-32fb0c5b49c5 (deactivatedRows=1, newAssignmentId=cad78d23-2c8f-426b-9fa5-5427f54796d9)
+2026-05-02T23:50:30.461+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : createAssignment: device=device-83c53bd6-f4b0-4fd9-8c75-994eb0e6cb3b restaurant=rest-6cd84e73-1435-4de8-9816-e58a96a41957 assignmentId=e899bf94-5cf9-4167-ad73-bf49ef099dae
+2026-05-02T23:50:30.461+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : createAssignment: device device-83c53bd6-f4b0-4fd9-8c75-994eb0e6cb3b already has active assignment e899bf94-5cf9-4167-ad73-bf49ef099dae → delegating to updateAssignment
+2026-05-02T23:50:30.462+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : updateAssignment: device=device-83c53bd6-f4b0-4fd9-8c75-994eb0e6cb3b → restaurant=rest-994e9d1b-5f39-4505-bb7c-4f4e5cf03950 (deactivatedRows=1, newAssignmentId=c5607e0f-996b-46cc-aea5-a14beb5ca38e)
+2026-05-02T23:50:30.462+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.a.DeviceAssignmentService        : createAssignment: device=device-b6666ec5-c9e6-4bfb-aee5-030784d118c7 restaurant=rest-44005c1b-d1ae-4e17-a370-8824f40ff0eb assignmentId=cbe2749b-1af4-486f-81ee-a9eb39f053dd
+</pre>
+</span>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="http://www.gradle.org">Gradle 8.10</a> at 2026. 5. 2. 오후 11:50:34</p>
+</div>
+</div>
+</body>
+</html>

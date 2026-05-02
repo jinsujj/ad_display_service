@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AdSignage</string>
+    <!-- Player base URL — the WebView will load $base/player/{deviceId}. -->
+    <string name="player_base_url">https://stream.owl-dev.me</string>
+</resources>

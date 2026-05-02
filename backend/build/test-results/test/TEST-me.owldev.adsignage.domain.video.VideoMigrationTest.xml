@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="me.owldev.adsignage.domain.video.VideoMigrationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-05-02T14:50:32" hostname="Jinsuui-MacBookAir.local" time="0.007">
+  <properties/>
+  <testcase name="V30 creates videos table with the columns the entity expects()" classname="me.owldev.adsignage.domain.video.VideoMigrationTest" time="0.007"/>
+  <system-out><![CDATA[2026-05-02T23:50:32.658+09:00  INFO 57102 --- [adsignage] [    Test worker] org.flywaydb.core.FlywayExecutor         : Database: jdbc:h2:mem:videos-ed74813c-37c0-4fbb-97cd-5a699e57555b (H2 2.2)
+2026-05-02T23:50:32.659+09:00  WARN 57102 --- [adsignage] [    Test worker] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-05-02T23:50:32.659+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-05-02T23:50:32.659+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbValidate     : Successfully validated 6 migrations (execution time 00:00.000s)
+2026-05-02T23:50:32.660+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-05-02T23:50:32.661+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Current version of schema "PUBLIC": << Empty Schema >>
+2026-05-02T23:50:32.661+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "1 - create advertisers"
+2026-05-02T23:50:32.662+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "30 - create videos"
+2026-05-02T23:50:32.662+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Successfully applied 2 migrations to schema "PUBLIC", now at version v30 (execution time 00:00.000s)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

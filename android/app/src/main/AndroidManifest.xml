@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.owldev.adsignage">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <application
+        android:allowBackup="false"
+        android:label="@string/app_name"
+        android:icon="@android:drawable/sym_def_app_icon"
+        android:theme="@style/Theme.AdSignage"
+        android:hardwareAccelerated="true"
+        android:usesCleartextTraffic="false">
+
+        <!--
+            AC 11: MainActivity launches a fullscreen WebView in immersive
+            sticky mode pointing at https://stream.owl-dev.me/player/{deviceId}.
+
+            - theme @style/Theme.AdSignage already removes status / nav bars
+              at the window level so the cold-start frame is fully black
+            - launchMode singleTask + clearTaskOnLaunch=false keeps the
+              WebView resident for the life of the device
+            - screenOrientation=portrait — kiosk fridge displays are 10–15"
+              portrait FHD per the seed
+            - configChanges intercepts rotation / keyboard events so the
+              WebView is never destroyed mid-playback
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AdSignage"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode|smallestScreenSize|screenLayout"
+            android:resizeableActivity="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            AC 13: Auto-start the signage player on device boot.
+
+            Stock Android fires BOOT_COMPLETED after the user has unlocked
+            the device for the first time. Several OEM ROMs commonly used
+            on cheap fridge-mounted Android boxes (HTC, Xiaomi, Samsung,
+            generic AOSP fast-boot kernels) ship with their own boot
+            broadcasts — we listen for those too so the WebView wrapper
+            comes back up after every power cycle, regardless of vendor.
+
+            The receiver runs at default (medium) priority and is gated
+            on RECEIVE_BOOT_COMPLETED so only the OS can deliver these.
+        -->
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.REBOOT" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

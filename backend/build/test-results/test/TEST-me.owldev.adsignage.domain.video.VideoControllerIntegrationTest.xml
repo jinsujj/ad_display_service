@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="me.owldev.adsignage.domain.video.VideoControllerIntegrationTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-05-02T14:50:31" hostname="Jinsuui-MacBookAir.local" time="0.969">
+  <properties/>
+  <testcase name="JSON POST is rejected (controller only consumes multipart)()" classname="me.owldev.adsignage.domain.video.VideoControllerIntegrationTest" time="0.066"/>
+  <testcase name="POST of an empty multipart body returns 400()" classname="me.owldev.adsignage.domain.video.VideoControllerIntegrationTest" time="0.067"/>
+  <testcase name="POST returns 201 with the persisted Video DTO and writes the file to disk()" classname="me.owldev.adsignage.domain.video.VideoControllerIntegrationTest" time="0.068"/>
+  <testcase name="POST without the file part returns 400()" classname="me.owldev.adsignage.domain.video.VideoControllerIntegrationTest" time="0.063"/>
+  <testcase name="POST stamps the authenticated advertiser's id onto the persisted row()" classname="me.owldev.adsignage.domain.video.VideoControllerIntegrationTest" time="0.064"/>
+  <testcase name="GET without JWT is rejected with 401 (auth-and-isolation pass landed)()" classname="me.owldev.adsignage.domain.video.VideoControllerIntegrationTest" time="0.062"/>
+  <testcase name="POST of a non-MP4 returns 415 Unsupported Media Type()" classname="me.owldev.adsignage.domain.video.VideoControllerIntegrationTest" time="0.063"/>
+  <testcase name="GET returns an empty array when no videos have been uploaded()" classname="me.owldev.adsignage.domain.video.VideoControllerIntegrationTest" time="0.069"/>
+  <testcase name="POST that exceeds the configured size cap returns 413()" classname="me.owldev.adsignage.domain.video.VideoControllerIntegrationTest" time="0.062"/>
+  <testcase name="POST without JWT is rejected with 401()" classname="me.owldev.adsignage.domain.video.VideoControllerIntegrationTest" time="0.061"/>
+  <testcase name="GET with a different advertiser's bearer returns only that advertiser's videos()" classname="me.owldev.adsignage.domain.video.VideoControllerIntegrationTest" time="0.124"/>
+  <testcase name="GET only returns videos owned by the authenticated advertiser()" classname="me.owldev.adsignage.domain.video.VideoControllerIntegrationTest" time="0.125"/>
+  <testcase name="GET returns persisted videos newest-first with full metadata()" classname="me.owldev.adsignage.domain.video.VideoControllerIntegrationTest" time="0.073"/>
+  <system-out><![CDATA[2026-05-02T23:50:31.546+09:00  INFO 57102 --- [adsignage] [    Test worker] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [me.owldev.adsignage.domain.video.VideoControllerIntegrationTest]: VideoControllerIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-05-02T23:50:31.550+09:00  INFO 57102 --- [adsignage] [    Test worker] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration me.owldev.adsignage.AdsignageApplication for test class me.owldev.adsignage.domain.video.VideoControllerIntegrationTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.4)
+
+2026-05-02T23:50:31.556+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.VideoControllerIntegrationTest : Starting VideoControllerIntegrationTest using Java 17.0.19 with PID 57102 (started by jinsujang in /Users/jinsujang/Desktop/dev/hackathon/backend)
+2026-05-02T23:50:31.556+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.d.v.VideoControllerIntegrationTest : Running with Spring Boot v3.3.4, Spring v6.1.13
+2026-05-02T23:50:31.556+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.VideoControllerIntegrationTest : No active profile set, falling back to 1 default profile: "default"
+2026-05-02T23:50:31.592+09:00  INFO 57102 --- [adsignage] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-05-02T23:50:31.598+09:00  INFO 57102 --- [adsignage] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 5 ms. Found 5 JPA repository interfaces.
+2026-05-02T23:50:31.614+09:00  INFO 57102 --- [adsignage] [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-05-02T23:50:31.615+09:00  INFO 57102 --- [adsignage] [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-05-02T23:50:31.617+09:00  INFO 57102 --- [adsignage] [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-05-02T23:50:31.617+09:00  INFO 57102 --- [adsignage] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-9 - Starting...
+2026-05-02T23:50:31.618+09:00  INFO 57102 --- [adsignage] [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-9 - Added connection conn90: url=jdbc:h2:mem:video-controller-test user=SA
+2026-05-02T23:50:31.618+09:00  INFO 57102 --- [adsignage] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-9 - Start completed.
+2026-05-02T23:50:31.618+09:00  WARN 57102 --- [adsignage] [    Test worker] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-05-02T23:50:31.631+09:00  INFO 57102 --- [adsignage] [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-05-02T23:50:31.633+09:00  INFO 57102 --- [adsignage] [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-05-02T23:50:31.660+09:00  WARN 57102 --- [adsignage] [    Test worker] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: 485f2a1b-9ed7-4aba-b625-0f93d1d40291
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-05-02T23:50:31.660+09:00  INFO 57102 --- [adsignage] [    Test worker] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-05-02T23:50:31.681+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Filter 'jwtAuthenticationFilter' configured for use
+2026-05-02T23:50:31.681+09:00  INFO 57102 --- [adsignage] [    Test worker] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-05-02T23:50:31.681+09:00  INFO 57102 --- [adsignage] [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-05-02T23:50:31.681+09:00  INFO 57102 --- [adsignage] [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-05-02T23:50:31.683+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.VideoControllerIntegrationTest : Started VideoControllerIntegrationTest in 0.132 seconds (process running for 6.322)
+2026-05-02T23:50:31.748+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=5457e305-1718-467f-9df1-fdd0eeb24846 path=/api/videos
+2026-05-02T23:50:31.814+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=19405152-6d36-47af-ac46-4594358c3ae0 path=/api/videos
+2026-05-02T23:50:31.816+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : POST /api/videos advertiserId=19405152-6d36-47af-ac46-4594358c3ae0 originalName='promo.mp4' contentType=video/mp4 size=0
+2026-05-02T23:50:31.880+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=cdf45a99-789f-489f-9b63-2d9a3172c61d path=/api/videos
+2026-05-02T23:50:31.880+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : POST /api/videos advertiserId=cdf45a99-789f-489f-9b63-2d9a3172c61d originalName='promo.mp4' contentType=video/mp4 size=14
+2026-05-02T23:50:31.881+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.s.LocalVideoStorageService     : video stored filename=673e87ec-1a1d-41c2-9aec-c6786c1009fb.mp4 size=14B mime=video/mp4 path=/var/folders/3g/13jv45350qdfq343d5rlklx40000gn/T/junit6403674827540448230/673e87ec-1a1d-41c2-9aec-c6786c1009fb.mp4
+2026-05-02T23:50:31.882+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.video.upload.VideoUploadService  : video uploaded id=f0595b18-86f7-4830-a559-e615d9cf1c5f filename=673e87ec-1a1d-41c2-9aec-c6786c1009fb.mp4 advertiserId=cdf45a99-789f-489f-9b63-2d9a3172c61d size=14B mime=video/mp4
+2026-05-02T23:50:31.882+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : video upload succeeded id=f0595b18-86f7-4830-a559-e615d9cf1c5f filename=673e87ec-1a1d-41c2-9aec-c6786c1009fb.mp4 advertiserId=cdf45a99-789f-489f-9b63-2d9a3172c61d
+2026-05-02T23:50:31.948+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=45735358-c257-4654-a83f-c93cca6b6fe8 path=/api/videos
+2026-05-02T23:50:32.010+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=7fec1826-b430-4c3e-a2ca-61a1c8a19cb6 path=/api/videos
+2026-05-02T23:50:32.010+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : POST /api/videos advertiserId=7fec1826-b430-4c3e-a2ca-61a1c8a19cb6 originalName='owned.mp4' contentType=video/mp4 size=11
+2026-05-02T23:50:32.011+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.s.LocalVideoStorageService     : video stored filename=b2efa362-564c-4dde-a464-29370c76f82d.mp4 size=11B mime=video/mp4 path=/var/folders/3g/13jv45350qdfq343d5rlklx40000gn/T/junit6403674827540448230/b2efa362-564c-4dde-a464-29370c76f82d.mp4
+2026-05-02T23:50:32.011+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.video.upload.VideoUploadService  : video uploaded id=50a8529a-f04d-4d5c-8bba-283c01865ae8 filename=b2efa362-564c-4dde-a464-29370c76f82d.mp4 advertiserId=7fec1826-b430-4c3e-a2ca-61a1c8a19cb6 size=11B mime=video/mp4
+2026-05-02T23:50:32.011+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : video upload succeeded id=50a8529a-f04d-4d5c-8bba-283c01865ae8 filename=b2efa362-564c-4dde-a464-29370c76f82d.mp4 advertiserId=7fec1826-b430-4c3e-a2ca-61a1c8a19cb6
+2026-05-02T23:50:32.074+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.a.jwt.JwtAuthenticationEntryPoint  : Unauthenticated request rejected path=/api/videos reason=Full authentication is required to access this resource
+2026-05-02T23:50:32.136+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=0eb34a2e-8b18-46b2-801f-a58c4c42c9fb path=/api/videos
+2026-05-02T23:50:32.137+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : POST /api/videos advertiserId=0eb34a2e-8b18-46b2-801f-a58c4c42c9fb originalName='weird.zip' contentType=application/zip size=1
+2026-05-02T23:50:32.203+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=d35ccefb-e26b-4ae4-8ca3-ab3b3b702ac1 path=/api/videos
+2026-05-02T23:50:32.205+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : GET /api/videos advertiserId=d35ccefb-e26b-4ae4-8ca3-ab3b3b702ac1 returning 0 video(s)
+2026-05-02T23:50:32.268+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=c56026e8-8764-4be9-92a7-50137b0e0feb path=/api/videos
+2026-05-02T23:50:32.269+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : POST /api/videos advertiserId=c56026e8-8764-4be9-92a7-50137b0e0feb originalName='big.mp4' contentType=video/mp4 size=1025
+2026-05-02T23:50:32.330+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.a.jwt.JwtAuthenticationEntryPoint  : Unauthenticated request rejected path=/api/videos reason=Full authentication is required to access this resource
+2026-05-02T23:50:32.450+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=e8534fde-0577-40e9-80ac-f983a6ee4c2a path=/api/videos
+2026-05-02T23:50:32.450+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : POST /api/videos advertiserId=e8534fde-0577-40e9-80ac-f983a6ee4c2a originalName='mine.mp4' contentType=video/mp4 size=1
+2026-05-02T23:50:32.450+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.s.LocalVideoStorageService     : video stored filename=d29c0ede-ae0a-4333-8967-9970598607da.mp4 size=1B mime=video/mp4 path=/var/folders/3g/13jv45350qdfq343d5rlklx40000gn/T/junit6403674827540448230/d29c0ede-ae0a-4333-8967-9970598607da.mp4
+2026-05-02T23:50:32.451+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.video.upload.VideoUploadService  : video uploaded id=d69e1f0d-33da-44c9-be06-8012a99a51ba filename=d29c0ede-ae0a-4333-8967-9970598607da.mp4 advertiserId=e8534fde-0577-40e9-80ac-f983a6ee4c2a size=1B mime=video/mp4
+2026-05-02T23:50:32.451+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : video upload succeeded id=d69e1f0d-33da-44c9-be06-8012a99a51ba filename=d29c0ede-ae0a-4333-8967-9970598607da.mp4 advertiserId=e8534fde-0577-40e9-80ac-f983a6ee4c2a
+2026-05-02T23:50:32.451+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=08c29086-5edc-4050-8874-e6f1b94353b9 path=/api/videos
+2026-05-02T23:50:32.452+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : POST /api/videos advertiserId=08c29086-5edc-4050-8874-e6f1b94353b9 originalName='theirs.mp4' contentType=video/mp4 size=1
+2026-05-02T23:50:32.452+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.s.LocalVideoStorageService     : video stored filename=1d6a2cf4-1d64-4301-b102-ebf3e40da377.mp4 size=1B mime=video/mp4 path=/var/folders/3g/13jv45350qdfq343d5rlklx40000gn/T/junit6403674827540448230/1d6a2cf4-1d64-4301-b102-ebf3e40da377.mp4
+2026-05-02T23:50:32.452+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.video.upload.VideoUploadService  : video uploaded id=0bb55b81-8886-4397-8f09-eed7166aefcb filename=1d6a2cf4-1d64-4301-b102-ebf3e40da377.mp4 advertiserId=08c29086-5edc-4050-8874-e6f1b94353b9 size=1B mime=video/mp4
+2026-05-02T23:50:32.452+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : video upload succeeded id=0bb55b81-8886-4397-8f09-eed7166aefcb filename=1d6a2cf4-1d64-4301-b102-ebf3e40da377.mp4 advertiserId=08c29086-5edc-4050-8874-e6f1b94353b9
+2026-05-02T23:50:32.453+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=08c29086-5edc-4050-8874-e6f1b94353b9 path=/api/videos
+2026-05-02T23:50:32.454+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : GET /api/videos advertiserId=08c29086-5edc-4050-8874-e6f1b94353b9 returning 1 video(s)
+2026-05-02T23:50:32.576+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=1f50cf29-eba4-405b-ba1f-9cc36777c00a path=/api/videos
+2026-05-02T23:50:32.576+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : POST /api/videos advertiserId=1f50cf29-eba4-405b-ba1f-9cc36777c00a originalName='mine.mp4' contentType=video/mp4 size=10
+2026-05-02T23:50:32.577+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.s.LocalVideoStorageService     : video stored filename=83a16c77-e9f1-432b-af6e-dc45aba0566e.mp4 size=10B mime=video/mp4 path=/var/folders/3g/13jv45350qdfq343d5rlklx40000gn/T/junit6403674827540448230/83a16c77-e9f1-432b-af6e-dc45aba0566e.mp4
+2026-05-02T23:50:32.577+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.video.upload.VideoUploadService  : video uploaded id=42de239e-1e77-4427-b666-e455e8143f21 filename=83a16c77-e9f1-432b-af6e-dc45aba0566e.mp4 advertiserId=1f50cf29-eba4-405b-ba1f-9cc36777c00a size=10B mime=video/mp4
+2026-05-02T23:50:32.577+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : video upload succeeded id=42de239e-1e77-4427-b666-e455e8143f21 filename=83a16c77-e9f1-432b-af6e-dc45aba0566e.mp4 advertiserId=1f50cf29-eba4-405b-ba1f-9cc36777c00a
+2026-05-02T23:50:32.578+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=1f50cf29-eba4-405b-ba1f-9cc36777c00a path=/api/videos
+2026-05-02T23:50:32.579+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : GET /api/videos advertiserId=1f50cf29-eba4-405b-ba1f-9cc36777c00a returning 1 video(s)
+2026-05-02T23:50:32.642+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=fb0ea254-97cf-450f-8014-32f0014aaa9a path=/api/videos
+2026-05-02T23:50:32.642+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : POST /api/videos advertiserId=fb0ea254-97cf-450f-8014-32f0014aaa9a originalName='older.mp4' contentType=video/mp4 size=11
+2026-05-02T23:50:32.643+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.s.LocalVideoStorageService     : video stored filename=d872374f-a1c1-479c-b204-fefe8c3e7c87.mp4 size=11B mime=video/mp4 path=/var/folders/3g/13jv45350qdfq343d5rlklx40000gn/T/junit6403674827540448230/d872374f-a1c1-479c-b204-fefe8c3e7c87.mp4
+2026-05-02T23:50:32.643+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.video.upload.VideoUploadService  : video uploaded id=496c2715-3c31-4a94-8efd-9e9d76135d4f filename=d872374f-a1c1-479c-b204-fefe8c3e7c87.mp4 advertiserId=fb0ea254-97cf-450f-8014-32f0014aaa9a size=11B mime=video/mp4
+2026-05-02T23:50:32.643+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : video upload succeeded id=496c2715-3c31-4a94-8efd-9e9d76135d4f filename=d872374f-a1c1-479c-b204-fefe8c3e7c87.mp4 advertiserId=fb0ea254-97cf-450f-8014-32f0014aaa9a
+2026-05-02T23:50:32.650+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=fb0ea254-97cf-450f-8014-32f0014aaa9a path=/api/videos
+2026-05-02T23:50:32.651+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : POST /api/videos advertiserId=fb0ea254-97cf-450f-8014-32f0014aaa9a originalName='newer.mp4' contentType=video/mp4 size=19
+2026-05-02T23:50:32.651+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.s.LocalVideoStorageService     : video stored filename=339bb7de-5f8b-461b-87e7-4b9d92c9c1c7.mp4 size=19B mime=video/mp4 path=/var/folders/3g/13jv45350qdfq343d5rlklx40000gn/T/junit6403674827540448230/339bb7de-5f8b-461b-87e7-4b9d92c9c1c7.mp4
+2026-05-02T23:50:32.651+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.video.upload.VideoUploadService  : video uploaded id=2d682c01-da0f-407c-b3f5-01d59475862d filename=339bb7de-5f8b-461b-87e7-4b9d92c9c1c7.mp4 advertiserId=fb0ea254-97cf-450f-8014-32f0014aaa9a size=19B mime=video/mp4
+2026-05-02T23:50:32.651+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : video upload succeeded id=2d682c01-da0f-407c-b3f5-01d59475862d filename=339bb7de-5f8b-461b-87e7-4b9d92c9c1c7.mp4 advertiserId=fb0ea254-97cf-450f-8014-32f0014aaa9a
+2026-05-02T23:50:32.652+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=fb0ea254-97cf-450f-8014-32f0014aaa9a path=/api/videos
+2026-05-02T23:50:32.653+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.domain.video.VideoController       : GET /api/videos advertiserId=fb0ea254-97cf-450f-8014-32f0014aaa9a returning 2 video(s)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

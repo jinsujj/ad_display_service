@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - LocalVideoStorageServiceTest</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<h1>LocalVideoStorageServiceTest</h1>
+<div class="breadcrumbs">
+<a href="../index.html">all</a> &gt; 
+<a href="../packages/me.owldev.adsignage.domain.video.storage.html">me.owldev.adsignage.domain.video.storage</a> &gt; LocalVideoStorageServiceTest</div>
+<div id="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox" id="tests">
+<div class="counter">10</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="failures">
+<div class="counter">0</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="ignored">
+<div class="counter">0</div>
+<p>ignored</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="duration">
+<div class="counter">0.007s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="tabs">
+<ul class="tabLinks">
+<li>
+<a href="#tab0">Tests</a>
+</li>
+<li>
+<a href="#tab1">Standard output</a>
+</li>
+</ul>
+<div id="tab0" class="tab">
+<h2>Tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Duration</th>
+<th>Result</th>
+</tr>
+</thead>
+<tr>
+<td class="success">accepts mixed-case extensions()</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">creates the storage directory if it does not yet exist()</td>
+<td class="success">0.002s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">each upload of the same original filename gets a unique stored filename()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">falls back to video mp4 when contentType is missing()</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">path traversal in the original filename is reduced to the leaf name()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">rejects empty uploads()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">rejects file with no extension()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">rejects unsupported extensions()</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">rejects upload with no original filename()</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">stores uploaded mp4 under the configured root with a UUID filename()</td>
+<td class="success">0.002s</td>
+<td class="success">passed</td>
+</tr>
+</table>
+</div>
+<div id="tab1" class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre>2026-05-02T23:50:32.664+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.s.LocalVideoStorageService     : video stored filename=8c446e81-c94f-4988-aa5e-5d7db0273cf2.mp4 size=1B mime=video/mp4 path=/var/folders/3g/13jv45350qdfq343d5rlklx40000gn/T/junit14417332425200792616/level1/level2/8c446e81-c94f-4988-aa5e-5d7db0273cf2.mp4
+2026-05-02T23:50:32.666+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.s.LocalVideoStorageService     : video stored filename=40ea1416-2920-4a01-bc8b-f686218b73b6.mp4 size=1B mime=video/mp4 path=/var/folders/3g/13jv45350qdfq343d5rlklx40000gn/T/junit10133534591091853570/40ea1416-2920-4a01-bc8b-f686218b73b6.mp4
+2026-05-02T23:50:32.667+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.s.LocalVideoStorageService     : video stored filename=84112fe3-ff81-41c8-9059-bb28808c972d.mp4 size=14B mime=video/mp4 path=/var/folders/3g/13jv45350qdfq343d5rlklx40000gn/T/junit10680219083673902490/84112fe3-ff81-41c8-9059-bb28808c972d.mp4
+2026-05-02T23:50:32.669+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.s.LocalVideoStorageService     : video stored filename=3942d487-c11e-4459-9cd0-2682750427af.mp4 size=1B mime=video/mp4 path=/var/folders/3g/13jv45350qdfq343d5rlklx40000gn/T/junit16434627722503061903/3942d487-c11e-4459-9cd0-2682750427af.mp4
+2026-05-02T23:50:32.669+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.s.LocalVideoStorageService     : video stored filename=400ed391-5911-4793-a98a-d0b8841e5a7c.mp4 size=1B mime=video/mp4 path=/var/folders/3g/13jv45350qdfq343d5rlklx40000gn/T/junit11416368575240673820/400ed391-5911-4793-a98a-d0b8841e5a7c.mp4
+2026-05-02T23:50:32.669+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.s.LocalVideoStorageService     : video stored filename=ac50bca6-7a16-49fd-a16e-f60742199e89.mp4 size=1B mime=video/mp4 path=/var/folders/3g/13jv45350qdfq343d5rlklx40000gn/T/junit11416368575240673820/ac50bca6-7a16-49fd-a16e-f60742199e89.mp4
+2026-05-02T23:50:32.670+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.d.v.s.LocalVideoStorageService     : video stored filename=0618c522-fa77-42c2-a082-096049cfd947.mp4 size=1B mime=video/mp4 path=/var/folders/3g/13jv45350qdfq343d5rlklx40000gn/T/junit9617418561452577650/0618c522-fa77-42c2-a082-096049cfd947.mp4
+</pre>
+</span>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="http://www.gradle.org">Gradle 8.10</a> at 2026. 5. 2. 오후 11:50:34</p>
+</div>
+</div>
+</body>
+</html>

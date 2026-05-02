@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - AuthLoginIntegrationTest</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<h1>AuthLoginIntegrationTest</h1>
+<div class="breadcrumbs">
+<a href="../index.html">all</a> &gt; 
+<a href="../packages/me.owldev.adsignage.auth.html">me.owldev.adsignage.auth</a> &gt; AuthLoginIntegrationTest</div>
+<div id="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox" id="tests">
+<div class="counter">5</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="failures">
+<div class="counter">0</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="ignored">
+<div class="counter">0</div>
+<p>ignored</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="duration">
+<div class="counter">0.796s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="tabs">
+<ul class="tabLinks">
+<li>
+<a href="#tab0">Tests</a>
+</li>
+<li>
+<a href="#tab1">Standard output</a>
+</li>
+</ul>
+<div id="tab0" class="tab">
+<h2>Tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Duration</th>
+<th>Result</th>
+</tr>
+</thead>
+<tr>
+<td class="success">login is case-insensitive on the email()</td>
+<td class="success">0.200s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">login rejects malformed payload with 400()</td>
+<td class="success">0.334s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">login returns 200 with signed JWT for valid credentials()</td>
+<td class="success">0.132s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">login returns 401 when email is not registered()</td>
+<td class="success">0.004s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">login returns 401 when password is wrong()</td>
+<td class="success">0.126s</td>
+<td class="success">passed</td>
+</tr>
+</table>
+</div>
+<div id="tab1" class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre>23:50:25.719 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [me.owldev.adsignage.auth.AuthLoginIntegrationTest]: AuthLoginIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+23:50:25.763 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration me.owldev.adsignage.AdsignageApplication for test class me.owldev.adsignage.auth.AuthLoginIntegrationTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.4)
+
+2026-05-02T23:50:25.894+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.auth.AuthLoginIntegrationTest      : Starting AuthLoginIntegrationTest using Java 17.0.19 with PID 57102 (started by jinsujang in /Users/jinsujang/Desktop/dev/hackathon/backend)
+2026-05-02T23:50:25.894+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.AuthLoginIntegrationTest      : Running with Spring Boot v3.3.4, Spring v6.1.13
+2026-05-02T23:50:25.894+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.auth.AuthLoginIntegrationTest      : No active profile set, falling back to 1 default profile: &quot;default&quot;
+2026-05-02T23:50:26.196+09:00  INFO 57102 --- [adsignage] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-05-02T23:50:26.222+09:00  INFO 57102 --- [adsignage] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 24 ms. Found 5 JPA repository interfaces.
+2026-05-02T23:50:26.389+09:00  INFO 57102 --- [adsignage] [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-05-02T23:50:26.408+09:00  INFO 57102 --- [adsignage] [    Test worker] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
+2026-05-02T23:50:26.418+09:00  INFO 57102 --- [adsignage] [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-05-02T23:50:26.500+09:00  INFO 57102 --- [adsignage] [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-05-02T23:50:26.508+09:00  INFO 57102 --- [adsignage] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-05-02T23:50:26.564+09:00  INFO 57102 --- [adsignage] [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:auth-login-test user=SA
+2026-05-02T23:50:26.565+09:00  INFO 57102 --- [adsignage] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-05-02T23:50:26.571+09:00  WARN 57102 --- [adsignage] [    Test worker] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-05-02T23:50:26.798+09:00  INFO 57102 --- [adsignage] [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-05-02T23:50:26.811+09:00  INFO 57102 --- [adsignage] [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-05-02T23:50:27.058+09:00  INFO 57102 --- [adsignage] [    Test worker] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-05-02T23:50:27.281+09:00  WARN 57102 --- [adsignage] [    Test worker] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: 5aa8ddc6-24b5-4e06-b17b-3d545548894b
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-05-02T23:50:27.286+09:00  INFO 57102 --- [adsignage] [    Test worker] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-05-02T23:50:27.493+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Filter 'jwtAuthenticationFilter' configured for use
+2026-05-02T23:50:27.493+09:00  INFO 57102 --- [adsignage] [    Test worker] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-05-02T23:50:27.493+09:00  INFO 57102 --- [adsignage] [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-05-02T23:50:27.493+09:00  INFO 57102 --- [adsignage] [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-05-02T23:50:27.506+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.auth.AuthLoginIntegrationTest      : Started AuthLoginIntegrationTest in 1.701 seconds (process running for 2.146)
+2026-05-02T23:50:27.940+09:00  INFO 57102 --- [adsignage] [    Test worker] me.owldev.adsignage.auth.AuthService     : advertiser registered id=a9cb6bd5-a348-402f-bbcc-a1075046d0d9 email=mixed@example.com
+2026-05-02T23:50:28.044+09:00  INFO 57102 --- [adsignage] [    Test worker] me.owldev.adsignage.auth.AuthService     : login success advertiserId=a9cb6bd5-a348-402f-bbcc-a1075046d0d9 email=mixed@example.com
+2026-05-02T23:50:28.112+09:00  INFO 57102 --- [adsignage] [    Test worker] me.owldev.adsignage.auth.AuthService     : advertiser registered id=18c8e2fd-19d0-451d-8efd-48aab7c29392 email=owner@example.com
+2026-05-02T23:50:28.173+09:00  INFO 57102 --- [adsignage] [    Test worker] me.owldev.adsignage.auth.AuthService     : login rejected: bad password for (owner@example.com)
+2026-05-02T23:50:28.237+09:00  INFO 57102 --- [adsignage] [    Test worker] me.owldev.adsignage.auth.AuthService     : advertiser registered id=71659bb0-7979-45ab-8a00-48bac83d6af5 email=owner@example.com
+2026-05-02T23:50:28.299+09:00  INFO 57102 --- [adsignage] [    Test worker] me.owldev.adsignage.auth.AuthService     : login success advertiserId=71659bb0-7979-45ab-8a00-48bac83d6af5 email=owner@example.com
+2026-05-02T23:50:28.312+09:00  INFO 57102 --- [adsignage] [    Test worker] me.owldev.adsignage.auth.AuthService     : login rejected: unknown email (ghost@example.com)
+</pre>
+</span>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="http://www.gradle.org">Gradle 8.10</a> at 2026. 5. 2. 오후 11:50:34</p>
+</div>
+</div>
+</body>
+</html>

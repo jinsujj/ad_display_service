@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="me.owldev.adsignage.domain.ad.AdMigrationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-05-02T14:50:28" hostname="Jinsuui-MacBookAir.local" time="0.111">
+  <properties/>
+  <testcase name="V40 enforces end_time greater than start_time via CHECK constraint()" classname="me.owldev.adsignage.domain.ad.AdMigrationTest" time="0.075"/>
+  <testcase name="V40 creates ads table with the columns the entity expects()" classname="me.owldev.adsignage.domain.ad.AdMigrationTest" time="0.021"/>
+  <testcase name="V40 enforces positive daily_play_count via CHECK constraint()" classname="me.owldev.adsignage.domain.ad.AdMigrationTest" time="0.015"/>
+  <system-out><![CDATA[2026-05-02T23:50:28.830+09:00  INFO 57102 --- [adsignage] [    Test worker] org.flywaydb.core.FlywayExecutor         : Database: jdbc:h2:mem:ads-ck-window-9f03c7c8-20f8-4b08-a010-073c9014a163 (H2 2.2)
+2026-05-02T23:50:28.832+09:00  WARN 57102 --- [adsignage] [    Test worker] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-05-02T23:50:28.838+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-05-02T23:50:28.839+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbValidate     : Successfully validated 6 migrations (execution time 00:00.004s)
+2026-05-02T23:50:28.841+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-05-02T23:50:28.849+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Current version of schema "PUBLIC": << Empty Schema >>
+2026-05-02T23:50:28.851+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "1 - create advertisers"
+2026-05-02T23:50:28.856+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "30 - create videos"
+2026-05-02T23:50:28.858+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "31 - add advertiser id to videos"
+2026-05-02T23:50:28.864+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "40 - create ads"
+2026-05-02T23:50:28.867+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Successfully applied 4 migrations to schema "PUBLIC", now at version v40 (execution time 00:00.004s)
+2026-05-02T23:50:28.887+09:00  INFO 57102 --- [adsignage] [    Test worker] org.flywaydb.core.FlywayExecutor         : Database: jdbc:h2:mem:ads-af8a0c86-e323-4284-ba52-08072ab84dc4 (H2 2.2)
+2026-05-02T23:50:28.888+09:00  WARN 57102 --- [adsignage] [    Test worker] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-05-02T23:50:28.889+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-05-02T23:50:28.889+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbValidate     : Successfully validated 6 migrations (execution time 00:00.000s)
+2026-05-02T23:50:28.889+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-05-02T23:50:28.891+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Current version of schema "PUBLIC": << Empty Schema >>
+2026-05-02T23:50:28.891+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "1 - create advertisers"
+2026-05-02T23:50:28.893+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "30 - create videos"
+2026-05-02T23:50:28.895+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "31 - add advertiser id to videos"
+2026-05-02T23:50:28.899+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "40 - create ads"
+2026-05-02T23:50:28.901+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Successfully applied 4 migrations to schema "PUBLIC", now at version v40 (execution time 00:00.003s)
+2026-05-02T23:50:28.907+09:00  INFO 57102 --- [adsignage] [    Test worker] org.flywaydb.core.FlywayExecutor         : Database: jdbc:h2:mem:ads-ck-count-180bb145-67fb-43b1-aab5-a11846e42ca1 (H2 2.2)
+2026-05-02T23:50:28.908+09:00  WARN 57102 --- [adsignage] [    Test worker] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-05-02T23:50:28.909+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-05-02T23:50:28.909+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbValidate     : Successfully validated 6 migrations (execution time 00:00.000s)
+2026-05-02T23:50:28.909+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-05-02T23:50:28.911+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Current version of schema "PUBLIC": << Empty Schema >>
+2026-05-02T23:50:28.911+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "1 - create advertisers"
+2026-05-02T23:50:28.913+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "30 - create videos"
+2026-05-02T23:50:28.914+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "31 - add advertiser id to videos"
+2026-05-02T23:50:28.917+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "40 - create ads"
+2026-05-02T23:50:28.919+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Successfully applied 4 migrations to schema "PUBLIC", now at version v40 (execution time 00:00.002s)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

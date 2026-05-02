@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="me.owldev.adsignage.sse.DeviceMappingChangedSseListenerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-05-02T14:50:33" hostname="Jinsuui-MacBookAir.local" time="0.001">
+  <properties/>
+  <testcase name="listener broadcasts MAPPING_CHANGED to every emitter for the affected device()" classname="me.owldev.adsignage.sse.DeviceMappingChangedSseListenerTest" time="0.001"/>
+  <testcase name="listener does not error when no emitters are registered()" classname="me.owldev.adsignage.sse.DeviceMappingChangedSseListenerTest" time="0.0"/>
+  <testcase name="listener does not deliver to other devices()" classname="me.owldev.adsignage.sse.DeviceMappingChangedSseListenerTest" time="0.0"/>
+  <system-out><![CDATA[2026-05-02T23:50:33.395+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE register: device=device-3879368a-9964-43e6-9920-f9a167cdca2c totalEmittersForDevice=1
+2026-05-02T23:50:33.395+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE register: device=device-3879368a-9964-43e6-9920-f9a167cdca2c totalEmittersForDevice=2
+2026-05-02T23:50:33.395+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE broadcast: device=device-3879368a-9964-43e6-9920-f9a167cdca2c delivered=2/2 attempted
+2026-05-02T23:50:33.395+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.s.DeviceMappingChangedSseListener  : MAPPING_CHANGED → device=device-3879368a-9964-43e6-9920-f9a167cdca2c newRestaurant=restaurant-X delivered=2
+2026-05-02T23:50:33.395+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.s.DeviceMappingChangedSseListener  : MAPPING_CHANGED → device=ghost-device newRestaurant=restaurant-A delivered=0
+2026-05-02T23:50:33.395+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE register: device=device-target totalEmittersForDevice=1
+2026-05-02T23:50:33.395+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE register: device=device-other totalEmittersForDevice=1
+2026-05-02T23:50:33.395+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE broadcast: device=device-target delivered=1/1 attempted
+2026-05-02T23:50:33.395+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.s.DeviceMappingChangedSseListener  : MAPPING_CHANGED → device=device-target newRestaurant=restaurant-Z delivered=1
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

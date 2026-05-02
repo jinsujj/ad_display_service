@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="me.owldev.adsignage.sse.PlaylistUpdatedSseListenerTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-05-02T14:50:33" hostname="Jinsuui-MacBookAir.local" time="0.043">
+  <properties/>
+  <testcase name="onPlaylistUpdated does not deliver to devices without an active assignment()" classname="me.owldev.adsignage.sse.PlaylistUpdatedSseListenerTest" time="0.039"/>
+  <testcase name="onPlaylistUpdated swallows repository failures so the post-commit phase never re-throws()" classname="me.owldev.adsignage.sse.PlaylistUpdatedSseListenerTest" time="0.001"/>
+  <testcase name="onPlaylistUpdated broadcasts PLAYLIST_UPDATE to every actively assigned device with a live emitter()" classname="me.owldev.adsignage.sse.PlaylistUpdatedSseListenerTest" time="0.0"/>
+  <testcase name="onPlaylistUpdated keeps fanning out when one device's emitter is broken()" classname="me.owldev.adsignage.sse.PlaylistUpdatedSseListenerTest" time="0.0"/>
+  <testcase name="onPlaylistUpdated is a benign no-op when no devices are actively assigned()" classname="me.owldev.adsignage.sse.PlaylistUpdatedSseListenerTest" time="0.001"/>
+  <system-out><![CDATA[2026-05-02T23:50:33.443+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE register: device=device-mapped totalEmittersForDevice=1
+2026-05-02T23:50:33.443+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE register: device=device-unmapped totalEmittersForDevice=1
+2026-05-02T23:50:33.443+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE broadcast: device=device-mapped delivered=1/1 attempted
+2026-05-02T23:50:33.443+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.sse.PlaylistEventPublisher         : PLAYLIST_UPDATE → device=device-mapped emitters=1 delivered=1
+2026-05-02T23:50:33.443+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.sse.PlaylistUpdatedSseListener     : PLAYLIST_UPDATE fan-out adId=ad-1 advertiserId=advertiser-1 activeDevices=1 devicesNotified=1 totalEmittersDelivered=1
+2026-05-02T23:50:33.445+09:00  WARN 57102 --- [adsignage] [    Test worker] m.o.a.sse.PlaylistUpdatedSseListener     : PLAYLIST_UPDATE listener: failed to load active assignments for adId=ad-1: simulated DB blip
+2026-05-02T23:50:33.445+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE register: device=device-a-925ca509-e5f4-4633-a896-fcd73d6374de totalEmittersForDevice=1
+2026-05-02T23:50:33.445+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE register: device=device-b-9bc16906-980f-4237-b6ca-bee0862b488d totalEmittersForDevice=1
+2026-05-02T23:50:33.445+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE broadcast: device=device-a-925ca509-e5f4-4633-a896-fcd73d6374de delivered=1/1 attempted
+2026-05-02T23:50:33.445+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.sse.PlaylistEventPublisher         : PLAYLIST_UPDATE → device=device-a-925ca509-e5f4-4633-a896-fcd73d6374de emitters=1 delivered=1
+2026-05-02T23:50:33.445+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE broadcast: device=device-b-9bc16906-980f-4237-b6ca-bee0862b488d delivered=1/1 attempted
+2026-05-02T23:50:33.445+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.sse.PlaylistEventPublisher         : PLAYLIST_UPDATE → device=device-b-9bc16906-980f-4237-b6ca-bee0862b488d emitters=1 delivered=1
+2026-05-02T23:50:33.445+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.sse.PlaylistUpdatedSseListener     : PLAYLIST_UPDATE fan-out adId=ad-1 advertiserId=advertiser-1 activeDevices=2 devicesNotified=2 totalEmittersDelivered=2
+2026-05-02T23:50:33.446+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE register: device=device-healthy totalEmittersForDevice=1
+2026-05-02T23:50:33.446+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE register: device=device-broken totalEmittersForDevice=1
+2026-05-02T23:50:33.446+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE broadcast: device=device-healthy delivered=1/1 attempted
+2026-05-02T23:50:33.446+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.sse.PlaylistEventPublisher         : PLAYLIST_UPDATE → device=device-healthy emitters=1 delivered=1
+2026-05-02T23:50:33.446+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE send failed (IO) for device=device-broken: client gone
+2026-05-02T23:50:33.446+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.adsignage.sse.SseEmitterRegistry     : SSE broadcast: device=device-broken delivered=0/0 attempted
+2026-05-02T23:50:33.446+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.sse.PlaylistEventPublisher         : PLAYLIST_UPDATE → device=device-broken emitters=1 delivered=0
+2026-05-02T23:50:33.446+09:00  INFO 57102 --- [adsignage] [    Test worker] m.o.a.sse.PlaylistUpdatedSseListener     : PLAYLIST_UPDATE fan-out adId=ad-1 advertiserId=advertiser-1 activeDevices=2 devicesNotified=1 totalEmittersDelivered=1
+2026-05-02T23:50:33.447+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.sse.PlaylistUpdatedSseListener     : PLAYLIST_UPDATE listener: no active device assignments — skipping broadcast (adId=ad-1)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

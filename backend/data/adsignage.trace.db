@@ -1,0 +1,15 @@
+2026-05-02 16:26:39.727840+09:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "DEVICES" not found; SQL statement:
+-- ===========================================================================
+-- V90__create_device_assignments.sql
+--
+-- Maps a physical signage device to a restaurant at a point in time.
+-- The (active = TRUE) row for a given device_id represents the current
+-- assignment; deactivated rows remain as audit history of past mappings.
+--
+-- Dependencies:
+--   - devices(device_id)         (created by an earlier migration, e.g. V10)
+--   - restaurants(restaurant_id) (created by an earlier migration, e.g. V20)
+--
+-- This file is intentionally numbered V90 so Flyway runs it after the parent
+-- tables exist; renumber if the [42102-224]

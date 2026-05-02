@@ -1,0 +1,52 @@
+# DNS evidence — captured 2026-05-02T07:27:16Z from dev machine
+# Resolver: 210.220.163.82
+
+----- dig stream.owl-dev.me A -----
+
+; <<>> DiG 9.10.6 <<>> stream.owl-dev.me A +noall +answer +stats
+;; global options: +cmd
+stream.owl-dev.me.	600	IN	A	110.8.21.243
+;; Query time: 43 msec
+;; SERVER: 210.220.163.82#53(210.220.163.82)
+;; WHEN: Sat May 02 16:27:16 KST 2026
+;; MSG SIZE  rcvd: 62
+
+
+----- dig stream.owl-dev.me AAAA -----
+
+; <<>> DiG 9.10.6 <<>> stream.owl-dev.me AAAA +noall +answer +stats
+;; global options: +cmd
+;; Query time: 46 msec
+;; SERVER: 210.220.163.82#53(210.220.163.82)
+;; WHEN: Sat May 02 16:27:17 KST 2026
+;; MSG SIZE  rcvd: 113
+
+
+----- dig owl-dev.me NS -----
+
+; <<>> DiG 9.10.6 <<>> owl-dev.me NS +noall +answer
+;; global options: +cmd
+owl-dev.me.		3600	IN	NS	ns1.gabia.co.kr.
+owl-dev.me.		3600	IN	NS	ns.gabia.net.
+owl-dev.me.		3600	IN	NS	ns.gabia.co.kr.
+
+----- dig owl-dev.me SOA -----
+
+; <<>> DiG 9.10.6 <<>> owl-dev.me SOA +noall +answer
+;; global options: +cmd
+owl-dev.me.		86400	IN	SOA	ns.gabia.co.kr. hosting.gabia.com. 2022042919 1800 600 1209600 86400
+
+----- HTTP 80 -> 301 redirect smoke test -----
+HTTP/1.1 301 Moved Permanently
+Server: nginx/1.24.0 (Ubuntu)
+Date: Sat, 02 May 2026 07:27:17 GMT
+Content-Type: text/html
+Content-Length: 178
+
+----- TLS cert currently served on :443 (SNI=stream.owl-dev.me) -----
+subject=CN=ai.owl-dev.me
+issuer=C=US, O=Let's Encrypt, CN=E7
+notBefore=Apr 25 03:26:55 2026 GMT
+notAfter=Jul 24 03:26:54 2026 GMT
+X509v3 Subject Alternative Name: 
+    DNS:ai.owl-dev.me

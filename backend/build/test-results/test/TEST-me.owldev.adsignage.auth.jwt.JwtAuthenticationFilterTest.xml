@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="me.owldev.adsignage.auth.jwt.JwtAuthenticationFilterTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-05-02T14:50:28" hostname="Jinsuui-MacBookAir.local" time="0.003">
+  <properties/>
+  <testcase name="token signed with a different secret is rejected()" classname="me.owldev.adsignage.auth.jwt.JwtAuthenticationFilterTest" time="0.001"/>
+  <testcase name="malformed token is rejected and SecurityContext stays empty()" classname="me.owldev.adsignage.auth.jwt.JwtAuthenticationFilterTest" time="0.0"/>
+  <testcase name="missing Authorization header leaves SecurityContext empty()" classname="me.owldev.adsignage.auth.jwt.JwtAuthenticationFilterTest" time="0.0"/>
+  <testcase name="existing authentication is not overwritten()" classname="me.owldev.adsignage.auth.jwt.JwtAuthenticationFilterTest" time="0.001"/>
+  <testcase name="valid Bearer token populates SecurityContext with AdvertiserPrincipal and ROLE_ADVERTISER()" classname="me.owldev.adsignage.auth.jwt.JwtAuthenticationFilterTest" time="0.001"/>
+  <testcase name="Bearer prefix with empty token is treated as no token()" classname="me.owldev.adsignage.auth.jwt.JwtAuthenticationFilterTest" time="0.0"/>
+  <testcase name="non-Bearer scheme is ignored and SecurityContext stays empty()" classname="me.owldev.adsignage.auth.jwt.JwtAuthenticationFilterTest" time="0.0"/>
+  <system-out><![CDATA[2026-05-02T23:50:28.806+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Rejected JWT on path /api/protected: JWT signature does not match locally computed signature. JWT validity cannot be asserted and should not be trusted.
+2026-05-02T23:50:28.807+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Rejected JWT on path /api/protected: Invalid compact JWT string: Compact JWSs must contain exactly 2 period characters, and compact JWEs must contain exactly 4.  Found: 0
+2026-05-02T23:50:28.808+09:00 DEBUG 57102 --- [adsignage] [    Test worker] m.o.a.auth.jwt.JwtAuthenticationFilter   : Authenticated request advertiserId=adv-42 path=/api/protected
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

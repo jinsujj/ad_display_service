@@ -1,0 +1,81 @@
+# =============================================================================
+# adsignage-backend.service
+#
+# systemd unit for the Spring Boot 3 (Kotlin) ad-signage backend on the
+# Ubuntu host (owl-SER8 / 192.168.0.24). Listens on 127.0.0.1:8080 — the
+# nginx reverse proxy at deploy/nginx/stream.owl-dev.me.conf fronts it on
+# :80/:443 and exposes /api/*, /api/sse/*, /api/videos/*, /actuator/*.
+#
+# Layout on the host (created by deploy/scripts/install-backend.sh):
+#   /opt/adsignage/backend/adsignage-backend.jar      <- fat jar (executable)
+#   /var/lib/adsignage/                               <- WorkingDirectory
+#       data/                                         <- H2 file DB
+#       videos/                                       <- uploaded MP4s
+#   /etc/adsignage/backend.env                        <- secrets (JWT_SECRET, …)
+#
+# Install:
+#   sudo bash deploy/scripts/install-backend.sh
+# Manage:
+#   sudo systemctl status adsignage-backend
+#   sudo journalctl -u adsignage-backend -f
+# =============================================================================
+[Unit]
+Description=AdSignage backend (Spring Boot 3, Kotlin)
+Documentation=https://github.com/owl-dev/hackathon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=adsignage
+Group=adsignage
+
+# All filesystem state (H2 file DB, uploaded videos) lives under /var/lib/adsignage.
+# Spring Boot's application.yml uses `./data/adsignage` for the H2 URL, so the
+# working directory anchors that to /var/lib/adsignage/data.
+WorkingDirectory=/var/lib/adsignage
+
+# Secrets / per-host overrides come from this env file (created by the
+# installer with mode 0640 root:adsignage). EnvironmentFile= is optional with
+# the leading '-' so a missing file does not block startup in dev.
+EnvironmentFile=-/etc/adsignage/backend.env
+
+# Server-side defaults. application.yml already references VIDEO_STORAGE_PATH
+# and JWT_SECRET via ${...:default} so these only need to be set when the host
+# wants to override them (the env file above is the typical source).
+Environment=JAVA_TOOL_OPTIONS=-XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom
+Environment=SPRING_PROFILES_ACTIVE=prod
+Environment=VIDEO_STORAGE_PATH=/var/lib/adsignage/videos
+Environment=SERVER_ADDRESS=127.0.0.1
+Environment=SERVER_PORT=8080
+
+ExecStart=/usr/bin/java -jar /opt/adsignage/backend/adsignage-backend.jar
+SuccessExitStatus=143
+
+# Resilience
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+# Logging -> journald (view with `journalctl -u adsignage-backend -f`)
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=adsignage-backend
+
+# Hardening (PoC-grade; relaxed enough that H2 + uploaded videos still work).
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/lib/adsignage
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictRealtime=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

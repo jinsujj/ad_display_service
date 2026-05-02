@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+        AC 11: Theme used by MainActivity so the launch window itself is
+        fullscreen + black. Without this, a cold-start of the APK paints the
+        default light status / nav bars for one frame before MainActivity's
+        runtime call to `applyImmersiveMode()` hides them, which looks like
+        a visual glitch on a 24/7 fridge-mounted display.
+
+        - parent Theme.AppCompat.NoActionBar drops the action bar
+        - windowFullscreen + windowNoTitle remove status / title bars
+        - windowBackground=@android:color/black avoids any white flash
+          between the window being created and the WebView's first paint
+        - windowContentTransitions disabled so we never get an animated
+          system-bar slide-in on resume
+    -->
+    <style name="Theme.AdSignage" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowContentTransitions">false</item>
+        <item name="android:windowActivityTransitions">false</item>
+        <item name="android:colorBackground">@android:color/black</item>
+        <item name="android:statusBarColor">@android:color/black</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
+    </style>
+
+</resources>

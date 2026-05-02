@@ -1,0 +1,644 @@
+:root {
+  --bg: #0b1020;
+  --bg-elev: #131a32;
+  --fg: #e6ecff;
+  --fg-muted: #9aa5c8;
+  --accent: #5b8cff;
+  --accent-strong: #2f6bff;
+  --border: #1f2a4a;
+  --danger: #ff6b6b;
+  --warn: #ffb86b;
+  --ok: #4ade80;
+  --radius: 10px;
+  --max-w: 1080px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+    Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 24px;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--fg);
+}
+
+.primary-nav {
+  display: flex;
+  gap: 16px;
+}
+
+.primary-nav a {
+  color: var(--fg-muted);
+  font-weight: 500;
+}
+
+.primary-nav a:hover {
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.app-main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.page-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.page-header .subtitle {
+  color: var(--fg-muted);
+  font-size: 13px;
+}
+
+.muted {
+  color: var(--fg-muted);
+}
+
+.section-heading {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  margin: 16px 0 8px;
+}
+
+/* ---------- Tables ---------- */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.data-table th {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--fg-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table td.id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--fg-muted);
+}
+
+/* ---------- Badges / pills ---------- */
+
+.pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.pill-ok {
+  color: #062;
+  background: #b8f5cf;
+}
+
+.pill-warn {
+  color: #5a3c00;
+  background: #ffe2b3;
+}
+
+.pill-muted {
+  color: var(--fg-muted);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ---------- Notices / errors ---------- */
+
+.notice {
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  margin-bottom: 16px;
+}
+
+.notice-error {
+  border-color: rgba(255, 107, 107, 0.5);
+  background: rgba(255, 107, 107, 0.08);
+  color: var(--danger);
+}
+
+.empty-state {
+  padding: 32px;
+  text-align: center;
+  color: var(--fg-muted);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ---------- Restaurant assignment selector (AC 40202, Sub-AC 2) ---------- */
+
+.assignment-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-width: 520px;
+}
+
+.assignment-selector__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.assignment-selector__current {
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.assignment-selector__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.assignment-selector__select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.assignment-selector__select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(91, 140, 255, 0.25);
+}
+
+.assignment-selector__select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ---------- Video upload form (AC 40104, Sub-AC 3) ---------- */
+
+.upload-form {
+  max-width: 640px;
+}
+
+.upload-form__fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+  padding: 20px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* fieldset[disabled] dims via opacity so the operator can still see what's
+     being uploaded but can't tweak the form mid-flight. */
+}
+
+.upload-form__fieldset[disabled] {
+  opacity: 0.85;
+}
+
+.upload-form__legend {
+  padding: 0 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.upload-form__label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.upload-form__hint {
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.upload-form__file {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.upload-form__file::file-selector-button {
+  margin-right: 12px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elev);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.upload-form__file::file-selector-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.upload-form__preview {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  font-size: 13px;
+}
+
+.upload-form__preview-meta {
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.upload-form__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.upload-form__bar {
+  width: 100%;
+  height: 14px;
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.upload-form__bar::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+}
+
+.upload-form__bar::-webkit-progress-value {
+  background: var(--accent);
+  border-radius: 8px;
+  transition: width 120ms linear;
+}
+
+.upload-form__bar::-moz-progress-bar {
+  background: var(--accent);
+  border-radius: 8px;
+}
+
+.upload-form__progress-label {
+  font-size: 12px;
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.upload-form__actions {
+  margin-top: 4px;
+}
+
+/* ---------- Ad schedule form (AC 3, Sub-AC 3) ---------- */
+
+.schedule-form {
+  max-width: 640px;
+}
+
+.schedule-form__fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+  padding: 20px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.schedule-form__fieldset[disabled] {
+  opacity: 0.85;
+}
+
+.schedule-form__legend {
+  padding: 0 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.schedule-form__hint {
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.schedule-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+/* Daily play count gets its own full-width row below the two time pickers
+   so the operator's eye flows: window start → window end → target plays. */
+.schedule-form__field:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 540px) {
+  .schedule-form__grid {
+    grid-template-columns: 1fr;
+  }
+  .schedule-form__field:nth-child(3) {
+    grid-column: auto;
+  }
+}
+
+.schedule-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.schedule-form__label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.schedule-form__input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.schedule-form__input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(91, 140, 255, 0.25);
+}
+
+.schedule-form__input[aria-invalid="true"] {
+  border-color: rgba(255, 107, 107, 0.6);
+  box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.18);
+}
+
+.schedule-form__input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.schedule-form__field-error {
+  font-size: 12px;
+  color: var(--danger);
+}
+
+.schedule-form__actions {
+  margin-top: 4px;
+}
+
+/* ---------- Ad id banner (ad detail page) ---------- */
+
+.ad-id-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elev);
+  font-size: 13px;
+}
+
+.ad-id-banner__id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  word-break: break-all;
+}
+
+/* ---------- Modal dialog (AC 9, Sub-AC 2 — device remap modal) ---------- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 16, 32, 0.75);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--bg-elev);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 48px);
+  overflow: hidden;
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.modal__close {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.modal__close:hover:not(:disabled) {
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.modal__close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal__body {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.modal__row {
+  font-size: 13px;
+}
+
+.modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- Ad lookup form (/ads index) ---------- */
+
+.ad-lookup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 540px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+}

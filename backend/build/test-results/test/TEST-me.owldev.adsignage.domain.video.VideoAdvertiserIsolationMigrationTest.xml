@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="me.owldev.adsignage.domain.video.VideoAdvertiserIsolationMigrationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-05-02T14:50:31" hostname="Jinsuui-MacBookAir.local" time="0.012">
+  <properties/>
+  <testcase name="V31 adds advertiser_id column to videos with NOT NULL and FK to advertisers()" classname="me.owldev.adsignage.domain.video.VideoAdvertiserIsolationMigrationTest" time="0.012"/>
+  <system-out><![CDATA[2026-05-02T23:50:31.535+09:00  INFO 57102 --- [adsignage] [    Test worker] org.flywaydb.core.FlywayExecutor         : Database: jdbc:h2:mem:videos-iso-7ea01f4d-fbb4-4554-b893-9df687fb4f6e (H2 2.2)
+2026-05-02T23:50:31.535+09:00  WARN 57102 --- [adsignage] [    Test worker] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-05-02T23:50:31.536+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-05-02T23:50:31.536+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbValidate     : Successfully validated 6 migrations (execution time 00:00.000s)
+2026-05-02T23:50:31.536+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-05-02T23:50:31.537+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Current version of schema "PUBLIC": << Empty Schema >>
+2026-05-02T23:50:31.538+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "1 - create advertisers"
+2026-05-02T23:50:31.539+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "30 - create videos"
+2026-05-02T23:50:31.540+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "31 - add advertiser id to videos"
+2026-05-02T23:50:31.541+09:00  INFO 57102 --- [adsignage] [    Test worker] o.f.core.internal.command.DbMigrate      : Successfully applied 3 migrations to schema "PUBLIC", now at version v31 (execution time 00:00.001s)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
