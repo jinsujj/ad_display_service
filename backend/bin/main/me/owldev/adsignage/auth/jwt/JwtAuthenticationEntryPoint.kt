@@ -12,35 +12,35 @@ import org.springframework.stereotype.Component
 import java.time.Instant
 
 /**
- * Sub-AC 3 of AC 303 — JSON 401 entry point.
+ * AC 303의 Sub-AC 3 — JSON 401 엔트리 포인트.
  *
- * Spring Security calls into an [AuthenticationEntryPoint] when a request hits
- * a protected endpoint **without** an authenticated principal in the
- * SecurityContext (i.e. no token, malformed token, or expired token — anything
- * that left [JwtAuthenticationFilter] without populating the context).
+ * SecurityContext에 인증된 principal이 **없는** 상태로(즉, 토큰 없음,
+ * 잘못된 토큰, 만료된 토큰 등 [JwtAuthenticationFilter]가 컨텍스트를 채우지
+ * 못하고 떠난 모든 경우) 요청이 보호된 엔드포인트에 도달하면 스프링
+ * 시큐리티가 [AuthenticationEntryPoint]를 호출.
  *
- * The default servlet container response would either:
- *  - emit an HTML error page, or
- *  - on Spring Security defaults, send `WWW-Authenticate: Basic realm=...` —
+ * 기본 서블릿 컨테이너 응답은 다음 중 하나:
+ *  - HTML 오류 페이지 발행, 또는
+ *  - 스프링 시큐리티 기본값으로 `WWW-Authenticate: Basic realm=...` 전송 —
  *
- * neither of which the Next.js admin web or the player page can consume.
+ * Next.js 관리자 웹이나 플레이어 페이지가 둘 다 소비할 수 없음.
  *
- * This implementation produces a JSON body whose shape matches
- * [me.owldev.adsignage.web.GlobalExceptionHandler.ApiError] so the admin web
- * has a single error contract regardless of where the rejection originates
- * (Spring Security filter chain vs. a thrown exception inside a controller).
+ * 이 구현은 [me.owldev.adsignage.web.GlobalExceptionHandler.ApiError]와
+ * 일치하는 JSON 본문을 생성하여, 거부의 출처(스프링 시큐리티 필터 체인 vs
+ * 컨트롤러 내부에서 던져진 예외)와 무관하게 관리자 웹이 단일 오류 계약을
+ * 갖도록 함.
  *
- * Notes on behaviour:
- *  - We intentionally do **not** echo the exception's full message to the
- *    client — the message can leak internal context (e.g. "Cookie 'JSESSIONID'
- *    decoded but not associated with a session"). Instead we emit a stable
- *    "Authentication required" string. The original message is logged at
- *    DEBUG so operators can still diagnose.
- *  - If the response is already committed (e.g. an upstream filter started
- *    streaming SSE), we silently bail rather than corrupt the response.
- *  - We do not set `WWW-Authenticate`. The bearer-token contract is implicit
- *    in our API and adding the header would prompt browsers to display a
- *    native Basic-auth dialog on the admin web.
+ * 동작 노트:
+ *  - 예외의 전체 메시지를 의도적으로 클라이언트에 에코하지 **않음** —
+ *    메시지가 내부 컨텍스트(예: "Cookie 'JSESSIONID' decoded but not
+ *    associated with a session")를 누설할 수 있음. 대신 안정적인
+ *    "Authentication required" 문자열을 발행. 원본 메시지는 DEBUG로
+ *    로깅되어 운영자가 여전히 진단 가능.
+ *  - 응답이 이미 커밋된 경우(예: 상류 필터가 SSE 스트리밍을 시작),
+ *    응답을 손상시키지 않고 조용히 빠져나감.
+ *  - `WWW-Authenticate`를 설정하지 않음. bearer-token 계약은 우리 API에
+ *    내재되어 있으며, 헤더를 추가하면 브라우저가 관리자 웹에 네이티브
+ *    Basic-auth 다이얼로그를 표시하게 됨.
  */
 @Component
 class JwtAuthenticationEntryPoint(

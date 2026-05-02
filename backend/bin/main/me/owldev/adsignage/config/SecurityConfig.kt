@@ -14,51 +14,48 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 
 /**
- * Sub-AC 2 of AC 302 — Spring Security wiring.
+ * AC 302의 Sub-AC 2 — 스프링 시큐리티 와이어링.
  *
- * Defines the single [SecurityFilterChain] for the API:
+ * API에 대한 단일 [SecurityFilterChain]을 정의:
  *
- *  - **Stateless** session policy. The API is JWT-bearer driven; we never
- *    create or rely on `HttpSession`. This also disables Spring's default
- *    SESSION cookie, which would otherwise confuse the SSE long-poll player
- *    behind nginx.
- *  - **CSRF disabled.** CSRF only protects cookie-borne credentials; we use
- *    `Authorization: Bearer …` exclusively, and the player page uses no
- *    cookies for auth. Disabling CSRF also unblocks the JSON `POST/PUT`
- *    contract used by the admin web client.
- *  - **HTTP Basic / form login disabled.** They would inject default
- *    `WWW-Authenticate: Basic` realms onto 401s and add a /login form route
- *    we don't want.
- *  - **Public endpoints** (no token required):
- *      - `POST /api/auth/{...}` — signup + login (issue the token)
- *      - `GET  /actuator/health` — uptime probes for nginx / load balancer
- *      - `GET  /h2-console/{...}` — dev-only DB browser (also: frame options
- *        relaxed to `sameOrigin` so the H2 web UI's frames load)
- *      - Player APIs — the Next.js `/player/{deviceId}` page calls the
- *        backend without a JWT (the device is unauthenticated; the
- *        deviceId path param is the bearer of identity for the hackathon).
- *        SSE stream + per-device playlist + the streaming child path
- *        `GET /api/videos/{filename}` are exposed; the parent
- *        `GET /api/videos` collection (admin list) is *not* in the
- *        allow-list so AC 4's per-advertiser ownership filter cannot be
- *        bypassed by an anonymous request.
- *  - **All other routes** require an authenticated principal — populated
- *    upstream by [JwtAuthenticationFilter] when a valid bearer token is
- *    presented. Endpoints that have not yet been migrated to the
- *    authenticated contract (e.g. the device-assignment admin routes —
- *    see [me.owldev.adsignage.domain.assignment.DeviceAssignmentController])
- *    are explicitly allow-listed here as a transitional measure; they will
- *    be locked down in the auth-and-isolation pass.
+ *  - **Stateless** 세션 정책. API는 JWT-bearer 기반; `HttpSession`을 절대
+ *    생성하거나 의존하지 않음. 이는 또한 스프링의 기본 SESSION 쿠키를
+ *    비활성화 — 그렇지 않으면 nginx 뒤의 SSE 롱폴 플레이어를 혼란시킴.
+ *  - **CSRF 비활성화.** CSRF는 쿠키 기반 자격증명만 보호; 우리는
+ *    `Authorization: Bearer …`만 사용하고, 플레이어 페이지는 인증용 쿠키를
+ *    쓰지 않음. CSRF 비활성화는 또한 관리자 웹 클라이언트가 사용하는
+ *    JSON `POST/PUT` 계약도 풀어줌.
+ *  - **HTTP Basic / 폼 로그인 비활성화.** 이들은 401에 기본
+ *    `WWW-Authenticate: Basic` realm을 주입하고 우리가 원치 않는 /login
+ *    폼 라우트를 추가함.
+ *  - **공개 엔드포인트** (토큰 불필요):
+ *      - `POST /api/auth/{...}` — 회원가입 + 로그인 (토큰 발급)
+ *      - `GET  /actuator/health` — nginx / 로드 밸런서를 위한 헬스 프로브
+ *      - `GET  /h2-console/{...}` — 개발 전용 DB 브라우저(또한 H2 웹 UI의
+ *        프레임이 로드되도록 프레임 옵션을 `sameOrigin`으로 완화)
+ *      - 플레이어 API — Next.js `/player/{deviceId}` 페이지는 JWT 없이
+ *        백엔드를 호출(디바이스는 미인증; deviceId 경로 파라미터가
+ *        해커톤에서 신원의 운반자). SSE 스트림 + 디바이스별 플레이리스트 +
+ *        스트리밍 자식 경로 `GET /api/videos/{filename}`이 노출됨; 부모
+ *        `GET /api/videos` 컬렉션(관리자 리스트)은 익명 요청이 AC 4의
+ *        광고주별 소유권 필터를 우회하지 못하도록 허용 목록에 *없음*.
+ *  - **그 외 모든 라우트**는 인증된 principal을 요구 — 유효한 bearer
+ *    토큰이 제시되면 [JwtAuthenticationFilter]에 의해 상류에서 채워짐.
+ *    아직 인증 계약으로 마이그레이션되지 않은 엔드포인트(예: 디바이스
+ *    할당 관리자 라우트 —
+ *    [me.owldev.adsignage.domain.assignment.DeviceAssignmentController] 참조)는
+ *    과도기 조치로 명시적 허용 목록에 등록; 추후 auth-and-isolation 패스에서
+ *    잠금 처리됨.
  *
- * **Filter order.** [JwtAuthenticationFilter] is registered *before*
- * [UsernamePasswordAuthenticationFilter] so that:
- *  1. A successful JWT validation populates the SecurityContext.
- *  2. The downstream `authorizeHttpRequests` rules can then evaluate
- *     `.authenticated()` against the populated context.
- *  3. Spring's default `UsernamePasswordAuthenticationFilter` (which would
- *     otherwise look for `username`/`password` form params on `/login`)
- *     never wins precedence — its place in the chain is preserved only as
- *     the conventional anchor point for our JWT filter.
+ * **필터 순서.** [JwtAuthenticationFilter]는 [UsernamePasswordAuthenticationFilter]
+ * *전에* 등록되어:
+ *  1. JWT 검증 성공 시 SecurityContext가 채워짐.
+ *  2. 이후 다운스트림 `authorizeHttpRequests` 규칙이 채워진 컨텍스트에 대해
+ *     `.authenticated()`를 평가할 수 있음.
+ *  3. 스프링의 기본 `UsernamePasswordAuthenticationFilter`(원래라면 `/login`에서
+ *     `username`/`password` 폼 파라미터를 찾을 것)가 결코 우선권을 갖지
+ *     않음 — 체인 내 위치는 우리의 JWT 필터를 위한 관례적 기준점으로만
+ *     유지됨.
  */
 @Configuration
 class SecurityConfig(
@@ -82,99 +79,95 @@ class SecurityConfig(
             .logout { logout -> logout.disable() }
             .authorizeHttpRequests { auth ->
                 auth
-                    // --- Public: auth (login/signup issues the JWT) --------
+                    // --- 공개: 인증 (로그인/회원가입이 JWT 발급) ----------
                     .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
-                    // --- Public: health probe ------------------------------
+                    // --- 공개: 헬스 프로브 ---------------------------------
                     .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
-                    // --- Public: dev-only H2 console -----------------------
+                    // --- 공개: 개발 전용 H2 콘솔 ---------------------------
                     .requestMatchers("/h2-console/**").permitAll()
-                    // --- Public: player APIs (device-side, no JWT) ---------
-                    // SSE stream the Next.js player subscribes to.
-                    // `/events` — original AC 5 SSE wire (DeviceSseController).
-                    // `/stream` — sub-AC 50002 SSE wire (DeviceStreamController);
-                    //            kept as a sibling carve-out so both routes
-                    //            remain reachable to anonymous device callers.
+                    // --- 공개: 플레이어 API (디바이스 측, JWT 없음) --------
+                    // Next.js 플레이어가 구독하는 SSE 스트림.
+                    // `/events` — 원래의 AC 5 SSE 와이어 (DeviceSseController).
+                    // `/stream` — sub-AC 50002 SSE 와이어 (DeviceStreamController);
+                    //            두 라우트가 모두 익명 디바이스 호출자에게
+                    //            도달 가능하도록 형제 예외로 유지.
                     .requestMatchers(HttpMethod.GET, "/api/devices/*/events").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/devices/*/stream").permitAll()
-                    // Playlist + video range endpoints land here in later
-                    // sub-ACs; pre-permitting their prefix keeps the player
-                    // page deployable as soon as those endpoints exist.
+                    // 플레이리스트 + 비디오 range 엔드포인트는 추후 sub-AC에서
+                    // 도착; 접두사를 미리 허용해 해당 엔드포인트가 존재하는
+                    // 즉시 플레이어 페이지를 배포 가능하게 유지.
                     .requestMatchers(HttpMethod.GET, "/api/devices/*/playlist").permitAll()
                     // AC 20202 Sub-AC 2: POST /api/devices/{id}/play-events
-                    // — the player reports "ad started" / "ad finished" here
-                    // so the backend can update server-side play counts.
-                    // Same anonymous-device contract as the sibling
-                    // `…/stream` / `…/playlist` routes; the deviceId path
-                    // parameter is the bearer of identity until the auth-
-                    // and-isolation pass introduces a device enrolment
-                    // token.
+                    // — 플레이어가 "광고 시작" / "광고 종료"를 여기에 보고하여
+                    // 백엔드가 서버 측 재생 횟수를 갱신할 수 있게 함.
+                    // 형제 `…/stream` / `…/playlist` 라우트와 동일한 익명-
+                    // 디바이스 계약; auth-and-isolation 패스가 디바이스 등록
+                    // 토큰을 도입할 때까지 deviceId 경로 파라미터가 신원의
+                    // 운반자.
                     .requestMatchers(HttpMethod.POST, "/api/devices/*/play-events").permitAll()
-                    // AC 4 (auth-and-isolation): the streaming endpoint
-                    // `GET /api/videos/{filename}` stays public so the
-                    // player page can fetch MP4 bytes without a JWT, but
-                    // the *parent* `GET /api/videos` (admin list) must be
-                    // authenticated so it can be ownership-filtered. Using
-                    // `/api/videos/*` rather than `/api/videos/**` matches
-                    // exactly one trailing path segment, leaving the
-                    // collection URI to fall through to `.authenticated()`.
+                    // AC 4 (auth-and-isolation): 스트리밍 엔드포인트
+                    // `GET /api/videos/{filename}`은 공개 유지하여 플레이어
+                    // 페이지가 JWT 없이 MP4 바이트를 가져올 수 있게 하되,
+                    // *부모* `GET /api/videos`(관리자 리스트)는 소유권
+                    // 필터링이 가능하도록 인증되어야 함. `/api/videos/**`이
+                    // 아닌 `/api/videos/*`를 사용하면 정확히 한 개의 후행
+                    // 경로 세그먼트와 매치하므로 컬렉션 URI는 `.authenticated()`로
+                    // 떨어짐.
                     .requestMatchers(HttpMethod.GET, "/api/videos/*").permitAll()
-                    // --- Transitional: admin endpoints not yet auth-gated.
-                    // These will require ROLE_ADVERTISER once the auth-and-
-                    // isolation pass lands. Kept open here so the green test
-                    // suite stays green while we wire the JWT filter into the
-                    // chain.
+                    // --- 과도기: 아직 인증 게이트가 없는 관리자 엔드포인트.
+                    // auth-and-isolation 패스가 도착하면 ROLE_ADVERTISER가
+                    // 필요. 체인에 JWT 필터를 연결하는 동안 그린 테스트
+                    // 스위트를 그린으로 유지하기 위해 여기서는 열어둠.
                     .requestMatchers("/api/devices/*/assignment").permitAll()
                     // Sub-AC 50101.1: PATCH /api/devices/{deviceId}/restaurant
-                    // — admin remap entry point for demo scenario #3.
-                    // Permitted alongside the sibling `…/assignment` route as
-                    // a transitional carve-out; locks down in the auth-and-
-                    // isolation pass that gates `/api/devices/**` admin CRUD
-                    // behind ROLE_ADVERTISER.
+                    // — 데모 시나리오 #3을 위한 관리자 리매핑 진입점.
+                    // 형제 `…/assignment` 라우트와 함께 과도기 예외로 허용;
+                    // `/api/devices/**` 관리자 CRUD를 ROLE_ADVERTISER 뒤로
+                    // 잠그는 auth-and-isolation 패스에서 잠금 처리됨.
                     .requestMatchers("/api/devices/*/restaurant").permitAll()
-                    // AC 9, Sub-AC 1: PATCH /api/devices/{deviceId} — generic
-                    // partial-update for device fields (restaurantId today;
-                    // screen/group when V10 devices table grows the columns).
-                    // Single-segment matcher so we permit only the device-root
-                    // path, not its named subresources (those are listed
-                    // explicitly above) — keeps GET /api/devices/* etc. free
-                    // to land under a future authenticated rule without a
-                    // surprise allow-list collision.
+                    // AC 9, Sub-AC 1: PATCH /api/devices/{deviceId} —
+                    // 디바이스 필드를 위한 일반 부분 업데이트(현재 restaurantId;
+                    // V10 devices 테이블에 컬럼이 늘어나면 screen/group).
+                    // 단일 세그먼트 매처라서 디바이스 루트 경로만 허용하고
+                    // 명명된 하위 리소스는 허용하지 않음(위에 명시적으로
+                    // 나열됨) — GET /api/devices/* 등이 향후 인증 규칙 아래로
+                    // 자유롭게 떨어질 수 있게 하여 예기치 않은 허용 목록
+                    // 충돌을 방지.
                     .requestMatchers(HttpMethod.PATCH, "/api/devices/*").permitAll()
-                    // --- Auth-gated: ad CRUD + schedule mutation (AC 3) ----
-                    // PUT/PATCH /api/ads/{id}/schedule is the schedule
-                    // mutator the admin UI calls; the JWT principal carries
-                    // the verified advertiser id, which the service uses
-                    // to enforce ownership (AC 4 auth-and-isolation).
-                    // Calling it out explicitly here is a no-op against the
-                    // `.anyRequest().authenticated()` default, but keeps the
-                    // contract searchable next to the other admin routes.
+                    // --- 인증 게이트: 광고 CRUD + 스케줄 변경 (AC 3) ------
+                    // PUT/PATCH /api/ads/{id}/schedule은 관리자 UI가 호출하는
+                    // 스케줄 mutator; JWT principal이 검증된 광고주 id를
+                    // 운반하고, 서비스가 이를 사용해 소유권을 강제
+                    // (AC 4 auth-and-isolation).
+                    // `.anyRequest().authenticated()` 기본값에 비해 명시적
+                    // 호출은 no-op이지만, 다른 관리자 라우트 옆에 계약을
+                    // 검색 가능하게 유지함.
                     .requestMatchers("/api/ads/**").authenticated()
-                    // --- Default: anything else needs a valid JWT ----------
+                    // --- 기본: 그 외에는 모두 유효한 JWT 필요 -------------
                     .anyRequest().authenticated()
             }
             .headers { headers ->
-                // H2 console renders inside frames; relax X-Frame-Options
-                // for same-origin so the dev console works.
+                // H2 콘솔은 프레임 내부에 렌더링; 개발 콘솔이 동작하도록
+                // X-Frame-Options를 same-origin으로 완화.
                 headers.frameOptions { fo -> fo.sameOrigin() }
             }
-            // Wire JSON-emitting handlers for the two security-layer
-            // rejection paths so the admin web + player page see a single
-            // error contract regardless of where the rejection originates:
-            //  - 401 Unauthorized via [JwtAuthenticationEntryPoint] when no
-            //    (or an invalid) token is presented to a protected endpoint.
-            //  - 403 Forbidden via [JwtAccessDeniedHandler] when an
-            //    authenticated principal lacks the required authority.
-            // Without these, Spring Security's defaults would emit either
-            // an HTML error page or a `WWW-Authenticate: Basic` challenge
-            // — neither consumable by the JSON-only API clients.
+            // 두 보안 레이어 거부 경로에 대해 JSON을 발행하는 핸들러를
+            // 연결하여 관리자 웹 + 플레이어 페이지가 거부의 출처와 무관하게
+            // 단일 오류 계약을 보도록 함:
+            //  - 보호된 엔드포인트에 토큰이 (없거나 유효하지 않게) 제시되면
+            //    [JwtAuthenticationEntryPoint]를 통한 401 Unauthorized.
+            //  - 인증된 principal이 필요한 권한을 갖지 않으면
+            //    [JwtAccessDeniedHandler]를 통한 403 Forbidden.
+            // 이것들이 없으면 스프링 시큐리티의 기본값은 HTML 오류 페이지나
+            // `WWW-Authenticate: Basic` 챌린지를 발행 — JSON 전용 API
+            // 클라이언트가 소비할 수 없음.
             .exceptionHandling { ex ->
                 ex
                     .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                     .accessDeniedHandler(jwtAccessDeniedHandler)
             }
-            // Run JWT validation before Spring's username/password filter so
-            // the SecurityContext is populated by the time authorization
-            // rules are evaluated.
+            // 인가 규칙이 평가되는 시점에 SecurityContext가 채워져 있도록
+            // 스프링의 username/password 필터 전에 JWT 검증을 실행.
             .addFilterBefore(
                 jwtAuthenticationFilter,
                 UsernamePasswordAuthenticationFilter::class.java,

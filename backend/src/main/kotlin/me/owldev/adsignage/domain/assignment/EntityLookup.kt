@@ -26,23 +26,23 @@ interface RestaurantLookup {
 @Component
 class JdbcDeviceLookup(private val jdbc: JdbcTemplate) : DeviceLookup {
     override fun exists(deviceId: String): Boolean {
-        val count: Int = jdbc.queryForObject(
+        val count: Int? = jdbc.queryForObject(
             "SELECT COUNT(*) FROM devices WHERE device_id = ?",
             Int::class.java,
             deviceId,
         )
-        return count > 0
+        return (count ?: 0) > 0
     }
 }
 
 @Component
 class JdbcRestaurantLookup(private val jdbc: JdbcTemplate) : RestaurantLookup {
     override fun exists(restaurantId: String): Boolean {
-        val count: Int = jdbc.queryForObject(
+        val count: Int? = jdbc.queryForObject(
             "SELECT COUNT(*) FROM restaurants WHERE restaurant_id = ?",
             Int::class.java,
             restaurantId,
         )
-        return count > 0
+        return (count ?: 0) > 0
     }
 }

@@ -7,27 +7,26 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 /**
- * Service that owns the device → restaurant assignment lifecycle.
+ * 디바이스 → 음식점 할당 라이프사이클을 소유하는 서비스.
  *
- * Sub-AC 2 scope:
- *  - [createAssignment] — create the first/only active assignment for a device.
- *  - [updateAssignment] — atomically remap a device to a different restaurant.
- *  - [getCurrentAssignment] — fetch the current active assignment.
- *  - Validates that referenced device_id / restaurant_id exist before writing.
+ * Sub-AC 2 범위:
+ *  - [createAssignment] — 디바이스에 대해 첫 번째/유일한 활성 할당을 생성.
+ *  - [updateAssignment] — 디바이스를 다른 음식점으로 원자적으로 리매핑.
+ *  - [getCurrentAssignment] — 현재 활성 할당을 가져옴.
+ *  - 쓰기 전에 참조된 device_id / restaurant_id가 존재하는지 검증.
  *
- * Concurrency note: [updateAssignment] and [createAssignment] run in a single
- * transaction so the "deactivate old + insert new" pair is atomic — there is
- * never a moment where a device has zero or two active rows.
+ * 동시성 노트: [updateAssignment]와 [createAssignment]는 단일 트랜잭션에서
+ * 실행되어 "이전 비활성화 + 새로 삽입" 쌍이 원자적임 — 디바이스가 0개 또는
+ * 2개의 활성 행을 갖는 순간은 절대 없음.
  *
- * SSE note (sub-AC 50102.2): on every successful create / update, the service
- * publishes a [DeviceMappingChangedEvent] so the SSE bridge layer can push a
- * MAPPING_CHANGED event down to every player connected for that device. The
- * domain service stays free of HTTP / SSE concerns — it just announces
- * "this mapping changed", and the [me.owldev.adsignage.sse] module decides
- * how that gets delivered to clients. Delivery happens **after the DB update
- * commits** — the listener is wired with
- * `@TransactionalEventListener(AFTER_COMMIT)`, so a rolled-back transaction
- * never produces a phantom remap event on the wire.
+ * SSE 노트 (sub-AC 50102.2): 모든 성공적인 생성/업데이트에서 서비스는
+ * [DeviceMappingChangedEvent]를 발행하여 SSE 브리지 레이어가 해당 디바이스에
+ * 연결된 모든 플레이어로 MAPPING_CHANGED 이벤트를 푸시할 수 있게 함.
+ * 도메인 서비스는 HTTP / SSE 관심사에서 자유롭게 유지됨 — 단지 "이 매핑이
+ * 변경되었다"고 알릴 뿐이고, [me.owldev.adsignage.sse] 모듈이 클라이언트에
+ * 어떻게 전달될지를 결정함. 전송은 **DB 업데이트가 커밋된 이후에**
+ * 발생함 — 리스너는 `@TransactionalEventListener(AFTER_COMMIT)`로 연결되어
+ * 있어, 롤백된 트랜잭션은 와이어에 가짜 리매핑 이벤트를 절대 생성하지 않음.
  */
 @Service
 class DeviceAssignmentService(
@@ -40,14 +39,14 @@ class DeviceAssignmentService(
     private val log = LoggerFactory.getLogger(DeviceAssignmentService::class.java)
 
     /**
-     * Creates a new active assignment for [deviceId] → [restaurantId].
+     * [deviceId] → [restaurantId]에 대해 새 활성 할당을 생성.
      *
-     * If the device already has an active assignment, this delegates to
-     * [updateAssignment] (deactivate-then-insert) so callers can use this
-     * method as an idempotent "set current assignment" entry point.
+     * 디바이스가 이미 활성 할당을 가지고 있으면 [updateAssignment](비활성화 후
+     * 삽입)에 위임하여 호출자가 이 메서드를 멱등적인 "현재 할당 설정" 진입점으로
+     * 사용할 수 있게 함.
      *
-     * @throws DeviceNotFoundException     if no row exists in `devices` for [deviceId]
-     * @throws RestaurantNotFoundException if no row exists in `restaurants` for [restaurantId]
+     * @throws DeviceNotFoundException     `devices`에서 [deviceId]에 해당하는 행이 없을 때
+     * @throws RestaurantNotFoundException `restaurants`에서 [restaurantId]에 해당하는 행이 없을 때
      */
     @Transactional
     fun createAssignment(deviceId: String, restaurantId: String): DeviceAssignment {
@@ -75,13 +74,13 @@ class DeviceAssignmentService(
     }
 
     /**
-     * Remaps [deviceId] to [newRestaurantId]. Deactivates the existing active
-     * row (if any) and inserts a new active row in the same transaction.
+     * [deviceId]를 [newRestaurantId]로 리매핑. 같은 트랜잭션에서 기존 활성
+     * 행(있다면)을 비활성화하고 새 활성 행을 삽입.
      *
-     * Returns the newly-created active [DeviceAssignment].
+     * 새로 생성된 활성 [DeviceAssignment]를 반환.
      *
-     * @throws DeviceNotFoundException     if no row exists in `devices` for [deviceId]
-     * @throws RestaurantNotFoundException if no row exists in `restaurants` for [newRestaurantId]
+     * @throws DeviceNotFoundException     `devices`에서 [deviceId]에 해당하는 행이 없을 때
+     * @throws RestaurantNotFoundException `restaurants`에서 [newRestaurantId]에 해당하는 행이 없을 때
      */
     @Transactional
     fun updateAssignment(deviceId: String, newRestaurantId: String): DeviceAssignment {
@@ -90,9 +89,9 @@ class DeviceAssignmentService(
     }
 
     /**
-     * Returns the current active assignment for [deviceId].
+     * [deviceId]에 대한 현재 활성 할당을 반환.
      *
-     * @throws AssignmentNotFoundException if the device has no active assignment
+     * @throws AssignmentNotFoundException 디바이스에 활성 할당이 없을 때
      */
     @Transactional(readOnly = true)
     fun getCurrentAssignment(deviceId: String): DeviceAssignment =
@@ -100,15 +99,15 @@ class DeviceAssignmentService(
             .orElseThrow { AssignmentNotFoundException(deviceId) }
 
     /**
-     * Returns the current active assignment for [deviceId], or `null`
-     * if the device is currently unassigned.
+     * [deviceId]에 대한 현재 활성 할당을 반환하거나, 디바이스가 현재
+     * 할당되지 않았다면 `null`을 반환.
      */
     @Transactional(readOnly = true)
     fun findCurrentAssignment(deviceId: String): DeviceAssignment? =
         assignmentRepository.findByDeviceIdAndActiveTrue(deviceId).orElse(null)
 
     // -------------------------------------------------------------------------
-    // internals
+    // 내부 구현
     // -------------------------------------------------------------------------
 
     private fun validateReferencesExist(deviceId: String, restaurantId: String) {
@@ -119,14 +118,14 @@ class DeviceAssignmentService(
     }
 
     /**
-     * Atomic deactivate-then-insert. Caller is responsible for having already
-     * validated that [deviceId] and [newRestaurantId] exist.
+     * 원자적인 비활성화 후 삽입. 호출자는 [deviceId]와 [newRestaurantId]가
+     * 존재함을 이미 검증한 책임을 짐.
      */
     private fun updateAssignmentInternal(deviceId: String, newRestaurantId: String): DeviceAssignment {
         val deactivated = assignmentRepository.deactivateCurrentForDevice(deviceId)
-        // Flush via saveAndFlush isn't strictly needed — the @Modifying query
-        // already executes against the DB; but we rely on the transaction
-        // boundary to make the whole pair atomic.
+        // saveAndFlush를 통한 플러시는 엄격히 필요하지 않음 — @Modifying
+        // 쿼리가 이미 DB에 대해 실행됨; 다만 전체 쌍을 원자적으로 만들기
+        // 위해 트랜잭션 경계에 의존함.
         val saved = assignmentRepository.save(
             DeviceAssignment(deviceId = deviceId, restaurantId = newRestaurantId),
         )

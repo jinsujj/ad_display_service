@@ -14,8 +14,8 @@ import org.robolectric.RobolectricTestRunner
 import java.util.UUID
 
 /**
- * Verifies AC 12: Android APK generates UUID device_id on first boot and
- * persists to SharedPreferences.
+ * AC 12 검증: Android APK가 최초 부팅 시 UUID device_id를 생성하고
+ * SharedPreferences에 영속화한다.
  */
 @RunWith(RobolectricTestRunner::class)
 class DeviceIdManagerTest {
@@ -40,7 +40,7 @@ class DeviceIdManagerTest {
         val id = DeviceIdManager.getOrCreateDeviceId(context)
 
         assertNotNull(id)
-        // Must be a valid UUID — UUID.fromString throws if not.
+        // 유효한 UUID여야 함 — 그렇지 않으면 UUID.fromString이 예외를 던진다.
         UUID.fromString(id)
         assertTrue(DeviceIdManager.hasDeviceId(context))
     }
@@ -59,7 +59,7 @@ class DeviceIdManagerTest {
     fun `device_id is persisted across manager calls and survives via SharedPreferences`() {
         val first = DeviceIdManager.getOrCreateDeviceId(context)
 
-        // Simulate process restart by reading SharedPreferences directly.
+        // SharedPreferences를 직접 읽어 프로세스 재시작 상황을 시뮬레이션한다.
         val prefs = context.getSharedPreferences("ad_signage_prefs", Context.MODE_PRIVATE)
         val stored = prefs.getString("device_id", null)
 
@@ -83,7 +83,7 @@ class DeviceIdManagerTest {
         DeviceIdManager.clearForTesting(context)
         val second = DeviceIdManager.getOrCreateDeviceId(context)
 
-        // Random UUIDs — vanishingly unlikely to collide.
+        // 랜덤 UUID — 충돌 확률은 사실상 0에 가깝다.
         assertNotEquals(first, second)
     }
 }

@@ -8,32 +8,32 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * Stored uploaded video asset.
+ * 업로드된 비디오 자산을 저장.
  *
- * Maps to the `videos` table created by Flyway migration V30.
+ * Flyway 마이그레이션 V30이 생성한 `videos` 테이블에 매핑.
  *
- * A `Video` is the *file-system-side* record of an MP4 that an advertiser
- * uploaded to the server. It is intentionally decoupled from the higher-level
- * `Ad` concept: the same video could in principle back multiple ads (and an
- * ad's lifecycle differs from the underlying file's lifecycle — soft-deleted
- * ads should not orphan the disk file mid-playback).
+ * `Video`는 광고주가 서버에 업로드한 MP4의 *파일 시스템 측* 레코드. 더
+ * 상위의 `Ad` 개념과 의도적으로 분리됨: 동일한 비디오가 원칙적으로 여러
+ * 광고를 뒷받침할 수 있고(또한 광고의 라이프사이클은 기저 파일의
+ * 라이프사이클과 다름 — 소프트 삭제된 광고가 재생 도중 디스크 파일을
+ * 고아로 만들면 안 됨).
  *
- * Ontology concepts represented:
- *  - ad_video_filename → [filename] (stored on-disk, server-generated, unique)
+ * 표현된 온톨로지 개념:
+ *  - ad_video_filename → [filename] (디스크 저장, 서버 생성, 유일)
  *  - ad_advertiser_id  → [advertiserId] (FK → advertisers.id, NOT NULL)
  *
- * Fields beyond the core ontology field are operational:
- *  - [originalName] preserves the advertiser-supplied filename for the admin UI.
- *  - [mimeType], [sizeBytes] support HTTP Range serving (Content-Type +
- *    Content-Length) without re-stat-ing the file on every request.
- *  - [storagePath] is the absolute on-disk path; resolved against the
- *    `adsignage.video-storage-path` config root at upload time and stored
- *    verbatim so the streaming endpoint never has to re-resolve it.
- *  - [uploadedAt] is captured at insert time for the admin "recent uploads"
- *    listing.
+ * 핵심 온톨로지 필드를 넘어선 운영 필드:
+ *  - [originalName]은 관리자 UI를 위해 광고주가 제공한 파일명을 보존.
+ *  - [mimeType], [sizeBytes]는 매 요청마다 파일을 다시 stat하지 않고도
+ *    HTTP Range 서빙(Content-Type + Content-Length)을 지원.
+ *  - [storagePath]는 디스크 상의 절대 경로; 업로드 시 설정 루트
+ *    `adsignage.video-storage-path`에 대해 해석되고 그대로 저장되어
+ *    스트리밍 엔드포인트가 다시 해석할 필요가 없게 함.
+ *  - [uploadedAt]은 관리자 "최근 업로드" 리스팅을 위해 insert 시점에
+ *    캡처됨.
  *
- * Identity is the server-generated UUID — equality and hashCode are based on
- * [id] alone, matching the pattern set by `Advertiser` and `DeviceAssignment`.
+ * 식별자는 서버 생성 UUID — `Advertiser`와 `DeviceAssignment`가 정한
+ * 패턴에 맞춰 [id]만으로 equality와 hashCode가 결정됨.
  */
 @Entity
 @Table(name = "videos")
@@ -43,55 +43,55 @@ class Video(
     val id: String = UUID.randomUUID().toString(),
 
     /**
-     * Owning advertiser's id (FK → `advertisers.id`).
+     * 소유 광고주의 id (FK → `advertisers.id`).
      *
-     * Set at upload time from the JWT principal — see
-     * [me.owldev.adsignage.domain.video.upload.VideoUploadService.upload].
-     * The data-isolation contract (AC 4) requires every read path that
-     * surfaces a [Video] to a logged-in advertiser to filter by this
-     * column, so the admin UI never sees another advertiser's uploads.
+     * 업로드 시 JWT principal에서 설정 —
+     * [me.owldev.adsignage.domain.video.upload.VideoUploadService.upload] 참조.
+     * 데이터 격리 계약(AC 4)은 로그인한 광고주에게 [Video]를 표면화하는
+     * 모든 읽기 경로가 이 컬럼으로 필터링하도록 요구하여 관리자 UI가 다른
+     * 광고주의 업로드를 절대 보지 못하게 함.
      *
-     * Stored as a plain string FK rather than a `@ManyToOne Advertiser`
-     * association to keep the entity flat and avoid lazy-init footguns
-     * inside the controller — the controller only needs the id for
-     * authorisation checks, never the full advertiser row.
+     * 엔터티를 평탄하게 유지하고 컨트롤러 내부의 lazy-init 함정을 피하기
+     * 위해 `@ManyToOne Advertiser` 연관 대신 일반 문자열 FK로 저장 —
+     * 컨트롤러는 인가 검사를 위해 id만 필요하지 전체 광고주 행은 결코
+     * 필요하지 않음.
      */
     @Column(name = "advertiser_id", nullable = false, updatable = false, length = 36)
     val advertiserId: String,
 
     /**
-     * Server-generated filename used on disk. Unique across the table; the
-     * upload pipeline derives this from the new UUID + extension to avoid
-     * any collision with user-supplied names.
+     * 디스크에 사용되는 서버 생성 파일명. 테이블 전체에서 유일; 업로드
+     * 파이프라인이 사용자 제공 이름과의 충돌을 피하기 위해 새 UUID +
+     * 확장자에서 이를 유도함.
      */
     @Column(name = "filename", nullable = false, unique = true, length = 255)
     val filename: String,
 
     /**
-     * Original filename as supplied by the advertiser's browser. Kept for
-     * display in the admin UI; never used for filesystem operations.
+     * 광고주의 브라우저가 제공한 원본 파일명. 관리자 UI 표시를 위해 유지;
+     * 파일시스템 작업에는 절대 사용되지 않음.
      */
     @Column(name = "original_name", nullable = false, length = 255)
     val originalName: String,
 
     /**
-     * MIME type as reported by the multipart upload (e.g. `video/mp4`).
-     * Stored so the streaming endpoint can set `Content-Type` without
-     * re-detecting on every request.
+     * multipart 업로드가 보고한 MIME 타입(예: `video/mp4`). 스트리밍
+     * 엔드포인트가 매 요청마다 재감지하지 않고 `Content-Type`을 설정할 수
+     * 있도록 저장됨.
      */
     @Column(name = "mime_type", nullable = false, length = 100)
     val mimeType: String,
 
     /**
-     * File size in bytes. Required for HTTP Range responses
-     * (`Content-Range: bytes start-end/sizeBytes`).
+     * 파일 크기(바이트). HTTP Range 응답
+     * (`Content-Range: bytes start-end/sizeBytes`)에 필요함.
      */
     @Column(name = "size_bytes", nullable = false)
     val sizeBytes: Long,
 
     /**
-     * Absolute path on the server filesystem where the video is stored.
-     * Resolved at upload time against `adsignage.video-storage-path`.
+     * 서버 파일시스템에서 비디오가 저장된 절대 경로. 업로드 시
+     * `adsignage.video-storage-path`에 대해 해석됨.
      */
     @Column(name = "storage_path", nullable = false, length = 1024)
     val storagePath: String,

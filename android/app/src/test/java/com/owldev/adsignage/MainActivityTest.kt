@@ -18,21 +18,21 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * Verifies AC 11 — Android APK launches a fullscreen WebView in immersive
- * sticky mode pointing at https://stream.owl-dev.me/player/{deviceId}.
+ * AC 11 검증 — Android APK는 https://stream.owl-dev.me/player/{deviceId}를
+ * 가리키는 전체화면 WebView를 immersive sticky 모드로 실행한다.
  *
- * The contract under test:
- *   1. The activity inflates a WebView and configures it for kiosk
- *      autoplay (JS on, mediaPlaybackRequiresUserGesture off).
- *   2. The activity sets FLAG_KEEP_SCREEN_ON so the display never sleeps.
- *   3. The WebView loads the URL produced by [PlayerUrl] for the device's
- *      persistent UUID — i.e. `https://stream.owl-dev.me/player/{uuid}`.
- *   4. Immersive sticky mode is active on the legacy code path
- *      (Robolectric pins us to API ≤ 29 below so we exercise it
- *      deterministically).
+ * 검증 대상 계약:
+ *   1. 액티비티가 WebView를 인플레이트하고 키오스크 자동 재생 설정
+ *      (JS on, mediaPlaybackRequiresUserGesture off)을 적용한다.
+ *   2. 액티비티가 FLAG_KEEP_SCREEN_ON을 설정하여 디스플레이가 절전 모드로
+ *      들어가지 않게 한다.
+ *   3. WebView는 디바이스의 영구 UUID에 대해 [PlayerUrl]이 만든 URL,
+ *      즉 `https://stream.owl-dev.me/player/{uuid}`를 로드한다.
+ *   4. 레거시 코드 경로에서 immersive sticky 모드가 활성화된다
+ *      (아래에서 Robolectric을 API ≤ 29로 고정해 결정적으로 검증).
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [29]) // exercise the legacy systemUiVisibility branch
+@Config(sdk = [29]) // 레거시 systemUiVisibility 분기를 검증하기 위함
 class MainActivityTest {
 
     private lateinit var context: Context
@@ -93,8 +93,8 @@ class MainActivityTest {
 
     @Test
     fun `WebView loads the canonical player URL for the persistent device_id`() {
-        // First-boot path: no device_id yet, MainActivity should generate one,
-        // persist it, and load /player/{deviceId}.
+        // 최초 부팅 경로: 아직 device_id가 없으므로 MainActivity가 새로
+        // 생성·영속화한 뒤 /player/{deviceId}를 로드해야 한다.
         val activity = Robolectric.buildActivity(MainActivity::class.java)
             .create()
             .start()
@@ -109,8 +109,8 @@ class MainActivityTest {
             deviceId = deviceId
         )
 
-        // Robolectric doesn't actually fetch the URL; it records the last
-        // load via the shadow API.
+        // Robolectric은 실제로 URL을 가져오지 않으며, shadow API를 통해
+        // 마지막 로드만 기록한다.
         val lastLoaded = shadowOf(webView).lastLoadedUrl
         assertEquals(expected, lastLoaded)
         assertTrue(
@@ -121,7 +121,7 @@ class MainActivityTest {
 
     @Test
     fun `WebView reuses the persisted device_id on subsequent activity creates`() {
-        // Boot 1 — generate.
+        // 부팅 1 — 새로 생성.
         val firstActivity = Robolectric.buildActivity(MainActivity::class.java)
             .create()
             .start()
@@ -131,7 +131,7 @@ class MainActivityTest {
         val firstUrl = shadowOf(firstActivity.findViewById<WebView>(R.id.webview)).lastLoadedUrl
         firstActivity.finish()
 
-        // Boot 2 — must reuse same UUID, hence same URL.
+        // 부팅 2 — 동일 UUID를 재사용해야 하므로 URL도 동일해야 한다.
         val secondActivity = Robolectric.buildActivity(MainActivity::class.java)
             .create()
             .start()
@@ -182,8 +182,8 @@ class MainActivityTest {
             .visible()
             .get()
 
-        // Simulate the user swiping in the system bars (which clears flags),
-        // then the OS handing focus back to us.
+        // 사용자가 시스템 바를 스와이프해 들이는 상황(플래그가 지워짐)을 만든 뒤,
+        // OS가 다시 우리에게 포커스를 돌려주는 시나리오를 시뮬레이션한다.
         @Suppress("DEPRECATION")
         activity.window.decorView.systemUiVisibility = 0
         activity.onWindowFocusChanged(true)

@@ -5,11 +5,11 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 
 /**
- * Request body for `POST /api/auth/signup`.
+ * `POST /api/auth/signup`의 요청 본문.
  *
- * Ontology mapping:
+ * 온톨로지 매핑:
  *  - [email]    → advertiser_email
- *  - [password] → advertiser_password_hash (after BCrypt hashing in service)
+ *  - [password] → advertiser_password_hash (서비스에서 BCrypt 해싱 후)
  */
 data class SignupRequest(
     @field:NotBlank(message = "email must not be blank")

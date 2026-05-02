@@ -8,12 +8,12 @@ import java.util.Date
 import javax.crypto.SecretKey
 
 /**
- * Issues HS256-signed JWT access tokens for authenticated advertisers.
+ * 인증된 광고주를 위한 HS256 서명 JWT 액세스 토큰 발급.
  *
- * Sub-AC 3 only needs token *issuance* — verification will be wired into a
- * Spring Security filter in a later sub-AC. We expose [parseSubject] now as a
- * convenience for tests so we can prove the token is valid and contains the
- * right `sub` claim without pulling in extra plumbing.
+ * Sub-AC 3은 토큰 *발급*만 필요 — 검증은 추후 sub-AC에서 스프링 시큐리티
+ * 필터에 연결됨. 테스트를 위한 편의성으로 [parseSubject]를 지금 노출하여
+ * 추가 배관 없이도 토큰이 유효하고 올바른 `sub` 클레임을 포함하는지 증명할
+ * 수 있게 함.
  */
 @Service
 class JwtService(
@@ -21,19 +21,19 @@ class JwtService(
 ) {
 
     private val signingKey: SecretKey by lazy {
-        // jjwt requires HS256 keys to be ≥ 256 bits. We derive the key from the
-        // configured secret's UTF-8 bytes so operators can supply a long
-        // human-readable string in `application.yml` / env var.
+        // jjwt는 HS256 키가 ≥ 256 비트일 것을 요구함. 운영자가
+        // `application.yml`/환경 변수에 사람이 읽을 수 있는 긴 문자열을
+        // 제공할 수 있도록 설정된 시크릿의 UTF-8 바이트에서 키를 유도함.
         Keys.hmacShaKeyFor(properties.secret.toByteArray(StandardCharsets.UTF_8))
     }
 
     /**
-     * Build a signed JWT for the given advertiser.
+     * 주어진 광고주에 대한 서명된 JWT를 빌드.
      *
-     *  - `sub`   = advertiserId (canonical identifier — see ontology)
-     *  - `email` = advertiser_email (convenience claim for the admin web)
-     *  - `iat`   = now
-     *  - `exp`   = now + [JwtProperties.expirationMs]
+     *  - `sub`   = advertiserId (정규 식별자 — 온톨로지 참조)
+     *  - `email` = advertiser_email (관리자 웹을 위한 편의 클레임)
+     *  - `iat`   = 현재
+     *  - `exp`   = 현재 + [JwtProperties.expirationMs]
      */
     fun issueToken(advertiserId: String, email: String): IssuedToken {
         val now = System.currentTimeMillis()
@@ -51,22 +51,22 @@ class JwtService(
     }
 
     /**
-     * Parse and verify a token, returning its `sub` (advertiserId).
-     * Throws if the signature is invalid or the token is expired.
+     * 토큰을 파싱하고 검증한 뒤 `sub`(advertiserId)를 반환.
+     * 서명이 잘못되었거나 토큰이 만료된 경우 던짐.
      */
     fun parseSubject(token: String): String {
         return parseAuthenticatedAdvertiser(token).advertiserId
     }
 
     /**
-     * Parse and verify a token, returning the full advertiser identity.
+     * 토큰을 파싱하고 검증한 뒤 전체 광고주 신원을 반환.
      *
-     * Used by [JwtAuthenticationFilter] (Sub-AC 1 of AC 301) to populate the
-     * SecurityContext with both the advertiserId (for ownership checks) and
-     * the email (for logging / convenience access via @AuthenticationPrincipal).
+     * [JwtAuthenticationFilter](AC 301의 Sub-AC 1)이 advertiserId(소유권
+     * 검사용)와 email(로깅 / @AuthenticationPrincipal을 통한 편의 접근용)
+     * 모두를 SecurityContext에 채우기 위해 사용함.
      *
-     * Throws (subclass of) [io.jsonwebtoken.JwtException] when the signature
-     * is invalid, the token is expired, or the payload is malformed.
+     * 서명이 잘못되었거나 토큰이 만료되었거나 페이로드가 잘못된 경우
+     * (의 하위 클래스인) [io.jsonwebtoken.JwtException]을 던짐.
      */
     fun parseAuthenticatedAdvertiser(token: String): AuthenticatedAdvertiser {
         val claims = Jwts.parser()
@@ -90,9 +90,9 @@ data class IssuedToken(
 )
 
 /**
- * The verified identity asserted by a valid JWT. Used as the principal
- * stored in [org.springframework.security.core.context.SecurityContextHolder]
- * after [JwtAuthenticationFilter] runs.
+ * 유효한 JWT가 주장하는 검증된 신원. [JwtAuthenticationFilter] 실행 후
+ * [org.springframework.security.core.context.SecurityContextHolder]에 저장된
+ * principal로 사용됨.
  */
 data class AuthenticatedAdvertiser(
     val advertiserId: String,

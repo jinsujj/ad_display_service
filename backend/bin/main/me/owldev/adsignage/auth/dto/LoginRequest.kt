@@ -5,17 +5,16 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 
 /**
- * Request body for `POST /api/auth/login`.
+ * `POST /api/auth/login`의 요청 본문.
  *
- * Ontology mapping:
+ * 온톨로지 매핑:
  *  - [email]    → advertiser_email
- *  - [password] → verified against advertiser_password_hash
+ *  - [password] → advertiser_password_hash와 대조 검증
  *
- * Note: validation is intentionally lenient compared to signup — we still
- * require the fields to be present and well-formed, but we do not enforce
- * the same minimum length on `password` here. The credentials get checked
- * against the BCrypt hash anyway, and a stricter rule would just leak the
- * signup policy to attackers.
+ * 노트: 검증은 회원가입에 비해 의도적으로 관대함 — 필드가 존재하고 형식이
+ * 올바르도록 여전히 요구하지만, 여기서는 `password`에 동일한 최소 길이를
+ * 강제하지 않음. 어차피 자격증명은 BCrypt 해시와 대조되며, 더 엄격한
+ * 규칙은 공격자에게 회원가입 정책만 노출시킬 뿐.
  */
 data class LoginRequest(
     @field:NotBlank(message = "email must not be blank")

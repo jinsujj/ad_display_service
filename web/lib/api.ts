@@ -1,32 +1,32 @@
 /**
- * Tiny API client for the AdSignage admin web.
+ * AdSignage 관리자 웹용 경량 API 클라이언트.
  *
- * All HTTP traffic from the admin UI flows through this module so that:
- *   - the API base URL is centralised (NEXT_PUBLIC_API_BASE_URL),
- *   - JSON / error handling is uniform,
- *   - JWT auth (Bearer) is auto-attached on browser calls to protected
- *     endpoints (Spring `SecurityConfig` requires it for `/api/ads/**`),
- *   - calls work both same-origin (behind nginx on stream.owl-dev.me) and
- *     cross-origin during local dev (e.g. http://192.168.0.24:8080).
+ * 관리자 UI의 모든 HTTP 트래픽은 다음을 위해 이 모듈을 통해 흐른다:
+ *   - API 베이스 URL을 한 곳에서 관리(NEXT_PUBLIC_API_BASE_URL),
+ *   - JSON / 에러 처리를 일관되게 유지,
+ *   - 보호된 엔드포인트에 대한 브라우저 호출에 JWT 인증(Bearer)을 자동
+ *     첨부(Spring `SecurityConfig`는 `/api/ads/**`에 대해 이를 요구함),
+ *   - 동일 출처(stream.owl-dev.me의 nginx 뒤)와 로컬 개발 시 교차 출처
+ *     (예: http://192.168.0.24:8080) 모두에서 동작.
  *
- * Server Components can call these helpers directly thanks to Next.js's built-in
- * `fetch` polyfill. Each request is marked `cache: 'no-store'` because the
- * admin views need live operator data, not the Next data cache.
+ * Next.js의 내장 `fetch` 폴리필 덕분에 Server Component에서도 이 헬퍼를
+ * 직접 호출할 수 있다. 관리 뷰는 Next 데이터 캐시가 아닌 실시간 운영
+ * 데이터가 필요하므로 모든 요청에 `cache: 'no-store'`를 표시한다.
  */
 
 const RAW_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 /**
- * localStorage key under which the admin web persists the advertiser JWT after
- * login. Mirrored across the codebase (`web/lib/videos.ts`, the auth UI doc
- * comments, and the form copy) so a single key keeps "logged in" state.
+ * 관리자 웹이 로그인 후 광고주 JWT를 보관하는 localStorage 키.
+ * 코드베이스 전반(`web/lib/videos.ts`, 인증 UI 주석, 폼 카피)에 동일하게
+ * 사용되어 단일 키로 "로그인" 상태를 유지한다.
  */
 export const AUTH_TOKEN_STORAGE_KEY = "adsignage_auth_token";
 
 /**
- * Read the persisted JWT from `localStorage`. Returns `null` server-side
- * (Server Components, SSR fetches) and in environments where storage is
- * unavailable (private browsing throws on access in some browsers).
+ * `localStorage`에 저장된 JWT를 읽는다. 서버 사이드(Server Component, SSR
+ * fetch)와 스토리지를 사용할 수 없는 환경(일부 브라우저의 시크릿 모드는
+ * 접근 시 throw)에서는 `null`을 반환한다.
  */
 export function readStoredAuthToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -38,16 +38,16 @@ export function readStoredAuthToken(): string | null {
 }
 
 /**
- * Returns the configured backend base URL with any trailing slash trimmed,
- * or "" to mean "same-origin" (i.e. requests like `/api/devices`).
+ * 끝의 슬래시를 모두 제거한 설정된 백엔드 베이스 URL을 반환하거나,
+ * "동일 출처"를 의미하는 빈 문자열("")을 반환한다(예: `/api/devices`와 같은 요청).
  */
 export function getApiBaseUrl(): string {
   return RAW_BASE_URL.replace(/\/+$/, "");
 }
 
 /**
- * Joins the API base URL with a request path. The path may or may not have a
- * leading slash; the result always has exactly one separator.
+ * API 베이스 URL과 요청 경로를 합친다. 경로 앞의 슬래시 유무와 관계없이
+ * 결과는 항상 정확히 하나의 구분자를 갖는다.
  */
 export function apiUrl(path: string): string {
   const base = getApiBaseUrl();
@@ -71,29 +71,29 @@ export class ApiError extends Error {
 
 type ApiFetchInit = Omit<RequestInit, "body"> & {
   body?: unknown;
-  /** Force-disable Next's data cache; defaults to true for live operator data. */
+  /** Next의 데이터 캐시를 강제 비활성화한다; 실시간 운영 데이터 기본값은 true. */
   noStore?: boolean;
   /**
-   * Explicit JWT to send as `Authorization: Bearer <token>`. Overrides the
-   * `localStorage` fallback. Pass `null` to opt out of auth attachment for
-   * this single call (e.g. public player APIs that must NOT carry a token).
+   * `Authorization: Bearer <token>`으로 전송할 명시적 JWT. `localStorage`
+   * 폴백을 덮어쓴다. 이 호출에 한해 인증 첨부를 건너뛰려면 `null`을 전달
+   * (예: 토큰을 절대 보내면 안 되는 공개 플레이어 API).
    */
   bearerToken?: string | null;
 };
 
 /**
- * Low-level helper: performs a JSON request against the backend and throws
- * [ApiError] on non-2xx responses. Use the typed wrappers below for callers.
+ * 저수준 헬퍼: 백엔드에 JSON 요청을 수행하고 2xx가 아닐 경우 [ApiError]를
+ * throw한다. 호출자는 아래의 타입드 래퍼를 사용한다.
  *
- * Auth attachment policy:
- *   - If the caller passes `bearerToken`, that value wins (`null` opts out).
- *   - Otherwise, in the browser, fall back to
- *     `localStorage.adsignage_auth_token` so authenticated admin endpoints
- *     (e.g. `PUT /api/ads/{id}/schedule`) just work after login.
- *   - Server-side (Server Components / SSR) there is no `localStorage`, so
- *     nothing is attached unless the caller is explicit.
- *   - A pre-set `Authorization` header in `init.headers` always wins over
- *     either of the above.
+ * 인증 첨부 정책:
+ *   - 호출자가 `bearerToken`을 전달하면 그 값이 우선한다(`null`은 제외 처리).
+ *   - 그 외에는 브라우저에서 `localStorage.adsignage_auth_token`으로 폴백되어
+ *     인증이 필요한 관리자 엔드포인트(예: `PUT /api/ads/{id}/schedule`)가
+ *     로그인 후 그대로 동작한다.
+ *   - 서버 사이드(Server Component / SSR)에는 `localStorage`가 없으므로
+ *     호출자가 명시하지 않는 한 아무것도 첨부되지 않는다.
+ *   - `init.headers`에 미리 설정된 `Authorization` 헤더는 위 모든 경우보다
+ *     항상 우선한다.
  */
 export async function apiFetch<T>(path: string, init: ApiFetchInit = {}): Promise<T> {
   const url = apiUrl(path);
@@ -105,8 +105,8 @@ export async function apiFetch<T>(path: string, init: ApiFetchInit = {}): Promis
     ...((headers as Record<string, string> | undefined) ?? {}),
   };
 
-  // Attach JWT only when the caller hasn't already pinned an Authorization
-  // header. `bearerToken === null` is a deliberate opt-out (public endpoints).
+  // 호출자가 Authorization 헤더를 직접 지정하지 않은 경우에만 JWT를 첨부.
+  // `bearerToken === null`은 의도적인 제외(공개 엔드포인트용).
   const hasExplicitAuth = Object.keys(finalHeaders).some(
     (k) => k.toLowerCase() === "authorization",
   );
@@ -143,7 +143,7 @@ export async function apiFetch<T>(path: string, init: ApiFetchInit = {}): Promis
     );
   }
 
-  // 204 No Content / empty body -> return undefined as T
+  // 204 No Content / 빈 본문 -> undefined를 T로 반환
   if (response.status === 204) return undefined as T;
   const text = await response.text();
   if (!text) return undefined as T;

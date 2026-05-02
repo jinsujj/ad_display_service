@@ -5,14 +5,14 @@ import android.content.SharedPreferences
 import java.util.UUID
 
 /**
- * Manages persistent device identification.
+ * 영구 디바이스 식별자를 관리한다.
  *
- * On first boot, generates a fresh UUID and stores it in SharedPreferences.
- * On subsequent boots, returns the previously persisted UUID so the device
- * keeps a stable identity across app restarts and reboots.
+ * 최초 부팅 시 새 UUID를 생성해 SharedPreferences에 저장한다.
+ * 이후 부팅에서는 이전에 영속화된 UUID를 반환하여, 앱 재시작 및 재부팅
+ * 사이에서도 디바이스가 안정적인 식별자를 유지하도록 한다.
  *
- * AC 12: Android APK generates UUID device_id on first boot and persists to
- * SharedPreferences.
+ * AC 12: Android APK가 최초 부팅 시 UUID device_id를 생성하고
+ * SharedPreferences에 영속화한다.
  */
 object DeviceIdManager {
 
@@ -21,14 +21,14 @@ object DeviceIdManager {
     private const val KEY_REGISTERED_AT = "device_registered_at"
 
     /**
-     * Returns the persistent device_id for this Android device.
+     * 본 Android 디바이스의 영구 device_id를 반환한다.
      *
-     * If no device_id exists yet (first boot), this method:
-     *   1. Generates a new random UUID v4 via [UUID.randomUUID]
-     *   2. Persists it to SharedPreferences (commit, synchronous)
-     *   3. Records the registration timestamp
+     * 아직 device_id가 없을 경우(최초 부팅) 본 메서드는:
+     *   1. [UUID.randomUUID]로 새 랜덤 UUID v4를 생성하고
+     *   2. SharedPreferences에 영속화(commit, 동기)하며
+     *   3. 등록 타임스탬프를 기록한다.
      *
-     * Subsequent calls return the same UUID without regenerating.
+     * 이후 호출에서는 재생성 없이 동일한 UUID를 반환한다.
      */
     @Synchronized
     fun getOrCreateDeviceId(context: Context): String {
@@ -41,8 +41,8 @@ object DeviceIdManager {
         val newDeviceId = UUID.randomUUID().toString()
         val registeredAt = System.currentTimeMillis()
 
-        // commit() instead of apply() so the value is durable before we
-        // hand it back to the caller — the WebView player URL depends on it.
+        // 호출자에게 값을 넘기기 전에 영속성을 보장하기 위해 apply()가 아닌
+        // commit() 사용 — WebView 플레이어 URL이 이 값에 의존한다.
         prefs.edit()
             .putString(KEY_DEVICE_ID, newDeviceId)
             .putLong(KEY_REGISTERED_AT, registeredAt)
@@ -52,23 +52,23 @@ object DeviceIdManager {
     }
 
     /**
-     * Returns the timestamp (epoch millis) when the device_id was first
-     * generated, or 0L if no device_id has been generated yet.
+     * device_id가 최초로 생성된 시점의 타임스탬프(epoch millis)를 반환한다.
+     * 아직 device_id가 생성되지 않았다면 0L을 반환한다.
      */
     fun getRegisteredAt(context: Context): Long {
         return prefs(context).getLong(KEY_REGISTERED_AT, 0L)
     }
 
     /**
-     * Returns true if a device_id has already been persisted on this device.
+     * 본 디바이스에 device_id가 이미 영속화되어 있으면 true를 반환한다.
      */
     fun hasDeviceId(context: Context): Boolean {
         return prefs(context).contains(KEY_DEVICE_ID)
     }
 
     /**
-     * For testing / factory-reset scenarios only. Not invoked in normal
-     * playback flow — once a device is registered it should keep its UUID.
+     * 테스트 및 공장 초기화 시나리오 전용. 일반 재생 플로우에서는 호출되지 않는다 —
+     * 디바이스가 한 번 등록되면 해당 UUID를 계속 유지해야 한다.
      */
     fun clearForTesting(context: Context) {
         prefs(context).edit().clear().commit()

@@ -16,17 +16,17 @@
         android:usesCleartextTraffic="false">
 
         <!--
-            AC 11: MainActivity launches a fullscreen WebView in immersive
-            sticky mode pointing at https://stream.owl-dev.me/player/{deviceId}.
+            AC 11: MainActivity는 https://stream.owl-dev.me/player/{deviceId}를
+            가리키는 전체화면 WebView를 immersive sticky 모드로 실행한다.
 
-            - theme @style/Theme.AdSignage already removes status / nav bars
-              at the window level so the cold-start frame is fully black
-            - launchMode singleTask + clearTaskOnLaunch=false keeps the
-              WebView resident for the life of the device
-            - screenOrientation=portrait — kiosk fridge displays are 10–15"
-              portrait FHD per the seed
-            - configChanges intercepts rotation / keyboard events so the
-              WebView is never destroyed mid-playback
+            - 테마 @style/Theme.AdSignage가 윈도우 레벨에서 상태바/내비게이션바를
+              미리 제거하므로 콜드 스타트 첫 프레임이 완전히 검정이다
+            - launchMode singleTask + clearTaskOnLaunch=false 조합으로 디바이스
+              수명 동안 WebView가 상주하도록 유지한다
+            - screenOrientation=portrait — 시드 사양에 따라 키오스크 냉장고
+              디스플레이는 10–15" 세로 FHD다
+            - configChanges로 회전/키보드 이벤트를 가로채 재생 중에 WebView가
+              파괴되지 않도록 한다
         -->
         <activity
             android:name=".MainActivity"
@@ -45,17 +45,17 @@
         </activity>
 
         <!--
-            AC 13: Auto-start the signage player on device boot.
+            AC 13: 디바이스 부팅 시 사이니지 플레이어 자동 시작.
 
-            Stock Android fires BOOT_COMPLETED after the user has unlocked
-            the device for the first time. Several OEM ROMs commonly used
-            on cheap fridge-mounted Android boxes (HTC, Xiaomi, Samsung,
-            generic AOSP fast-boot kernels) ship with their own boot
-            broadcasts — we listen for those too so the WebView wrapper
-            comes back up after every power cycle, regardless of vendor.
+            Stock Android는 사용자가 디바이스를 처음 잠금 해제한 뒤
+            BOOT_COMPLETED를 발사한다. 저가 냉장고 부착형 Android 박스에서
+            흔히 쓰이는 일부 OEM ROM(HTC, Xiaomi, Samsung, 일반 AOSP 퀵부트
+            커널 등)은 자체 부팅 브로드캐스트를 함께 송출하므로, 벤더에 관계
+            없이 매 전원 사이클 후 WebView 래퍼가 다시 올라오도록 그 신호도
+            함께 수신한다.
 
-            The receiver runs at default (medium) priority and is gated
-            on RECEIVE_BOOT_COMPLETED so only the OS can deliver these.
+            리시버는 기본(중간) 우선순위로 동작하며 RECEIVE_BOOT_COMPLETED로
+            게이팅되어 OS만 해당 인텐트를 전달할 수 있다.
         -->
         <receiver
             android:name=".BootReceiver"

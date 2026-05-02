@@ -13,11 +13,11 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * Auth REST endpoints.
+ * 인증 REST 엔드포인트.
  *
- * Sub-AC 2: exposes `POST /api/auth/signup`.
- * Sub-AC 3: exposes `POST /api/auth/login` (verifies credentials and returns
- *           a signed HS256 JWT access token).
+ * Sub-AC 2: `POST /api/auth/signup`을 노출.
+ * Sub-AC 3: `POST /api/auth/login`을 노출(자격증명을 검증하고 서명된
+ *           HS256 JWT 액세스 토큰을 반환).
  */
 @RestController
 @RequestMapping("/api/auth")

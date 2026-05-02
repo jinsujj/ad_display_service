@@ -15,25 +15,24 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * REST endpoints for the device → restaurant assignment lifecycle.
+ * 디바이스 → 음식점 할당 라이프사이클을 위한 REST 엔드포인트.
  *
- * Sub-AC 3 scope:
- *  - `POST /api/devices/{id}/assignment` — create the (first) active
- *    assignment for a device. Idempotent: if the device already has an active
- *    assignment, the service deactivates it and inserts a new active row,
- *    matching the wire-equivalent semantics of PUT.
- *  - `PUT /api/devices/{id}/assignment` — remap a device to a different
- *    restaurant. This is the SSE-driven entry point for demo scenario #3.
+ * Sub-AC 3 범위:
+ *  - `POST /api/devices/{id}/assignment` — 디바이스에 대해 (첫 번째) 활성
+ *    할당을 생성. 멱등(Idempotent): 디바이스가 이미 활성 할당을 가지고
+ *    있으면 서비스가 이를 비활성화하고 새 활성 행을 삽입 — PUT의 와이어
+ *    동등 시맨틱과 일치.
+ *  - `PUT /api/devices/{id}/assignment` — 디바이스를 다른 음식점으로
+ *    리매핑. 이는 데모 시나리오 #3을 위한 SSE 기반 진입점.
  *
- * HTTP contract:
- *  - 201 Created on POST success (response body = the new active assignment)
- *  - 200 OK      on PUT success
- *  - 400 Bad Request on validation failure (handled by GlobalExceptionHandler)
- *  - 404 Not Found if the device_id or restaurant_id is unknown
+ * HTTP 계약:
+ *  - 201 Created POST 성공 시 (응답 본문 = 새 활성 할당)
+ *  - 200 OK      PUT 성공 시
+ *  - 400 Bad Request 검증 실패 시 (GlobalExceptionHandler가 처리)
+ *  - 404 Not Found device_id 또는 restaurant_id가 알려지지 않은 경우
  *
- * Authorization is intentionally permissive in the hackathon build — the
- * SecurityConfig opens these routes; finer-grained checks land in a later
- * sub-AC alongside JWT login.
+ * 해커톤 빌드에서 인가는 의도적으로 관대 — SecurityConfig가 이 라우트들을
+ * 열어둠; 더 세밀한 검사는 JWT 로그인과 함께 추후 sub-AC에서 도착함.
  */
 @RestController
 @RequestMapping("/api/devices/{id}/assignment")
@@ -44,13 +43,12 @@ class DeviceAssignmentController(
     private val log = LoggerFactory.getLogger(DeviceAssignmentController::class.java)
 
     /**
-     * Creates the active assignment for the device whose path id is [id].
+     * 경로 id가 [id]인 디바이스에 대해 활성 할당을 생성.
      *
-     * Returns 201 Created with the persisted assignment. If the device already
-     * has an active assignment, the service collapses to update semantics
-     * (deactivate old + insert new) — the response still carries the *new*
-     * active row, and the status remains 201 to keep the POST contract simple
-     * for hackathon clients.
+     * 영속화된 할당과 함께 201 Created를 반환. 디바이스가 이미 활성 할당을
+     * 가지고 있으면 서비스가 update 시맨틱(이전 비활성화 + 새로 삽입)으로
+     * 축약 — 응답은 여전히 *새* 활성 행을 운반하고, 해커톤 클라이언트를
+     * 위해 POST 계약을 간단하게 유지하도록 상태는 201로 유지됨.
      */
     @PostMapping
     fun create(
@@ -65,12 +63,12 @@ class DeviceAssignmentController(
     }
 
     /**
-     * Updates (remaps) the active assignment for the device whose path id is
-     * [id] to point at the [body]'s restaurant.
+     * 경로 id가 [id]인 디바이스의 활성 할당을 [body]의 음식점을 가리키도록
+     * 업데이트(리매핑).
      *
-     * Returns 200 OK with the new active assignment. The previously-active row
-     * is deactivated atomically inside the service transaction so a device is
-     * never observably in a half-mapped state.
+     * 새 활성 할당과 함께 200 OK를 반환. 이전에 활성이던 행은 서비스
+     * 트랜잭션 내부에서 원자적으로 비활성화되므로 디바이스는 절대 절반만
+     * 매핑된 상태로 관찰되지 않음.
      */
     @PutMapping
     fun update(

@@ -1,31 +1,30 @@
 package com.owldev.adsignage
 
 /**
- * AC 11 — Resolves the player page URL the WebView will load.
+ * AC 11 — WebView가 로드할 플레이어 페이지 URL을 만들어낸다.
  *
- * The contract is intentionally narrow:
- *   - input: a base URL (e.g. https://stream.owl-dev.me) + a device_id (UUID)
- *   - output: "${base}/player/${deviceId}"
+ * 계약은 의도적으로 좁게 잡았다:
+ *   - 입력: 베이스 URL(예: https://stream.owl-dev.me) + device_id(UUID)
+ *   - 출력: "${base}/player/${deviceId}"
  *
- * The base URL is sourced from a string resource (`R.string.player_base_url`)
- * so QA / staging / prod can be swapped without touching code, and any
- * trailing slashes are trimmed. The device_id is required and must be
- * non-blank — passing a blank id is a programming error and we fail fast
- * rather than letting the WebView load `…/player/` and silently 404.
+ * 베이스 URL은 문자열 리소스(`R.string.player_base_url`)에서 가져오므로
+ * 코드를 건드리지 않고도 QA/스테이징/프로덕션을 교체할 수 있으며, 끝에 붙은
+ * 슬래시는 모두 제거한다. device_id는 필수이며 공백일 수 없다 — 공백 id를
+ * 넘기는 것은 프로그래밍 오류이므로, WebView가 `…/player/`를 로드해 조용히
+ * 404가 나는 대신 즉시 실패(fail fast)한다.
  *
- * Kept as a pure object (no Android imports) so it's exercisable from a
- * JVM unit test without Robolectric — the URL contract is the part most
- * likely to drift across deploys, so we want it covered by the cheapest
- * possible tests.
+ * Android import가 없는 순수 object로 유지하여 Robolectric 없이 JVM 단위
+ * 테스트에서 검증 가능하다 — 배포 환경에 따라 어긋나기 가장 쉬운 부분이
+ * URL 계약이므로, 가장 저렴한 계층의 테스트로 커버되도록 한다.
  */
 object PlayerUrl {
 
     private const val PLAYER_PATH = "player"
 
     /**
-     * Returns the canonical player URL for [deviceId] under [baseUrl].
+     * [baseUrl] 하위에서 [deviceId]에 해당하는 표준 플레이어 URL을 반환한다.
      *
-     * @throws IllegalArgumentException if [baseUrl] or [deviceId] is blank.
+     * @throws IllegalArgumentException [baseUrl] 또는 [deviceId]가 공백인 경우
      */
     fun forDevice(baseUrl: String, deviceId: String): String {
         require(baseUrl.isNotBlank()) { "baseUrl must not be blank" }

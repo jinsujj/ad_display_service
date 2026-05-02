@@ -1,18 +1,18 @@
 /**
- * Player playlist API surface.
+ * 플레이어 플레이리스트 API 표면.
  *
- * Wire contract (Spring Boot backend, owned by sibling sub-ACs):
+ * 와이어 계약(Spring Boot 백엔드, 형제 Sub-AC 소관):
  *
  *   GET /api/devices/{id}/playlist
  *     -> 200 OK, application/json
  *        {
  *          "deviceId":     string,
- *          "restaurantId": string?,                  // null if unmapped
+ *          "restaurantId": string?,                  // 매핑 없으면 null
  *          "ads": [
  *            {
  *              "adId":         string,
  *              "title":        string,
- *              "videoUrl":     string,               // absolute or path
+ *              "videoUrl":     string,               // 절대 URL 또는 경로
  *              "scheduleId":   string,
  *              "startTime":    string?,              // "HH:mm"
  *              "endTime":      string?,              // "HH:mm"
@@ -23,29 +23,28 @@
  *          "fetchedAt": string                       // ISO-8601
  *        }
  *
- * The endpoint is allow-listed in `SecurityConfig` (see comments on the
- * `/api/devices/*\/playlist` matcher) and is being implemented in a
- * sibling sub-AC. This module is tolerant of the endpoint not yet
- * existing — callers (the player page) catch the [ApiError] and render a
- * splash so the SSE-driven reload still has somewhere to land safely.
+ * 이 엔드포인트는 `SecurityConfig`의 허용 목록에 있으며(`/api/devices/*\/playlist`
+ * 매처의 주석 참조), 형제 Sub-AC에서 구현 중이다. 이 모듈은 엔드포인트가
+ * 아직 없는 경우에도 견고하다 — 호출자(플레이어 페이지)는 [ApiError]를
+ * 캐치하고 스플래시를 렌더링하므로, SSE 기반 리로드는 항상 안전하게 착지할
+ * 곳을 갖는다.
  *
- * Why a separate file (vs. extending `lib/devices.ts`):
- *   The devices module is admin-side; the playlist is player-side. They
- *   evolve independently and the player should not pull in admin-only
- *   types (and vice versa).
+ * 별도 파일로 둔 이유(`lib/devices.ts` 확장이 아닌):
+ *   devices 모듈은 관리자 측이고, playlist는 플레이어 측이다. 둘은 독립적으로
+ *   진화하며, 플레이어가 관리자 전용 타입을 끌어와서는 안 되고 그 반대도
+ *   마찬가지다.
  */
 
 import { apiFetch, apiUrl, ApiError } from "./api";
 
-/** A single ad entry in the device's current playlist. */
+/** 디바이스 현재 플레이리스트의 단일 광고 항목. */
 export interface PlaylistAd {
   adId: string;
   title: string;
   /**
-   * Resolved absolute URL the `<video>` element can `src` directly.
-   * If the backend returns a relative path, [fetchPlaylist] resolves it
-   * against the API base URL so the WebView can play it without further
-   * processing.
+   * `<video>` 요소가 그대로 `src`에 사용할 수 있는 해소된 절대 URL.
+   * 백엔드가 상대 경로를 반환하면 [fetchPlaylist]가 API 베이스 URL과 결합해
+   * 해소하므로, WebView는 추가 처리 없이 재생할 수 있다.
    */
   videoUrl: string;
   scheduleId: string;
@@ -54,7 +53,7 @@ export interface PlaylistAd {
   dailyCount?: number | null;
 }
 
-/** Full playlist payload for one device. */
+/** 단일 디바이스용 전체 플레이리스트 페이로드. */
 export interface DevicePlaylist {
   deviceId: string;
   restaurantId: string | null;
@@ -77,13 +76,12 @@ type RawPlaylist = {
 };
 
 /**
- * Fetches the current playlist for [deviceId]. Re-runs after every SSE
- * MAPPING_CHANGED / PLAYLIST_UPDATE event from the player page (see
- * `hooks/usePlayerSse.ts`).
+ * [deviceId]의 현재 플레이리스트를 가져온다. 플레이어 페이지의 모든 SSE
+ * MAPPING_CHANGED / PLAYLIST_UPDATE 이벤트 이후 재실행된다(`hooks/usePlayerSse.ts`
+ * 참조).
  *
- * The result is normalised so the player can treat the playlist
- * uniformly regardless of small backend shape variations during the
- * hackathon bring-up.
+ * 결과는 정규화되어, 해커톤 셋업 중 발생할 수 있는 소소한 백엔드 형태
+ * 차이와 무관하게 플레이어가 플레이리스트를 일관되게 다룰 수 있다.
  */
 export async function fetchPlaylist(
   deviceId: string,
@@ -116,18 +114,17 @@ function normalisePlaylist(
 }
 
 /**
- * Public-API counterpart of [normalisePlaylist] for the SSE fast-path
- * (AC 60201 Sub-AC 1).
+ * SSE 빠른 경로(AC 60201 Sub-AC 1)를 위한 [normalisePlaylist]의 공개 API
+ * 대응 함수.
  *
- * When a `PLAYLIST_UPDATE` SSE event carries an inline `playlist` on the
- * wire, the player hook hands that loosely-typed object to this function
- * to coerce it into a canonical `DevicePlaylist` before committing to
- * React state. Re-uses the exact normalisation rules as the HTTP refetch
- * path so playback is identical regardless of which channel delivered the
- * playlist.
+ * `PLAYLIST_UPDATE` SSE 이벤트가 와이어에서 인라인 `playlist`를 운반하면,
+ * 플레이어 훅은 그 느슨한 타입 객체를 이 함수로 넘겨 React 상태에 커밋하기
+ * 전에 표준 `DevicePlaylist`로 강제 변환한다. HTTP 재조회 경로와 정확히
+ * 동일한 정규화 규칙을 재사용하므로, 어떤 채널로 플레이리스트가 도착했든
+ * 재생은 동일하다.
  *
- * Throws if the input is not a plain object — the caller (PlayerClient)
- * catches and falls back to a refetch in that case.
+ * 입력이 plain object가 아니면 throw한다 — 호출자(PlayerClient)는 이를
+ * 캐치하고 재조회로 폴백한다.
  */
 export function normaliseInlinePlaylist(
   deviceId: string,
@@ -156,16 +153,16 @@ function normaliseAd(raw: RawPlaylistAd): PlaylistAd | null {
 }
 
 /**
- * Make sure the `<video src>` is something the WebView can resolve.
+ * `<video src>`가 WebView가 해소할 수 있는 형태인지 보장한다.
  *
- * Cases:
- *   - "https://..." / "http://..." → returned unchanged.
- *   - "/api/videos/abc.mp4"        → joined with the API base URL.
- *   - "videos/abc.mp4"             → joined with API base URL + leading "/".
+ * 케이스:
+ *   - "https://..." / "http://..." → 그대로 반환.
+ *   - "/api/videos/abc.mp4"        → API 베이스 URL과 결합.
+ *   - "videos/abc.mp4"             → API 베이스 URL과 앞쪽 "/"를 추가해 결합.
  *
- * Resolution is needed because the player runs at the Next.js origin
- * (e.g. https://stream.owl-dev.me), but the videos are served from the
- * Spring backend (which may be at a different host during local dev).
+ * 플레이어는 Next.js origin(예: https://stream.owl-dev.me)에서 실행되지만,
+ * 비디오는 Spring 백엔드(로컬 개발 시 다른 호스트일 수 있음)에서 제공되므로
+ * 해소가 필요하다.
  */
 function resolveVideoUrl(url: string): string {
   if (/^https?:\/\//i.test(url)) return url;
@@ -174,42 +171,39 @@ function resolveVideoUrl(url: string): string {
 
 /* ---------------------------------------------------------- AC 9 helpers
  *
- * AC 9 — "Ads play only within scheduled time window".
+ * AC 9 — "광고는 예약된 시간 윈도우 내에서만 재생된다".
  *
- * The wire contract above already carries `startTime` / `endTime` per ad
- * (HH:mm strings, device-local wall-clock semantics — see backend
- * `Ad.kt` / `AdScheduleDtos.kt`). The backend's CHECK constraint
- * `ck_ads_time_window` guarantees `endTime > startTime` so we can treat
- * the window as a simple half-open interval `[start, end)` without having
- * to model midnight wraparound.
+ * 위 와이어 계약은 이미 광고별 `startTime` / `endTime`을 운반한다(HH:mm
+ * 문자열, 디바이스 로컬 벽시계 시맨틱 — 백엔드 `Ad.kt` / `AdScheduleDtos.kt`
+ * 참조). 백엔드의 CHECK 제약 `ck_ads_time_window`가 `endTime > startTime`을
+ * 보장하므로, 윈도우는 자정 랩어라운드를 모델링하지 않고 단순 반열린 구간
+ * `[start, end)`로 다룰 수 있다.
  *
- * The player is the place this rule is enforced — per the seed:
- *   "All playback/schedule/SSE logic lives in Next.js player page,
- *    not native Android."
+ * 이 규칙은 플레이어에서 강제된다 — seed에 따르면:
+ *   "모든 재생/스케줄/SSE 로직은 네이티브 Android가 아닌 Next.js 플레이어
+ *    페이지에 있다."
  *
- * Two pure helpers keep the rule testable in isolation from the React
- * component, and let the round-robin AC keep using the same playlist
- * shape it already iterates over (we just hand it a narrowed list).
+ * 두 개의 순수 헬퍼는 규칙을 React 컴포넌트와 독립적으로 테스트 가능하게
+ * 하며, 라운드 로빈 AC가 이미 순회하는 동일한 플레이리스트 형태를 계속
+ * 사용할 수 있게 한다(좁혀진 목록만 넘겨주면 된다).
  */
 
 /**
- * Parse an `HH:mm` clock string into a minutes-since-midnight integer.
+ * `HH:mm` 시각 문자열을 자정 이후 분 단위 정수로 파싱한다.
  *
- * Returns `null` on any malformed input — that includes the empty
- * string, missing field, out-of-range hour/minute, or non-numeric
- * fragments. Callers (see [isAdActive]) treat a `null` result as
- * "no schedule on this end of the window" and conservatively allow
- * playback rather than masking an ad permanently because of a server
- * formatting bug.
+ * 형식 오류 입력에는 `null`을 반환한다 — 빈 문자열, 누락 필드, 범위 밖의
+ * 시/분, 비숫자 조각 모두 포함. 호출자(예: [isAdActive])는 `null` 결과를
+ * "이쪽 끝에는 스케줄 없음"으로 간주하고 보수적으로 재생을 허용함으로써,
+ * 서버의 포맷팅 버그 때문에 광고가 영구적으로 가려지는 일을 막는다.
  *
- * Exported for the player's status overlay so it can render the
- * window in a human-readable form alongside the live filter outcome.
+ * 플레이어의 상태 오버레이가 라이브 필터 결과와 함께 윈도우를 사람이
+ * 읽기 쉬운 형태로 렌더링할 수 있도록 export한다.
  */
 export function parseHhMmToMinutes(value: string | null | undefined): number | null {
   if (!value) return null;
-  // Accept "HH:mm" only — backend serialises with this exact pattern.
-  // Reject "H:mm", "HHmm", "HH:mm:ss", or trailing whitespace so we
-  // never silently accept a mis-formatted window.
+  // "HH:mm"만 허용 — 백엔드는 정확히 이 패턴으로 직렬화한다.
+  // "H:mm", "HHmm", "HH:mm:ss", 끝쪽 공백은 모두 거부하여 잘못된 형식의
+  // 윈도우를 조용히 받아들이지 않도록 한다.
   const match = /^([0-9]{2}):([0-9]{2})$/.exec(value);
   if (!match) return null;
   const h = Number(match[1]);
@@ -221,41 +215,39 @@ export function parseHhMmToMinutes(value: string | null | undefined): number | n
 }
 
 /**
- * Convert a [Date] to the same minutes-since-midnight integer used by
- * [parseHhMmToMinutes], in the device's local timezone (the timezone
- * of the JS runtime — which on the WebView is the device timezone).
+ * [Date]를 디바이스 로컬 타임존(JS 런타임의 타임존 — WebView에서는 디바이스
+ * 타임존)에서 [parseHhMmToMinutes]가 사용하는 것과 같은 자정 이후 분 단위
+ * 정수로 변환한다.
  *
- * Done this way (vs. `toLocaleTimeString` parsing) because:
- *   - it never allocates a string, so it is cheap to call on every
- *     render of the player while the wall-clock tick is live;
- *   - it is locale-independent, so the player behaves identically on
- *     a Korean and an English Android device;
- *   - it sidesteps the half-hour timezones (e.g. Asia/Kabul) that
- *     can break naive `toISOString().slice(11, 16)` approaches.
+ * `toLocaleTimeString` 파싱이 아닌 이 방식을 쓴 이유:
+ *   - 문자열을 절대 할당하지 않아, 벽시계 틱이 살아있는 동안 플레이어의
+ *     매 렌더에서 호출해도 비용이 작다;
+ *   - 로케일 독립이므로, 한국어/영어 Android 디바이스에서 동일하게 동작한다;
+ *   - 30분 단위 타임존(예: Asia/Kabul)을 피해, 단순한
+ *     `toISOString().slice(11, 16)` 접근법을 깨뜨리지 않는다.
  */
 export function dateToLocalMinutes(date: Date): number {
   return date.getHours() * 60 + date.getMinutes();
 }
 
 /**
- * AC 9 predicate — is [ad] currently within its scheduled play window?
+ * AC 9 술어 — [ad]가 현재 스케줄 재생 윈도우 안에 있는가?
  *
- * Semantics:
- *   - Window is `[startTime, endTime)` — start is inclusive, end is
- *     exclusive. Matches the typical "advertise during dinner service
- *     17:00..21:00" intent: at 21:00 the window has just ended.
- *   - Wall-clock time is taken from [now] in the device's local
- *     timezone. Defaults to a fresh `new Date()` so callers can omit
- *     it for the simple case while tests can inject a fixed time.
- *   - If either bound is missing or unparseable, that side of the
- *     window is treated as unconstrained. Two missing bounds means
- *     "always active" — fail-open so a server bug producing nulls
- *     doesn't blackhole a customer's entire schedule. The backend's
- *     own validation (`UpdateAdScheduleRequest`) guarantees both
- *     fields are present in practice.
+ * 시맨틱:
+ *   - 윈도우는 `[startTime, endTime)` — 시작은 포함, 종료는 제외.
+ *     일반적인 "저녁 서비스 17:00..21:00 동안 광고" 의도와 일치한다:
+ *     21:00에는 윈도우가 막 종료된 상태다.
+ *   - 벽시계 시각은 디바이스 로컬 타임존의 [now]에서 가져온다. 기본값은
+ *     새 `new Date()`이므로 단순한 경우 호출자는 인자를 생략할 수 있고,
+ *     테스트는 고정 시각을 주입할 수 있다.
+ *   - 어느 한쪽 경계가 누락되었거나 파싱 불가능하면, 그쪽 윈도우는 제약
+ *     없는 것으로 취급한다. 두 경계 모두 누락이면 "항상 활성" — null을
+ *     생성하는 서버 버그가 고객의 전체 스케줄을 블랙홀에 빠뜨리지 않도록
+ *     fail-open. 실제로는 백엔드의 자체 검증(`UpdateAdScheduleRequest`)이
+ *     두 필드가 모두 존재함을 보장한다.
  *
- * Pure / no React dependencies so it can be exercised by a future jest
- * suite alongside [filterActiveAds].
+ * 순수 / React 의존성 없음 — [filterActiveAds]와 함께 향후 jest 스위트에서
+ * 실행할 수 있다.
  */
 export function isAdActive(ad: PlaylistAd, now: Date = new Date()): boolean {
   const startMin = parseHhMmToMinutes(ad.startTime);
@@ -268,18 +260,16 @@ export function isAdActive(ad: PlaylistAd, now: Date = new Date()): boolean {
 }
 
 /**
- * AC 9 — narrow a playlist's `ads` list to only those currently within
- * their scheduled window. Order is preserved so the round-robin AC can
- * continue iterating in playlist order; the active-set is just a stable
- * view over the source array filtered by the live wall clock.
+ * AC 9 — 플레이리스트의 `ads` 목록을 현재 스케줄 윈도우 안에 있는 항목으로만
+ * 좁힌다. 순서는 보존되므로 라운드 로빈 AC는 플레이리스트 순서대로 계속
+ * 순회할 수 있다. 활성 세트는 원본 배열을 라이브 벽시계로 필터링한 안정된
+ * 뷰일 뿐이다.
  *
- * Why a separate function rather than a one-liner inline filter on the
- * caller side:
- *   - Lets the player page surface "active n of m" in the status
- *     overlay using the same source of truth as the playback path.
- *   - Keeps the predicate's `now` injection point in one place — easy
- *     to swap to a different time source (e.g. server time) without
- *     hunting through the player component.
+ * 호출자 측의 한 줄 인라인 필터가 아닌 별도 함수로 둔 이유:
+ *   - 플레이어 페이지가 상태 오버레이의 "active n of m"을 재생 경로와 동일한
+ *     진실의 출처로 표시할 수 있게 한다.
+ *   - 술어의 `now` 주입 지점을 한 곳에 둠으로써, 다른 시간 소스(예: 서버
+ *     시각)로의 교체가 쉬워진다 — 플레이어 컴포넌트를 뒤지지 않고도 가능.
  */
 export function filterActiveAds(
   ads: PlaylistAd[],
@@ -288,5 +278,5 @@ export function filterActiveAds(
   return ads.filter((ad) => isAdActive(ad, now));
 }
 
-/** Re-export for convenience so the player page only imports from one module. */
+/** 플레이어 페이지가 단일 모듈에서만 import할 수 있도록 편의를 위해 재export. */
 export { ApiError };

@@ -9,20 +9,19 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * DeviceAssignment maps a physical signage device to a restaurant at a point in time.
+ * DeviceAssignment는 시점 t에 물리 사이니지 디바이스를 음식점에 매핑.
  *
- * Maps to the device_assignments table created by Flyway migration V90.
+ * Flyway 마이그레이션 V90이 생성한 device_assignments 테이블에 매핑.
  *
- * The [active] flag identifies the current/effective assignment for a device.
- * When a device is remapped (the SSE-driven demo scenario #3), the existing
- * active row is deactivated and a new active row is inserted, so the table
- * doubles as an audit log of past mappings.
+ * [active] 플래그는 디바이스의 현재/유효한 할당을 식별. 디바이스가
+ * 리매핑되면(SSE 기반 데모 시나리오 #3), 기존 활성 행이 비활성화되고
+ * 새 활성 행이 삽입되므로 테이블은 과거 매핑의 감사 로그 역할도 함.
  *
- * Ontology concepts represented:
+ * 표현된 온톨로지 개념:
  *  - device_id              → [deviceId]    (FK → devices.device_id)
  *  - device_restaurant_id   → [restaurantId] (FK → restaurants.restaurant_id)
  *  - assigned_at            → [assignedAt]
- *  - (active flag)          → [active]
+ *  - (active 플래그)        → [active]
  */
 @Entity
 @Table(
@@ -52,8 +51,8 @@ class DeviceAssignment(
     var active: Boolean = true,
 ) {
     /**
-     * Marks this assignment as no longer current. Used when a device is remapped:
-     * the previously active row is deactivated and a new active row is inserted.
+     * 이 할당을 더 이상 현재가 아니라고 표시. 디바이스가 리매핑될 때 사용:
+     * 이전 활성 행은 비활성화되고 새 활성 행이 삽입됨.
      */
     fun deactivate() {
         this.active = false

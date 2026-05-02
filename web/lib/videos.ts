@@ -1,44 +1,43 @@
 /**
- * Videos API surface used by the admin web.
+ * 관리자 웹이 사용하는 비디오 API 표면.
  *
- * Wire contract (Spring Boot backend, owned by AC 40104 sibling sub-ACs):
+ * 와이어 계약(Spring Boot 백엔드, AC 40104 형제 Sub-AC 소관):
  *
  *   POST /api/videos                              (multipart/form-data)
- *     part `file`: the MP4 binary
+ *     part `file`: MP4 바이너리
  *   -> 201 Created, application/json
  *      {
  *        "id":           string  (UUID),
- *        "filename":     string  (server-generated on-disk name),
- *        "originalName": string  (advertiser-supplied filename),
+ *        "filename":     string  (서버 생성 디스크 파일명),
+ *        "originalName": string  (광고주가 제공한 파일명),
  *        "mimeType":     string  ("video/mp4"),
  *        "sizeBytes":    number,
  *        "url":          string  ("/api/videos/{filename}"),
  *        "uploadedAt":   string  (ISO-8601 instant)
  *      }
  *
- *   Errors are mapped by GlobalExceptionHandler:
- *     400 Bad Request          empty body / missing filename / missing part /
+ *   에러는 GlobalExceptionHandler가 매핑한다:
+ *     400 Bad Request          빈 본문 / 파일명 누락 / part 누락 /
  *                              malformed multipart
- *     413 Payload Too Large    application-level cap (500 MiB) OR servlet cap
- *     415 Unsupported Media    Content-Type missing or not in the MP4 whitelist
- *     401 Unauthorized         no/invalid JWT (the endpoint is auth-gated)
+ *     413 Payload Too Large    애플리케이션 레벨 한도(500 MiB) 또는 servlet 한도
+ *     415 Unsupported Media    Content-Type 누락 또는 MP4 화이트리스트에 없음
+ *     401 Unauthorized         JWT 없음/유효하지 않음(엔드포인트는 인증 게이트)
  *
- * Why XMLHttpRequest instead of `fetch`:
- *   The standard `fetch()` API on browsers does not expose a progress event for
- *   the *upload* phase (only the download phase via `Response.body`). Sub-AC 3
- *   explicitly requires "progress indication", which for a 100-MB MP4 over a
- *   restaurant Wi-Fi link is the difference between "the page is hung" and
- *   "70% — keep waiting". XMLHttpRequest's `xhr.upload.onprogress` is the only
- *   first-party browser primitive that gives us bytes-uploaded / bytes-total
- *   ticks during the upload, so the upload helper here intentionally bypasses
- *   `apiFetch` (lib/api.ts) and goes direct to XHR.
+ * `fetch` 대신 XMLHttpRequest를 사용하는 이유:
+ *   브라우저의 표준 `fetch()` API는 *업로드* 단계의 progress 이벤트를 노출하지
+ *   않는다(다운로드 단계만 `Response.body`로 노출). Sub-AC 3은 명시적으로
+ *   "progress indication"을 요구하며, 식당 Wi-Fi에서 100MB MP4를 올릴 때
+ *   "페이지가 멈춘 것 같다"와 "70% — 기다리세요"의 차이를 만든다. XMLHttpRequest의
+ *   `xhr.upload.onprogress`는 업로드 중 bytes-uploaded / bytes-total 틱을
+ *   제공하는 유일한 일급 브라우저 기본 기능이므로, 여기 업로드 헬퍼는 의도적으로
+ *   `apiFetch`(lib/api.ts)를 우회해 XHR을 직접 사용한다.
  */
 
 import { apiFetch, apiUrl } from "./api";
 
 /* --------------------------------------------------------------- types */
 
-/** Wire shape returned by `POST /api/videos`. */
+/** `POST /api/videos`가 반환하는 와이어 형태. */
 export interface VideoUploadResponse {
   id: string;
   filename: string;
@@ -49,7 +48,7 @@ export interface VideoUploadResponse {
   uploadedAt: string;
 }
 
-/** Backend `ApiError` JSON envelope (mirrors GlobalExceptionHandler.ApiError). */
+/** 백엔드 `ApiError` JSON 봉투(GlobalExceptionHandler.ApiError와 동일). */
 interface ApiErrorBody {
   timestamp?: string;
   status?: number;
@@ -59,10 +58,9 @@ interface ApiErrorBody {
 }
 
 /**
- * Upload-specific error so callers can branch on status code without parsing
- * the message string. Mirrors the shape of `ApiError` in lib/api.ts but is
- * raised from XHR (not fetch) so we can't reuse that class directly without
- * importing it in a misleading way.
+ * 호출자가 메시지 문자열을 파싱하지 않고도 상태 코드로 분기할 수 있도록 한
+ * 업로드 전용 에러. lib/api.ts의 `ApiError` 형태를 따르지만 XHR(fetch가 아님)에서
+ * 발생하므로, 그 클래스를 오해 소지 없이 직접 재사용할 수는 없다.
  */
 export class VideoUploadError extends Error {
   readonly status: number;
@@ -76,35 +74,34 @@ export class VideoUploadError extends Error {
   }
 }
 
-/** Per-tick payload delivered to the `onProgress` callback during upload. */
+/** 업로드 중 `onProgress` 콜백에 전달되는 틱별 페이로드. */
 export interface VideoUploadProgress {
-  /** Bytes the browser has pushed to the network so far. */
+  /** 지금까지 브라우저가 네트워크로 푸시한 바이트 수. */
   loaded: number;
-  /** Total bytes to push (== file size). 0 if the browser cannot compute it. */
+  /** 푸시할 총 바이트 수(= 파일 크기). 브라우저가 계산할 수 없으면 0. */
   total: number;
-  /** True once the browser has progress totals (some early ticks may not). */
+  /** 브라우저가 진행률 총량을 알고 있으면 true(초기 일부 틱은 모를 수 있음). */
   lengthComputable: boolean;
   /**
-   * Convenience derived value in [0, 1]. NaN if `total === 0` and we'd divide
-   * by zero — callers should guard with `Number.isFinite(percent)` before
-   * rendering.
+   * [0, 1] 범위의 편의 파생값. `total === 0`이면 0으로 나누게 되어 NaN이 된다 —
+   * 호출자는 렌더링 전에 `Number.isFinite(percent)`로 가드해야 한다.
    */
   percent: number;
 }
 
-/** Options for [uploadVideo]. */
+/** [uploadVideo]의 옵션. */
 export interface UploadVideoOptions {
-  /** Called on every `xhr.upload.onprogress` tick. */
+  /** 모든 `xhr.upload.onprogress` 틱에서 호출된다. */
   onProgress?: (p: VideoUploadProgress) => void;
   /**
-   * AbortSignal to cancel the in-flight request. Aborting rejects the returned
-   * promise with a [VideoUploadError] of status `0` and message "aborted".
+   * 진행 중 요청을 취소할 AbortSignal. abort 시 반환 Promise는 status `0`,
+   * message "aborted"의 [VideoUploadError]로 reject된다.
    */
   signal?: AbortSignal;
   /**
-   * Optional bearer token (JWT) to send as `Authorization: Bearer <token>`.
-   * If omitted, falls back to `localStorage.adsignage_auth_token` so a future
-   * login UI just has to populate that key and uploads start authenticating.
+   * `Authorization: Bearer <token>`으로 전송할 선택적 bearer 토큰(JWT).
+   * 생략 시 `localStorage.adsignage_auth_token`으로 폴백하므로, 향후 로그인
+   * UI는 그 키만 채우면 업로드 인증이 시작된다.
    */
   bearerToken?: string;
 }
@@ -112,38 +109,37 @@ export interface UploadVideoOptions {
 /* ----------------------------------------------------- client-side rules */
 
 /**
- * Hard cap mirrored from the backend's
- * `VideoStorageProperties.maxUploadSizeBytes` default (500 MiB). Re-declared
- * here so the client can reject oversize files *before* paying the upload
- * latency cost. If the server caps change, bump this constant — the server
- * will still enforce its own limit.
+ * 백엔드의 `VideoStorageProperties.maxUploadSizeBytes` 기본값(500 MiB)을
+ * 그대로 반영한 하드 한도. 클라이언트가 업로드 지연 비용을 *지불하기 전에*
+ * 큰 파일을 거부할 수 있도록 여기 다시 선언한다. 서버 한도가 바뀌면 이 상수를
+ * 갱신한다 — 서버는 그래도 자체 한도를 강제한다.
  */
 export const MAX_UPLOAD_SIZE_BYTES: number = 500 * 1024 * 1024;
 
 /**
- * MIME types the backend accepts (mirrors `VideoStorageProperties.allowedMimeTypes`).
- * The backend is the source of truth; this is a UX-only fast-fail.
+ * 백엔드가 허용하는 MIME 타입(`VideoStorageProperties.allowedMimeTypes`와 동일).
+ * 진실의 출처는 백엔드이며, 이것은 UX 전용 빠른 실패다.
  */
 export const ALLOWED_MIME_TYPES: readonly string[] = ["video/mp4"];
 
-/** Allowed file-extension fallback (some browsers don't set Content-Type). */
+/** 허용 확장자 폴백(일부 브라우저는 Content-Type을 설정하지 않음). */
 const ALLOWED_EXTENSIONS: readonly string[] = [".mp4"];
 
-/** Result of [validateMp4File] — a discriminated union for clean call sites. */
+/** [validateMp4File]의 결과 — 깔끔한 호출 지점을 위한 식별 유니온. */
 export type Mp4ValidationResult =
   | { ok: true }
   | { ok: false; code: "empty" | "too-large" | "wrong-type"; message: string };
 
 /**
- * Client-side MP4 / size validation. Runs synchronously against the [File]
- * metadata the browser already has — no I/O, no parsing. The backend re-runs
- * the same checks (and signs off on the bytes), so this is purely a UX layer
- * that fails fast before paying the upload cost.
+ * 클라이언트 측 MP4 / 크기 검증. 브라우저가 이미 가지고 있는 [File] 메타데이터에
+ * 대해 동기적으로 실행된다 — I/O 없음, 파싱 없음. 백엔드가 동일한 검사를
+ * 다시 수행하고 바이트도 검사하므로, 이것은 업로드 비용을 지불하기 전에 빠르게
+ * 실패시키기 위한 순수 UX 레이어다.
  *
- * Failure codes match the three backend rejection paths:
- *   - "empty"       → backend EmptyVideoUploadException → 400
- *   - "too-large"   → backend VideoTooLargeException    → 413
- *   - "wrong-type"  → backend InvalidVideoMimeTypeException → 415
+ * 실패 코드는 백엔드의 세 가지 거부 경로와 일치한다:
+ *   - "empty"       → 백엔드 EmptyVideoUploadException → 400
+ *   - "too-large"   → 백엔드 VideoTooLargeException    → 413
+ *   - "wrong-type"  → 백엔드 InvalidVideoMimeTypeException → 415
  */
 export function validateMp4File(file: File | null | undefined): Mp4ValidationResult {
   if (!file) {
@@ -162,9 +158,9 @@ export function validateMp4File(file: File | null | undefined): Mp4ValidationRes
     };
   }
 
-  // Most browsers populate `file.type` from the OS MIME table when the user
-  // picks a file via <input type="file">; some (notably older Edge / certain
-  // Android WebViews) leave it empty and we have to fall back to the extension.
+  // 대부분의 브라우저는 사용자가 <input type="file">로 파일을 고를 때 OS MIME
+  // 테이블에서 `file.type`을 채운다. 일부(특히 구형 Edge / 특정 Android
+  // WebView)는 비워두므로, 확장자로 폴백해야 한다.
   const mime = (file.type || "").trim().toLowerCase();
   const lowerName = file.name.toLowerCase();
   const extOk = ALLOWED_EXTENSIONS.some((ext) => lowerName.endsWith(ext));
@@ -180,7 +176,7 @@ export function validateMp4File(file: File | null | undefined): Mp4ValidationRes
       };
     }
   } else if (!extOk) {
-    // No type metadata AND no .mp4 extension — almost certainly not an MP4.
+    // 타입 메타데이터도 없고 .mp4 확장자도 없음 — 거의 확실히 MP4가 아님.
     return {
       ok: false,
       code: "wrong-type",
@@ -193,7 +189,7 @@ export function validateMp4File(file: File | null | undefined): Mp4ValidationRes
   return { ok: true };
 }
 
-/** Pretty-print a byte count using binary IEC suffixes. */
+/** 이진 IEC 접미사로 바이트 수를 보기 좋게 출력한다. */
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return "—";
   if (bytes < 1024) return `${bytes} B`;
@@ -209,31 +205,30 @@ export function formatBytes(bytes: number): string {
 
 /* ------------------------------------------------------ upload */
 
-/** Read a JWT from localStorage (browser-only). Returns `null` server-side. */
+/** localStorage에서 JWT를 읽는다(브라우저 전용). 서버 사이드에서는 `null` 반환. */
 function readStoredAuthToken(): string | null {
   if (typeof window === "undefined") return null;
   try {
     return window.localStorage.getItem("adsignage_auth_token");
   } catch {
-    // Storage may throw in private mode — treat as unauthenticated.
+    // 시크릿 모드에서는 스토리지 접근이 throw할 수 있다 — 미인증으로 취급.
     return null;
   }
 }
 
 /**
- * Uploads a single MP4 to `POST /api/videos` with progress reporting.
+ * 진행률 보고를 포함하여 단일 MP4를 `POST /api/videos`로 업로드한다.
  *
- * Resolves with the parsed [VideoUploadResponse] on 2xx. Rejects with a
- * [VideoUploadError] on:
- *   - HTTP non-2xx (status carries the backend's code, body carries the
- *     parsed `ApiError` JSON or raw text fallback);
- *   - Network failure / DNS error (status 0, body null);
- *   - User abort via `options.signal` (status 0, message "aborted");
- *   - Browser-side JSON parse failure on 2xx (status 200, body == raw text).
+ * 2xx에서는 파싱된 [VideoUploadResponse]로 resolve한다. 다음의 경우
+ * [VideoUploadError]로 reject한다:
+ *   - HTTP 비-2xx(status는 백엔드 코드, body는 파싱된 `ApiError` JSON 또는
+ *     원본 텍스트 폴백);
+ *   - 네트워크 실패 / DNS 에러(status 0, body null);
+ *   - `options.signal`을 통한 사용자 abort(status 0, message "aborted");
+ *   - 2xx에서 브라우저 측 JSON 파싱 실패(status 200, body == 원본 텍스트).
  *
- * The function intentionally does NOT re-run client-side validation — call
- * [validateMp4File] in the form first so the user sees a synchronous error
- * before the request kicks off.
+ * 이 함수는 클라이언트 측 검증을 의도적으로 다시 실행하지 *않는다* — 폼에서
+ * 먼저 [validateMp4File]을 호출해 사용자가 요청 전에 동기 에러를 확인하도록 한다.
  */
 export function uploadVideo(
   file: File,
@@ -245,15 +240,15 @@ export function uploadVideo(
   return new Promise<VideoUploadResponse>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url, true);
-    xhr.responseType = "text"; // we'll JSON.parse manually for better errors
+    xhr.responseType = "text"; // 더 나은 에러를 위해 JSON.parse는 직접 수행
 
-    // Accept JSON so a misconfigured server doesn't try to give us text/html.
+    // 잘못 설정된 서버가 text/html을 주려고 시도하지 않도록 JSON을 Accept.
     xhr.setRequestHeader("Accept", "application/json");
 
-    // NB: we deliberately do NOT set Content-Type — the browser must set it
-    // to `multipart/form-data; boundary=...` from the FormData object, and
-    // setting it manually would strip the boundary and the server would
-    // reject the request as malformed multipart.
+    // 주의: Content-Type은 의도적으로 설정하지 *않는다* — 브라우저가 FormData
+    // 객체로부터 `multipart/form-data; boundary=...`을 직접 설정해야 하며,
+    // 수동으로 설정하면 boundary가 제거되어 서버가 malformed multipart로
+    // 요청을 거부하게 된다.
 
     const token = bearerToken ?? readStoredAuthToken();
     if (token) {
@@ -273,8 +268,8 @@ export function uploadVideo(
       };
     }
 
-    // Fire a final "100%" tick on successful upload so the UI lands at 100
-    // even if the server is slow to write the response back.
+    // 업로드 성공 시 마지막 "100%" 틱을 발생시켜, 서버가 응답을 늦게 써내도
+    // UI는 100에 도달하도록 한다.
     xhr.upload.onload = () => {
       if (onProgress) {
         onProgress({
@@ -294,7 +289,7 @@ export function uploadVideo(
         try {
           parsed = JSON.parse(text);
         } catch {
-          parsed = text; // surface raw text so callers can debug
+          parsed = text; // 호출자가 디버깅할 수 있도록 원본 텍스트 노출
         }
       }
 
@@ -342,7 +337,7 @@ export function uploadVideo(
 
     if (signal) {
       if (signal.aborted) {
-        // Abort before send — short-circuit synchronously.
+        // 전송 전 abort — 동기적으로 단락 처리.
         reject(new VideoUploadError("Upload aborted.", 0, null));
         return;
       }
@@ -356,7 +351,7 @@ export function uploadVideo(
     }
 
     const form = new FormData();
-    // The server expects the multipart name `file` (see VideoController.upload).
+    // 서버는 multipart 이름으로 `file`을 기대한다(VideoController.upload 참조).
     form.append("file", file, file.name);
 
     xhr.send(form);
@@ -366,20 +361,18 @@ export function uploadVideo(
 /* ------------------------------------------------------ list */
 
 /**
- * Wire shape returned by `GET /api/videos`. Identical to
- * [VideoUploadResponse] so the admin UI can reuse one row renderer for both
- * the just-uploaded asset (returned by `POST /api/videos`) and the historical
- * roster fetched on page load.
+ * `GET /api/videos`가 반환하는 와이어 형태. [VideoUploadResponse]와 동일하므로,
+ * 관리자 UI는 방금 업로드된 자산(`POST /api/videos` 반환)과 페이지 로드 시
+ * 가져오는 기존 목록 모두에 동일한 행 렌더러를 재사용할 수 있다.
  */
 export type VideoListItem = VideoUploadResponse;
 
 /**
- * Tolerant variant for legacy / alternative backend shapes — mirrors the
- * pattern used in `lib/devices.ts`. The JPA entity surface and the wire DTO
- * agree today, but accepting a couple of common alias spellings (e.g. a
- * Spring controller that wraps the collection in `{ items: [...] }`, or
- * advertisers' future `originalFilename` rename) decouples the UI from the
- * exact backend evolution path.
+ * 레거시 / 대체 백엔드 형태에 관대한 변형 — `lib/devices.ts`에서 사용된
+ * 패턴과 동일. JPA 엔티티 표면과 와이어 DTO는 현재 일치하지만, 흔한 별칭
+ * 표기 몇 가지(예: 컬렉션을 `{ items: [...] }`로 감싸는 Spring 컨트롤러,
+ * 광고주의 향후 `originalFilename` 이름 변경)를 허용함으로써 UI를 정확한
+ * 백엔드 진화 경로와 결합 해제한다.
  */
 type RawVideo = Partial<VideoListItem> & {
   videoId?: string;
@@ -394,8 +387,8 @@ type RawVideo = Partial<VideoListItem> & {
 };
 
 /**
- * Normalise whatever the backend returns into the canonical [VideoListItem]
- * shape so the admin UI doesn't have to second-guess field naming.
+ * 백엔드가 반환하는 형태를 표준 [VideoListItem] 형태로 정규화하여, 관리자
+ * UI가 필드 이름을 추측할 필요가 없도록 한다.
  */
 function normaliseVideo(raw: RawVideo): VideoListItem {
   const id = raw.id ?? raw.videoId ?? "";
@@ -423,25 +416,24 @@ function normaliseVideo(raw: RawVideo): VideoListItem {
 }
 
 /**
- * Fetches the full uploaded-videos list from the backend.
+ * 백엔드에서 업로드된 비디오 전체 목록을 가져온다.
  *
- * Returns a normalised, newest-first [VideoListItem] array. The backend is
- * expected to sort `uploaded_at DESC` (see
- * `VideoRepository.findAllByOrderByUploadedAtDesc`), but the UI re-sorts as
- * a defensive belt-and-braces — if a future caching layer or a tolerant
- * shim returns rows in an unexpected order, the admin still sees the most
- * recent upload at the top.
+ * 정규화되고 최신순으로 정렬된 [VideoListItem] 배열을 반환한다. 백엔드는
+ * `uploaded_at DESC`로 정렬한다고 가정하지만(`VideoRepository.findAllByOrderByUploadedAtDesc`
+ * 참조), 향후 캐싱 레이어나 관대한 어댑터가 예상치 못한 순서로 행을 반환할
+ * 가능성에 대비해 UI가 다시 정렬한다 — 그래도 관리자는 항상 가장 최근
+ * 업로드를 맨 위에서 본다.
  *
- * Throws [ApiError] from `lib/api.ts` if the backend responds with non-2xx
- * — callers (e.g. the videos page) catch this and render an inline error
- * notice rather than letting the page crash.
+ * 백엔드가 2xx가 아닌 응답을 하면 `lib/api.ts`의 [ApiError]를 throw한다 —
+ * 호출자(예: videos 페이지)는 이를 캐치하고 페이지를 크래시시키지 않고
+ * 인라인 에러 안내를 렌더링한다.
  */
 export async function listVideos(): Promise<VideoListItem[]> {
   const raw = await apiFetch<RawVideo[] | { items?: RawVideo[] }>(
     "/api/videos",
   );
 
-  // Some Spring controllers wrap collections in `{ items: [...] }`. Accept both.
+  // 일부 Spring 컨트롤러는 컬렉션을 `{ items: [...] }`로 감싼다. 둘 다 수용.
   const items = Array.isArray(raw)
     ? raw
     : Array.isArray(raw?.items)
@@ -450,8 +442,8 @@ export async function listVideos(): Promise<VideoListItem[]> {
 
   const normalised = items.map(normaliseVideo);
 
-  // Defensive newest-first sort. Falsy / unparseable timestamps end up at the
-  // bottom (Date.parse → NaN, which is treated as -Infinity below).
+  // 방어적 최신순 정렬. falsy / 파싱 불가 타임스탬프는 맨 아래로 간다
+  // (Date.parse → NaN은 아래에서 -Infinity로 취급).
   return normalised.slice().sort((a, b) => {
     const ta = Date.parse(a.uploadedAt);
     const tb = Date.parse(b.uploadedAt);
@@ -461,7 +453,7 @@ export async function listVideos(): Promise<VideoListItem[]> {
   });
 }
 
-/** Build a human-friendly error message from the parsed API error body. */
+/** 파싱된 API 에러 본문에서 사람이 읽기 좋은 에러 메시지를 생성. */
 function buildErrorMessage(status: number, body: unknown): string {
   if (body && typeof body === "object") {
     const apiError = body as ApiErrorBody;

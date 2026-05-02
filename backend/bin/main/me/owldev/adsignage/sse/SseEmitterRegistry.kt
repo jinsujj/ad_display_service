@@ -9,40 +9,38 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * Thread-safe registry of [SseEmitter]s keyed by device_id.
+ * device_id로 키잉된 [SseEmitter]의 스레드 안전 registry.
  *
- * One device may have multiple concurrent emitters (e.g. Android WebView
- * reconnecting after a network blip, or an admin debug page open in a
- * second tab) — every active emitter for a device receives every broadcast.
+ * 한 디바이스가 동시에 여러 emitter를 가질 수 있음(예: 네트워크 끊김 후
+ * 재연결되는 안드로이드 WebView, 또는 두 번째 탭에서 열린 관리자 디버그
+ * 페이지) — 디바이스의 모든 활성 emitter는 모든 브로드캐스트를 받음.
  *
- * # Public API (Sub-AC 1 contract)
- *  - [add]            — register an emitter under a deviceId
- *  - [remove]         — explicitly drop an emitter (also called automatically
- *                       when the underlying connection completes / times out
- *                       / errors)
- *  - [getByDeviceId]  — read-only snapshot of the live emitters for a device
+ * # 공개 API (Sub-AC 1 계약)
+ *  - [add]            — deviceId 아래에 emitter 등록
+ *  - [remove]         — emitter를 명시적으로 제거(기저 연결이 완료/타임아웃/
+ *                       오류가 날 때 자동으로도 호출됨)
+ *  - [getByDeviceId]  — 디바이스의 라이브 emitter에 대한 읽기 전용 스냅샷
  *
- * # Lifecycle guarantees
- *  - [add] wires the emitter's onCompletion / onTimeout / onError callbacks
- *    so a closed connection is removed without intervention from the caller.
- *  - [broadcast] sends an SSE event to every emitter currently registered
- *    for the given deviceId. Failures are caught per-emitter so one bad
- *    client cannot starve siblings; the failing emitter is completed-with-
- *    error and removed from the registry.
+ * # 라이프사이클 보장
+ *  - [add]는 emitter의 onCompletion / onTimeout / onError 콜백을 연결하므로
+ *    호출자의 개입 없이 닫힌 연결이 제거됨.
+ *  - [broadcast]는 주어진 deviceId에 현재 등록된 모든 emitter로 SSE 이벤트를
+ *    전송. 실패는 emitter별로 잡히므로 잘못된 클라이언트 하나가 형제들을
+ *    굶주리게 할 수 없음; 실패한 emitter는 complete-with-error 처리되고
+ *    registry에서 제거됨.
  *
- * # Why a CopyOnWriteArrayList per device
- * It lets us iterate during broadcast without holding a lock that would
- * block new registrations from the same device, while ConcurrentHashMap
- * keeps the outer map safe for concurrent add / broadcast / remove calls.
+ * # 왜 디바이스별 CopyOnWriteArrayList인가
+ * 같은 디바이스의 새 등록을 차단할 수 있는 락을 잡지 않고도 브로드캐스트
+ * 중에 순회할 수 있게 해주며, ConcurrentHashMap은 동시 add / broadcast /
+ * remove 호출에 대해 외부 맵을 안전하게 유지함.
  *
- * # Where this fits in the demo
- * This component is the wire-side companion to
- * [me.owldev.adsignage.domain.assignment.DeviceAssignmentService] — when an
- * admin remaps a device to a different restaurant, an event is published,
- * and a listener forwards it through this registry to every connected
- * player page for the affected device. That path is what makes demo
- * scenario #3 (real-time device-to-restaurant remapping) feel instant to a
- * human watching the screen.
+ * # 데모에서의 위치
+ * 이 컴포넌트는 [me.owldev.adsignage.domain.assignment.DeviceAssignmentService]의
+ * 와이어 측 동반자(companion) — 관리자가 디바이스를 다른 음식점으로
+ * 리매핑하면 이벤트가 발행되고, 리스너가 이 registry를 통해 영향받는
+ * 디바이스의 모든 연결된 플레이어 페이지로 전달함. 이 경로가 데모 시나리오
+ * #3(실시간 device-to-restaurant 리매핑)을 화면을 보는 사람에게 즉각적으로
+ * 느껴지게 만듦.
  */
 @Component
 class SseEmitterRegistry {
@@ -50,21 +48,22 @@ class SseEmitterRegistry {
     private val log = LoggerFactory.getLogger(SseEmitterRegistry::class.java)
 
     /**
-     * deviceId → list of live emitters. CopyOnWriteArrayList lets us iterate
-     * during broadcast without holding a lock that would block new
-     * registrations from the same device, while ConcurrentHashMap keeps the
-     * outer map safe for concurrent add / broadcast / remove calls.
+     * deviceId → 라이브 emitter 리스트. CopyOnWriteArrayList는 같은 디바이스의
+     * 새 등록을 차단할 수 있는 락을 잡지 않고도 브로드캐스트 중에 순회할 수
+     * 있게 해주며, ConcurrentHashMap은 동시 add / broadcast / remove 호출에
+     * 대해 외부 맵을 안전하게 유지함.
      */
     private val emitters: ConcurrentHashMap<String, CopyOnWriteArrayList<SseEmitter>> =
         ConcurrentHashMap()
 
     /**
-     * Registers [emitter] under [deviceId]. The emitter's onCompletion,
-     * onTimeout and onError callbacks are wired here, so the caller does
-     * not need to remember to deregister — the SSE infra does it for them
-     * the moment the underlying HTTP connection closes for any reason.
+     * [emitter]를 [deviceId] 아래에 등록. emitter의 onCompletion, onTimeout,
+     * onError 콜백이 여기서 연결되므로 호출자는 등록 해제를 기억할 필요가
+     * 없음 — 기저 HTTP 연결이 어떤 이유로든 닫히는 순간 SSE 인프라가 대신
+     * 처리해 줌.
      *
-     * Returns [emitter] so callers can chain (`val e = registry.add(id, SseEmitter())`).
+     * 호출자가 체이닝할 수 있도록 [emitter]를 반환
+     * (`val e = registry.add(id, SseEmitter())`).
      */
     fun add(deviceId: String, emitter: SseEmitter): SseEmitter {
         require(deviceId.isNotBlank()) { "deviceId must not be blank" }
@@ -78,9 +77,9 @@ class SseEmitterRegistry {
         }
         emitter.onTimeout {
             remove(deviceId, emitter)
-            // Spring requires complete() in the timeout callback, otherwise
-            // the response stays half-open until container teardown.
-            try { emitter.complete() } catch (ignored: Exception) { /* best-effort */ }
+            // 스프링은 timeout 콜백에서 complete()를 요구함. 그렇지 않으면
+            // 응답이 컨테이너 셧다운까지 반-개방(half-open) 상태로 남음.
+            try { emitter.complete() } catch (ignored: Exception) { /* 베스트 에포트 */ }
             log.debug("SSE emitter timed out for device={}", deviceId)
         }
         emitter.onError { ex ->
@@ -97,79 +96,79 @@ class SseEmitterRegistry {
     }
 
     /**
-     * Backwards-compatible alias for [add]. The pre-rename callers
-     * (AC 5: DeviceSseController, DeviceMappingChangedSseListener) used
-     * `registry.register(...)`; keep the entry point so any external/test
-     * caller still compiles.
+     * [add]에 대한 하위 호환 별칭. 이름 변경 이전 호출자
+     * (AC 5: DeviceSseController, DeviceMappingChangedSseListener)가
+     * `registry.register(...)`를 사용했으므로, 외부/테스트 호출자가 이전
+     * 이름으로도 컴파일되도록 진입점을 유지.
      */
     fun register(deviceId: String, emitter: SseEmitter): SseEmitter = add(deviceId, emitter)
 
     /**
-     * Explicitly removes [emitter] from the registry for [deviceId].
+     * [deviceId]에 대해 registry에서 [emitter]를 명시적으로 제거.
      *
-     * Idempotent: removing an emitter that was never registered (or has
-     * already been removed by a lifecycle callback) is a no-op. The empty
-     * device entry is also pruned so we never leak per-device lists for
-     * devices that have fully disconnected.
+     * 멱등(Idempotent): 등록된 적이 없는(혹은 라이프사이클 콜백에 의해 이미
+     * 제거된) emitter를 제거하는 것은 no-op. 또한 빈 디바이스 엔트리는
+     * 가지치기되어, 완전히 끊어진 디바이스에 대해 디바이스별 리스트를 결코
+     * 누수시키지 않음.
      */
     fun remove(deviceId: String, emitter: SseEmitter) {
         val list = emitters[deviceId] ?: return
         list.remove(emitter)
         if (list.isEmpty()) {
-            // CAS-style removal so we never delete a list that another
-            // thread just refilled with a new emitter for the same device.
+            // 다른 스레드가 같은 디바이스에 대해 새 emitter로 방금 채운
+            // 리스트를 절대 삭제하지 않도록 CAS 스타일로 제거.
             emitters.remove(deviceId, list)
         }
     }
 
     /**
-     * Returns an immutable snapshot of the live emitters for [deviceId],
-     * or an empty list if the device has no current connections.
+     * [deviceId]의 라이브 emitter에 대한 불변 스냅샷을 반환하거나, 디바이스에
+     * 현재 연결이 없으면 빈 리스트를 반환.
      *
-     * The returned list is a defensive copy — mutating it does NOT affect
-     * the registry, and the registry mutating itself does NOT invalidate
-     * the snapshot. Callers that want to send to "all current emitters"
-     * should prefer [broadcast] which adds per-emitter failure handling.
+     * 반환된 리스트는 방어적 복사본 — 변경해도 registry에 영향이 없고,
+     * registry가 자체 변경되어도 스냅샷은 무효화되지 않음. "현재 모든
+     * emitter로 전송"을 원하는 호출자는 emitter별 실패 처리가 추가된
+     * [broadcast]를 선호해야 함.
      */
     fun getByDeviceId(deviceId: String): List<SseEmitter> {
         val list = emitters[deviceId] ?: return emptyList()
-        // CopyOnWriteArrayList iteration is already snapshot-safe, but we
-        // hand callers an unmodifiable copy so they cannot mutate registry
-        // state through the list reference.
+        // CopyOnWriteArrayList 순회는 이미 스냅샷 안전이지만, 호출자가 리스트
+        // 참조를 통해 registry 상태를 변경할 수 없도록 수정 불가능한 복사본을
+        // 건네줌.
         return Collections.unmodifiableList(list.toList())
     }
 
     /**
-     * Broadcasts [event] to every emitter currently registered for [deviceId].
+     * [deviceId]에 현재 등록된 모든 emitter로 [event]를 브로드캐스트.
      *
-     * Returns the number of emitters that received the event successfully.
-     * Failures are logged and the offending emitter is purged from the
-     * registry — the caller does not need to handle per-client errors.
+     * 이벤트를 성공적으로 받은 emitter의 수를 반환. 실패는 로그로 남기고
+     * 문제가 된 emitter는 registry에서 제거됨 — 호출자는 클라이언트별
+     * 오류를 처리할 필요가 없음.
      */
     fun broadcast(deviceId: String, event: SseEmitter.SseEventBuilder): Int {
         val list = emitters[deviceId] ?: return 0
         if (list.isEmpty()) return 0
 
         var delivered = 0
-        // Iterate over the CopyOnWriteArrayList (already snapshot-safe) so
-        // we can mutate `list` on failure without ConcurrentModification.
+        // 실패 시 ConcurrentModification 없이 `list`를 변경할 수 있도록
+        // CopyOnWriteArrayList(이미 스냅샷 안전)를 순회.
         for (emitter in list) {
             try {
                 emitter.send(event)
                 delivered++
             } catch (ex: IOException) {
-                // Client disconnected mid-send — drop them.
+                // 클라이언트가 전송 도중 끊김 — 제거.
                 log.debug("SSE send failed (IO) for device={}: {}", deviceId, ex.message)
                 remove(deviceId, emitter)
-                try { emitter.completeWithError(ex) } catch (_: Exception) { /* best-effort */ }
+                try { emitter.completeWithError(ex) } catch (_: Exception) { /* 베스트 에포트 */ }
             } catch (ex: IllegalStateException) {
-                // Emitter already completed — drop them.
+                // emitter가 이미 완료됨 — 제거.
                 log.debug("SSE send failed (state) for device={}: {}", deviceId, ex.message)
                 remove(deviceId, emitter)
             } catch (ex: Exception) {
                 log.warn("SSE send failed for device={}: {}", deviceId, ex.message)
                 remove(deviceId, emitter)
-                try { emitter.completeWithError(ex) } catch (_: Exception) { /* best-effort */ }
+                try { emitter.completeWithError(ex) } catch (_: Exception) { /* 베스트 에포트 */ }
             }
         }
         log.info(
@@ -182,18 +181,18 @@ class SseEmitterRegistry {
     }
 
     /**
-     * Returns the current number of registered emitters for [deviceId].
-     * Test/debug helper — not part of the production hot path.
+     * [deviceId]에 대해 현재 등록된 emitter 수를 반환.
+     * 테스트/디버그 헬퍼 — 운영 핫패스에는 포함되지 않음.
      */
     fun connectionCount(deviceId: String): Int = emitters[deviceId]?.size ?: 0
 }
 
 /**
- * Backwards-compatible alias for the AC 5 name. New code should reference
- * [SseEmitterRegistry]; this typealias prevents the rename from breaking
- * any in-flight branches that still type the old name.
+ * AC 5 이름에 대한 하위 호환 별칭. 새 코드는 [SseEmitterRegistry]를
+ * 참조해야 함; 이 typealias는 이름 변경이 아직 이전 이름을 사용하는
+ * 진행 중 브랜치를 깨지 않도록 함.
  *
- * Spring resolves the @Component by class identity (a typealias is the
- * same JVM type), so DI continues to work without a duplicate bean.
+ * 스프링은 클래스 정체성으로 @Component를 해석하며(typealias는 동일한
+ * JVM 타입), 따라서 중복 빈 없이 DI가 계속 동작함.
  */
 typealias DeviceSseRegistry = SseEmitterRegistry

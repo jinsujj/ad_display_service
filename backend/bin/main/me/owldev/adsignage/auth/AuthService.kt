@@ -13,21 +13,21 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 /**
- * Authentication service.
+ * 인증 서비스.
  *
- * Sub-AC 2 scope: implement the signup flow.
- *  - Normalises the email (lower-case, trim) for uniqueness.
- *  - Rejects duplicates with [DuplicateEmailException].
- *  - Hashes the password with the injected [PasswordEncoder] (BCrypt).
- *  - Persists a new [Advertiser] and returns a [SignupResponse].
+ * Sub-AC 2 범위: 회원가입 플로우 구현.
+ *  - 유일성을 위해 이메일을 정규화(소문자 변환, trim).
+ *  - 중복을 [DuplicateEmailException]으로 거부.
+ *  - 주입된 [PasswordEncoder] (BCrypt)로 비밀번호 해시.
+ *  - 새 [Advertiser]를 영속화하고 [SignupResponse]를 반환.
  *
- * Sub-AC 3 scope: implement the login flow.
- *  - Looks up the advertiser by normalised email.
- *  - Verifies the supplied password against the stored BCrypt hash.
- *  - Returns a signed JWT (HS256) on success via [JwtService].
- *  - Throws [InvalidCredentialsException] on any failure — the same
- *    exception is used for both "no such user" and "wrong password" so we
- *    don't leak which emails are registered.
+ * Sub-AC 3 범위: 로그인 플로우 구현.
+ *  - 정규화된 이메일로 광고주를 조회.
+ *  - 제시된 비밀번호를 저장된 BCrypt 해시와 검증.
+ *  - 성공 시 [JwtService]를 통해 서명된 JWT (HS256)를 반환.
+ *  - 실패 시 [InvalidCredentialsException]을 던짐 — "그런 사용자 없음"과
+ *    "비밀번호 틀림" 모두 동일한 예외를 사용하여 어떤 이메일이 등록되어
+ *    있는지 누설하지 않음.
  */
 @Service
 class AuthService(
@@ -92,16 +92,15 @@ class AuthService(
 }
 
 /**
- * Thrown when a signup attempt collides with an already-registered email.
- * Mapped to HTTP 409 by the global exception handler.
+ * 회원가입 시도가 이미 등록된 이메일과 충돌할 때 던져짐.
+ * 전역 예외 핸들러에 의해 HTTP 409로 매핑됨.
  */
 class DuplicateEmailException(val email: String) :
     RuntimeException("Email already registered: $email")
 
 /**
- * Thrown when a login attempt fails — either the email is not registered or
- * the password does not match. Intentionally generic so the API does not
- * disclose which condition was violated. Mapped to HTTP 401 by the global
- * exception handler.
+ * 로그인 시도가 실패할 때 던져짐 — 이메일이 등록되지 않았거나 비밀번호가
+ * 일치하지 않을 때. 어떤 조건이 위반되었는지 API가 노출하지 않도록
+ * 의도적으로 일반적임. 전역 예외 핸들러에 의해 HTTP 401로 매핑됨.
  */
 class InvalidCredentialsException : RuntimeException("Invalid email or password")

@@ -6,11 +6,11 @@ import org.junit.Test
 import java.util.UUID
 
 /**
- * Verifies AC 11: the WebView loads `https://stream.owl-dev.me/player/{deviceId}`.
+ * AC 11 검증: WebView가 `https://stream.owl-dev.me/player/{deviceId}`를 로드한다.
  *
- * Pure JVM unit test — no Robolectric — because the URL contract is the
- * thing most likely to drift across environments and we want it covered
- * by the cheapest possible test layer.
+ * 순수 JVM 단위 테스트 — Robolectric을 사용하지 않음 — 이는 환경에 따라
+ * 가장 어긋나기 쉬운 부분이 URL 계약이므로, 가장 저렴한 테스트 계층으로
+ * 커버하기 위함이다.
  */
 class PlayerUrlTest {
 
@@ -78,8 +78,8 @@ class PlayerUrlTest {
     @Test
     fun `forDevice does not double-slash when base url has no trailing slash`() {
         val url = PlayerUrl.forDevice(baseUrl, deviceId)
-        // Exactly one separator between host and `player`, exactly one
-        // between `player` and the device id.
+        // 호스트와 `player` 사이는 정확히 슬래시 하나, `player`와 device id
+        // 사이도 정확히 슬래시 하나여야 한다.
         val schemeStripped = url.removePrefix("https://")
         assertEquals(2, schemeStripped.count { it == '/' })
     }

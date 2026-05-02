@@ -8,13 +8,13 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * Advertiser account.
+ * 광고주 계정.
  *
- * Maps to the advertisers table created by Flyway migration V1.
+ * Flyway 마이그레이션 V1이 생성한 advertisers 테이블에 매핑.
  *
- * Ontology concepts represented:
+ * 표현된 온톨로지 개념:
  *  - advertiser_id        → [id]
- *  - advertiser_email     → [email] (unique)
+ *  - advertiser_email     → [email] (유일)
  *  - advertiser_password_hash → [passwordHash] (bcrypt)
  */
 @Entity

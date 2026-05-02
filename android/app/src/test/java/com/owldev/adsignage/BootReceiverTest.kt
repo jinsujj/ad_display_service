@@ -18,16 +18,16 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 
 /**
- * Verifies AC 13: Android APK auto-starts on BOOT_COMPLETED.
+ * AC 13 검증: Android APK가 BOOT_COMPLETED 시 자동 시작된다.
  *
- * The contract under test:
- *   1. When the OS broadcasts BOOT_COMPLETED, BootReceiver schedules a
- *      MainActivity launch with FLAG_ACTIVITY_NEW_TASK.
- *   2. The receiver also responds to OEM quick-boot variants commonly
- *      shipped on cheap fridge-mounted Android boxes.
- *   3. Unrelated broadcasts are ignored (no activity launch, no crash).
- *   4. The persistent device_id (AC 12) is pre-warmed at boot so the
- *      WebView player URL is ready as soon as MainActivity starts.
+ * 검증 대상 계약:
+ *   1. OS가 BOOT_COMPLETED를 브로드캐스트하면 BootReceiver는
+ *      FLAG_ACTIVITY_NEW_TASK로 MainActivity 실행을 예약한다.
+ *   2. 본 리시버는 저가 냉장고 부착형 Android 박스에서 흔히 출하되는
+ *      OEM 퀵부트 변종에도 응답한다.
+ *   3. 관련 없는 브로드캐스트는 무시된다(액티비티 미실행, 크래시 없음).
+ *   4. 영구 device_id(AC 12)가 부팅 시점에 미리 준비되어 MainActivity가
+ *      시작하자마자 WebView 플레이어 URL이 즉시 준비되어 있다.
  */
 @RunWith(RobolectricTestRunner::class)
 class BootReceiverTest {
@@ -39,7 +39,7 @@ class BootReceiverTest {
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         app = context.applicationContext as Application
-        // Reset any leftover state from prior tests in this JVM run.
+        // 동일 JVM 실행에서 이전 테스트가 남긴 상태를 모두 초기화.
         DeviceIdManager.clearForTesting(context)
         shadowOf(app).clearNextStartedActivities()
     }
@@ -63,8 +63,8 @@ class BootReceiverTest {
 
     @Test
     fun `BOOT_COMPLETED launch uses NEW_TASK flag`() {
-        // Mandatory when starting Activities from a non-Activity context —
-        // without it Android throws AndroidRuntimeException at runtime.
+        // 비-Activity 컨텍스트에서 Activity를 시작할 때 필수 —
+        // 이 플래그가 없으면 Android가 런타임에 AndroidRuntimeException을 던진다.
         deliverBootIntent(Intent.ACTION_BOOT_COMPLETED)
 
         val started = shadowOf(app).peekNextStartedActivity()
@@ -79,8 +79,8 @@ class BootReceiverTest {
 
     @Test
     fun `OEM quick-boot intents also trigger auto-start`() {
-        // These OEM-specific actions are common on the kind of cheap
-        // Android boxes restaurants tend to mount in liquor fridges.
+        // 식당이 주류 냉장고에 흔히 부착하는 저가 Android 박스에서 자주 보이는
+        // OEM 전용 액션들.
         val oemActions = listOf(
             "android.intent.action.QUICKBOOT_POWERON",
             "com.htc.intent.action.QUICKBOOT_POWERON",
@@ -103,8 +103,8 @@ class BootReceiverTest {
 
     @Test
     fun `unrelated broadcasts do not launch MainActivity`() {
-        // Defense in depth: even if the receiver got registered for an
-        // intent we don't expect, it must not cold-start the WebView.
+        // 다층 방어: 예상치 못한 인텐트에 리시버가 등록되어 있더라도
+        // WebView를 콜드 스타트해서는 안 된다.
         deliverBootIntent("android.intent.action.SOMETHING_ELSE")
 
         val started = shadowOf(app).peekNextStartedActivity()
@@ -116,9 +116,9 @@ class BootReceiverTest {
 
     @Test
     fun `null action is ignored gracefully`() {
-        // We invoke onReceive directly with an action-less Intent to make
-        // sure the receiver doesn't NPE on edge-case broadcasts.
-        val intent = Intent() // no action set
+        // 액션이 없는 Intent로 onReceive를 직접 호출하여, 엣지 케이스
+        // 브로드캐스트에서 리시버가 NPE를 일으키지 않는지 확인한다.
+        val intent = Intent() // 액션 미설정
         BootReceiver().onReceive(app, intent)
 
         val started = shadowOf(app).peekNextStartedActivity()
@@ -131,8 +131,8 @@ class BootReceiverTest {
 
         deliverBootIntent(Intent.ACTION_BOOT_COMPLETED)
 
-        // After boot, device_id should be persisted so MainActivity's
-        // WebView load doesn't have to wait for the first commit().
+        // 부팅 이후 device_id가 영속화되어, MainActivity의 WebView 로드가
+        // 최초 commit()을 기다릴 필요가 없도록 한다.
         assertTrue(
             "BootReceiver must persist device_id as part of auto-start",
             DeviceIdManager.hasDeviceId(context)
@@ -144,9 +144,9 @@ class BootReceiverTest {
         deliverBootIntent(Intent.ACTION_BOOT_COMPLETED)
         val first = DeviceIdManager.getOrCreateDeviceId(context)
 
-        // Simulate a power cycle — receiver fires again, but the persisted
-        // UUID must survive (this is the AC 12 invariant exercised through
-        // the AC 13 boot flow).
+        // 전원 사이클을 시뮬레이션 — 리시버가 다시 실행되어도, 영속화된
+        // UUID는 유지되어야 한다(이는 AC 13 부팅 플로우를 통해 검증되는
+        // AC 12 불변식이다).
         deliverBootIntent(Intent.ACTION_BOOT_COMPLETED)
         val second = DeviceIdManager.getOrCreateDeviceId(context)
 
@@ -156,9 +156,10 @@ class BootReceiverTest {
 
     @Test
     fun `BOOT_ACTIONS constant matches manifest contract`() {
-        // If someone adds a new <action> to the manifest's intent-filter
-        // they must also add it to BOOT_ACTIONS — this test guards the
-        // pairing so the runtime check in onReceive stays in sync.
+        // 누군가 매니페스트의 intent-filter에 새로운 <action>을 추가했다면
+        // BOOT_ACTIONS에도 반드시 추가해야 한다 — 본 테스트는 이 한 쌍이
+        // 어긋나지 않도록 지켜, onReceive의 런타임 체크가 매니페스트와
+        // 항상 동기화 상태를 유지하도록 한다.
         val expected = setOf(
             Intent.ACTION_BOOT_COMPLETED,
             "android.intent.action.QUICKBOOT_POWERON",
