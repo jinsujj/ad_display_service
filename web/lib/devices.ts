@@ -200,3 +200,19 @@ export async function patchDevice(
     },
   );
 }
+
+/**
+ * `DELETE /api/devices/{deviceId}` — 어드민이 디바이스 행을 제거.
+ *
+ * 디바이스 행과 모든 매핑 이력이 삭제된다. 디바이스 앱이 다시 켜지면
+ * 자기 device_id 로 멱등 register 를 다시 호출해 새 행이 생성된다.
+ *
+ * 분실/교체/테스트 정리에 사용. 운영자는 confirm 후 호출.
+ */
+export async function deleteDevice(deviceId: string): Promise<void> {
+  if (!deviceId) throw new Error("deviceId is required");
+  await apiFetch<undefined>(
+    `/api/devices/${encodeURIComponent(deviceId)}`,
+    { method: "DELETE" },
+  );
+}

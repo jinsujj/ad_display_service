@@ -48,6 +48,7 @@ import { useRouter } from "next/navigation";
 
 import { ApiError } from "@/lib/api";
 import {
+  deleteDevice,
   patchDevice,
   type DevicePatchResponse,
   type DeviceListItem,
@@ -222,6 +223,38 @@ export function DevicesTableClient(props: DevicesTableClientProps) {
     setEditingDeviceId(null);
   }, []);
 
+  /**
+   * 디바이스 제거 — confirm 후 DELETE /api/devices/{id}.
+   * 행은 즉시 로컬 미러에서 빠지고, router.refresh() 로 서버 권위 재조회.
+   * 디바이스 앱이 다시 켜지면 자동 재등록되므로 안전한 정리 동작.
+   */
+  const handleDelete = useCallback(
+    async (device: DeviceListItem) => {
+      const label = device.deviceName || device.deviceId;
+      const ok = window.confirm(
+        `디바이스 "${label}" 를 어드민에서 제거할까요?\n\n` +
+          `· 매핑 이력도 함께 삭제됩니다.\n` +
+          `· 디바이스 앱이 다음에 켜지면 자기 ID 로 자동 재등록되어 다시 표시됩니다.`,
+      );
+      if (!ok) return;
+
+      setSubmit(device.deviceId, { kind: "submitting" });
+      try {
+        await deleteDevice(device.deviceId);
+        // 로컬 즉시 제거 + 서버 새로고침
+        setDevices((prev) => prev.filter((d) => d.deviceId !== device.deviceId));
+        setEditingDeviceId((cur) => (cur === device.deviceId ? null : cur));
+        startRefresh(() => router.refresh());
+      } catch (err) {
+        setSubmit(device.deviceId, {
+          kind: "error",
+          message: describeError(err),
+        });
+      }
+    },
+    [router, setSubmit, startRefresh],
+  );
+
   return (
     <div>
       <div className="toolbar" style={{ marginBottom: 8 }}>
@@ -284,6 +317,7 @@ export function DevicesTableClient(props: DevicesTableClientProps) {
                 }
                 onClearStatus={() => setSubmit(device.deviceId, { kind: "idle" })}
                 onOpenModal={() => openRemapModal(device.deviceId)}
+                onDelete={() => handleDelete(device)}
               />
             );
           })}
@@ -330,6 +364,8 @@ interface DeviceRowProps {
   onClearStatus: () => void;
   /** 이 행에 대한 모달 기반 재할당 다이얼로그를 연다(AC 9, Sub-AC 2). */
   onOpenModal: () => void;
+  /** 디바이스를 어드민에서 제거(앱 재시작 시 자동 재등록). */
+  onDelete: () => void;
 }
 
 function DeviceRow(props: DeviceRowProps) {
@@ -343,6 +379,7 @@ function DeviceRow(props: DeviceRowProps) {
     onSave,
     onClearStatus,
     onOpenModal,
+    onDelete,
   } = props;
 
   const current = device.currentRestaurant;
@@ -419,6 +456,19 @@ function DeviceRow(props: DeviceRowProps) {
                 title="다이얼로그 없이 행에서 바로 재할당"
               >
                 {current ? "재할당" : "할당"}
+              </button>
+              {/* 디바이스 제거 — 분실/교체/테스트 정리용. 디바이스 앱이
+                  재시작되면 자기 ID 로 자동 재등록되므로 안전. */}
+              <button
+                type="button"
+                className="btn"
+                onClick={onDelete}
+                disabled={submitting}
+                title="이 디바이스 제거 (앱 재시작 시 자동 재등록)"
+                aria-label={`Delete device ${device.deviceName || device.deviceId}`}
+                style={{ color: "var(--err)", borderColor: "rgba(239,68,68,0.35)" }}
+              >
+                ✕ 제거
               </button>
             </div>
           )}

@@ -59,4 +59,11 @@ interface DeviceAssignmentRepository : JpaRepository<DeviceAssignment, String> {
             "WHERE a.deviceId = :deviceId AND a.active = true",
     )
     fun deactivateCurrentForDevice(@Param("deviceId") deviceId: String): Int
+
+    /**
+     * 어드민이 디바이스를 제거할 때 매핑 이력 전체(활성/비활성)를 일괄 삭제.
+     */
+    @Modifying
+    @Query("DELETE FROM DeviceAssignment a WHERE a.deviceId = :deviceId")
+    fun deleteAllByDeviceId(@Param("deviceId") deviceId: String): Int
 }

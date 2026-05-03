@@ -11,7 +11,9 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -73,6 +75,27 @@ class DeviceListController(
                 lastSeenAt = saved.lastSeenAt,
             ),
         )
+    }
+
+    /**
+     * 어드민이 디바이스를 제거. device 행 + 활성/비활성 매핑 이력까지 일괄
+     * 삭제한다. 디바이스 앱이 다시 켜지면 멱등 register 가 새 행을 만들어
+     * 다시 등록되므로 재시작이나 분실/교체 디바이스 정리에 안전하다.
+     */
+    @DeleteMapping("/api/devices/{deviceId}")
+    @Transactional
+    fun deleteDevice(@PathVariable deviceId: String): ResponseEntity<Void> {
+        // 매핑 이력 먼저 (활성/비활성 불문, 외래 데이터 모두 정리)
+        val removedAssignments = assignmentRepository.deleteAllByDeviceId(deviceId)
+        // 그 다음 디바이스 자체. 없는 id 면 deleteById가 EmptyResultDataAccessException
+        // 을 던지므로 existsById 로 가드.
+        val existed = deviceRepository.existsById(deviceId)
+        if (existed) deviceRepository.deleteById(deviceId)
+        log.info(
+            "DELETE /api/devices/{} removed_device={} removed_assignments={}",
+            deviceId, existed, removedAssignments,
+        )
+        return ResponseEntity.noContent().build()
     }
 
     @GetMapping(
