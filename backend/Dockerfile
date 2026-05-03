@@ -67,8 +67,13 @@ RUN apt-get update \
 # `user: "1001:1001"` 로 핀하거나 named volume 을 권장.
 RUN groupadd --system --gid 1001 adsignage \
  && useradd  --system --uid 1001 --gid adsignage --create-home --home-dir /home/adsignage adsignage \
- && mkdir -p /var/lib/adsignage/data /var/lib/adsignage/videos /opt/adsignage \
+ && mkdir -p /var/lib/adsignage/data /var/lib/adsignage/videos /opt/adsignage/data \
  && chown -R adsignage:adsignage /var/lib/adsignage /opt/adsignage
+# /opt/adsignage/data 를 미리 만들어 두는 이유:
+#   Docker 가 named volume 을 *처음 마운트* 할 때 image 의 해당 경로에 있던
+#   디렉토리 내용 + ownership 을 그대로 volume 으로 복사한다. 이 라인이 없으면
+#   compose 가 /opt/adsignage/data 마운트 시 root 소유의 빈 volume 이 만들어져
+#   non-root 유저(uid 1001)가 H2 lock 파일을 쓰지 못해 부팅 실패.
 
 WORKDIR /opt/adsignage
 
