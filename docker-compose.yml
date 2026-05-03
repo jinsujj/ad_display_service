@@ -33,7 +33,7 @@ services:
     environment:
       # 기본 application.yml 이 ${JWT_SECRET} placeholder 를 쓰므로 반드시
       # 셋팅. 셋팅 안 하면 데모용 약한 키가 그대로 들어간다.
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required — generate with: openssl rand -hex 64}
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is required — generate with openssl rand -hex 64}"
       VIDEO_STORAGE_PATH: /var/lib/adsignage/videos
       DAILY_COUNT_ZONE_ID: ${DAILY_COUNT_ZONE_ID:-Asia/Seoul}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
