@@ -46,6 +46,8 @@ dependencies {
 
     // Flyway
     implementation("org.flywaydb:flyway-core")
+    // Flyway 10 부터 vendor 모듈이 분리됨 — PostgreSQL 마이그레이션 시 필요.
+    runtimeOnly("org.flywaydb:flyway-database-postgresql")
 
     // OpenAPI (Swagger UI) — Spring Boot 3.4 호환 버전
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")

@@ -2,23 +2,32 @@ spring:
   application:
     name: adsignage
   datasource:
-    url: jdbc:h2:file:./data/adsignage;AUTO_SERVER=TRUE;MODE=PostgreSQL
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
+    # 환경변수로 override 가능 — 운영(컨테이너) 은 PostgreSQL 을 가리키게,
+    # 로컬 개발은 H2 file 기본값 그대로. PostgreSQL 모드는 SPRING_DATASOURCE_URL,
+    # SPRING_DATASOURCE_USERNAME, SPRING_DATASOURCE_PASSWORD 를 docker compose
+    # 에서 주입한다.
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:./data/adsignage;AUTO_SERVER=TRUE;MODE=PostgreSQL}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.h2.Driver}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
   jpa:
     hibernate:
       ddl-auto: validate
     open-in-view: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
+        # Hibernate 가 datasource URL 로부터 자동 감지하도록 명시 dialect 제거.
+        # PostgreSQL 이면 PostgreSQLDialect, H2 면 H2Dialect 가 선택된다.
         format_sql: true
     show-sql: false
   flyway:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
+    # PostgreSQL 의 다른 프로젝트(owl-blog 등) 와 테이블이 섞이지 않도록
+    # 별도 schema 사용. 로컬 H2 에서는 schemas 가 없어도 무시되므로 문제 없음.
+    schemas: ${SPRING_FLYWAY_SCHEMAS:}
+    create-schemas: true
   servlet:
     multipart:
       # Sub-AC 5: cap individual file part and the overall multipart request at

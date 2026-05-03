@@ -37,19 +37,29 @@ services:
       VIDEO_STORAGE_PATH: /var/lib/adsignage/videos
       DAILY_COUNT_ZONE_ID: ${DAILY_COUNT_ZONE_ID:-Asia/Seoul}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-      # H2 file URL 이 컨테이너 내 WORKDIR 기준 ./data/ 에 떨어지므로 named
-      # volume 으로 영속화. 외부 PostgreSQL 로 옮길 때는 SPRING_DATASOURCE_URL
-      # 등 표준 Spring 환경변수를 여기에 추가.
+      # PostgreSQL 외부 컨테이너(owl-blog-network 의 postgres) 사용. 호스트명
+      # `postgres` 는 외부 network attach 후 컨테이너 이름으로 해석된다.
+      # currentSchema 로 owldev DB 안에 별도 schema 격리.
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://postgres:5432/owldev?currentSchema=adsignage}
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_DATASOURCE_USERNAME: "${POSTGRES_USER:?POSTGRES_USER required}"
+      SPRING_DATASOURCE_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}"
+      # Flyway 가 schema 를 처음 만나면 자동 생성하도록.
+      SPRING_FLYWAY_SCHEMAS: adsignage
     volumes:
+      # PostgreSQL 사용 후 H2 파일은 더 이상 안 쓰지만, 운영 PostgreSQL 장애
+      # 시 H2 fallback 으로 잠깐 띄워볼 수 있게 named volume 은 그대로.
       - adsignage-data:/opt/adsignage/data
       - adsignage-videos:/var/lib/adsignage/videos
     ports:
-      # 기존 systemd 가 8080 을 점유 중인 환경에서는 BACKEND_HOST_PORT 를
-      # 18080 같은 다른 포트로 두고 양쪽이 공존하게 한다. 컨테이너 내부는
-      # 항상 8080 — 변하지 않는다.
-      - "${BACKEND_HOST_PORT:-8080}:8080"
+      # nginx 가 8082 / 3002 로 프록시하고 있으므로 publish 포트도 거기 맞춤.
+      # 다른 환경(LAN 직접 접근, CI 등) 에서는 .env 의 BACKEND_HOST_PORT 로 override.
+      - "${BACKEND_HOST_PORT:-8082}:8080"
     networks:
       - adsignage
+      # postgres 컨테이너가 attached 된 외부 network. .env 의
+      # POSTGRES_NETWORK 으로 override 가능.
+      - postgres-net
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 30s
@@ -73,10 +83,8 @@ services:
       PORT: 3000
       HOSTNAME: 0.0.0.0
     ports:
-      # 마찬가지로 systemd 와 공존하려면 WEB_HOST_PORT 를 13000 같이 다른
-      # 포트로. 기존 nginx 가 13000 을 가리키도록 conf 를 바꿀 때까지는 docker
-      # 측은 LAN IP + 포트로 직접 접근(http://192.168.0.24:13000) 가능.
-      - "${WEB_HOST_PORT:-3000}:3000"
+      # nginx stream.owl-dev.me 가 3002 로 프록시하므로 거기 맞춤. .env 로 override 가능.
+      - "${WEB_HOST_PORT:-3002}:3000"
     networks:
       - adsignage
     depends_on:
@@ -92,6 +100,11 @@ services:
 networks:
   adsignage:
     driver: bridge
+  # postgres 컨테이너가 이미 붙어 있는 외부 network. 같은 host 에서 별도
+  # docker compose 로 만든 네트워크라 external: true 로 attach 만 한다.
+  postgres-net:
+    external: true
+    name: ${POSTGRES_NETWORK:-owl-blog-network}
 
 volumes:
   # H2 file: jdbc:h2:file:./data/adsignage → 컨테이너 /opt/adsignage/data
