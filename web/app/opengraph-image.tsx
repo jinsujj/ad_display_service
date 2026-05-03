@@ -61,7 +61,8 @@ export default function OpengraphImage() {
         >
           <span
             style={{
-              display: "inline-block",
+              // satori 는 display: "inline-block" 미지원 — flex/block/none 만 허용.
+              display: "flex",
               width: 14,
               height: 14,
               borderRadius: "50%",
