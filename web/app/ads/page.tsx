@@ -21,6 +21,7 @@
  */
 
 import { AdLookupForm } from "@/components/AdLookupForm";
+import { AuthGuard } from "@/components/AuthGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,7 @@ export const metadata = {
 
 export default function AdsIndexPage() {
   return (
+    <AuthGuard>
     <section>
       <div className="page-header">
         <div>
@@ -51,5 +53,6 @@ export default function AdsIndexPage() {
       <h2 className="section-heading">광고 열기</h2>
       <AdLookupForm />
     </section>
+    </AuthGuard>
   );
 }

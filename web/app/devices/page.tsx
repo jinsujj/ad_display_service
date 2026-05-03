@@ -28,6 +28,7 @@ import { ApiError } from "@/lib/api";
 import { listDevices, type DeviceListItem } from "@/lib/devices";
 import { listRestaurants, type RestaurantListItem } from "@/lib/restaurants";
 import { DevicesTableClient } from "@/components/DevicesTableClient";
+import { AuthGuard } from "@/components/AuthGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,7 @@ export default async function DevicesPage() {
   }
 
   return (
+    <AuthGuard>
     <section>
       <div className="page-header">
         <div>
@@ -102,6 +104,7 @@ export default async function DevicesPage() {
         />
       )}
     </section>
+    </AuthGuard>
   );
 }
 

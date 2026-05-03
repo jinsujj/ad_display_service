@@ -31,6 +31,7 @@ import { ApiError } from "@/lib/api";
 import { listVideos, type VideoListItem } from "@/lib/videos";
 import { VideoUploadForm } from "@/components/VideoUploadForm";
 import { VideosListTable } from "@/components/VideosListTable";
+import { AuthGuard } from "@/components/AuthGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,7 @@ export default async function VideosPage() {
   }
 
   return (
+    <AuthGuard>
     <section>
       <div className="page-header">
         <div>
@@ -97,6 +99,7 @@ export default async function VideosPage() {
         <code>localStorage.adsignage_auth_token</code> 에 저장됩니다.
       </p>
     </section>
+    </AuthGuard>
   );
 }
 

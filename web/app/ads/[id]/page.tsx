@@ -24,6 +24,7 @@
 import Link from "next/link";
 
 import { AdScheduleForm } from "@/components/AdScheduleForm";
+import { AuthGuard } from "@/components/AuthGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,7 @@ export default function AdEditPage({ params }: AdEditPageProps) {
   const adId = params.id;
 
   return (
+    <AuthGuard>
     <section>
       <div className="page-header">
         <div>
@@ -73,5 +75,6 @@ export default function AdEditPage({ params }: AdEditPageProps) {
         과 일일 송출 횟수 <code>1..10000</code> 범위가 강제됩니다.
       </p>
     </section>
+    </AuthGuard>
   );
 }
