@@ -1,0 +1,13 @@
+{
+    "folders": [
+        { "name": "backend", "path": "backend" },
+        { "name": "android", "path": "android" },
+        { "name": "web", "path": "web" },
+        { "name": "deploy", "path": "deploy" },
+        { "name": "(root)", "path": "." }
+    ],
+    "settings": {
+        "java.configuration.updateBuildConfiguration": "automatic",
+        "java.compile.nullAnalysis.mode": "automatic"
+    }
+}

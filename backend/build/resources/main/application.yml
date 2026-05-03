@@ -36,6 +36,18 @@ server:
   port: 8080
   forward-headers-strategy: framework
 
+# springdoc-openapi (Swagger UI / OpenAPI 3 스펙) 노출 설정
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+    try-it-out-enabled: true
+
 adsignage:
   video-storage-path: ${VIDEO_STORAGE_PATH:/var/lib/adsignage/videos}
   jwt:

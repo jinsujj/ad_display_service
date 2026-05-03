@@ -44,6 +44,9 @@ dependencies {
     // Flyway
     implementation("org.flywaydb:flyway-core")
 
+    // OpenAPI (Swagger UI) — Spring Boot 3.4 호환 버전
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
+
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")

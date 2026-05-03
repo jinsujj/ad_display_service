@@ -85,6 +85,17 @@ class SecurityConfig(
                     .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                     // --- 공개: 개발 전용 H2 콘솔 ---------------------------
                     .requestMatchers("/h2-console/**").permitAll()
+                    // --- 공개: OpenAPI / Swagger UI ------------------------
+                    // springdoc-openapi 가 노출하는 정적 자원과 JSON 스펙은
+                    // 누구나 접근 가능해야 어드민/플레이어 개발자가 토큰
+                    // 없이도 API를 탐색할 수 있다.
+                    .requestMatchers(
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs",
+                        "/v3/api-docs/**",
+                        "/v3/api-docs.yaml",
+                    ).permitAll()
                     // --- 공개: 플레이어 API (디바이스 측, JWT 없음) --------
                     // Next.js 플레이어가 구독하는 SSE 스트림.
                     // `/events` — 원래의 AC 5 SSE 와이어 (DeviceSseController).
