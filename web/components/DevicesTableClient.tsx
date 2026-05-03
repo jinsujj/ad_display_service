@@ -237,6 +237,14 @@ export function DevicesTableClient(props: DevicesTableClientProps) {
       </div>
 
       <table className="data-table" aria-label="디바이스">
+        <colgroup>
+          <col style={{ width: 180 }} />
+          <col style={{ width: 200 }} />
+          <col style={{ width: 130 }} />
+          <col />
+          <col style={{ width: 130 }} />
+          <col style={{ width: 220 }} />
+        </colgroup>
         <thead>
           <tr>
             <th scope="col">디바이스</th>
@@ -244,9 +252,7 @@ export function DevicesTableClient(props: DevicesTableClientProps) {
             <th scope="col">등록일</th>
             <th scope="col">현재 음식점</th>
             <th scope="col">매핑 시각</th>
-            <th scope="col" style={{ width: 260 }}>
-              재할당
-            </th>
+            <th scope="col">재할당</th>
           </tr>
         </thead>
         <tbody>

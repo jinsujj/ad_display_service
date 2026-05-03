@@ -40,33 +40,50 @@ interface VideosListTableProps {
 
 export function VideosListTable({ videos }: VideosListTableProps) {
   return (
-    <table className="data-table">
+    <table className="data-table" aria-label="업로드된 영상 목록">
+      <colgroup>
+        <col />
+        <col style={{ width: 220 }} />
+        <col style={{ width: 92 }} />
+        <col style={{ width: 92 }} />
+        <col style={{ width: 160 }} />
+        <col style={{ width: 80 }} />
+        <col style={{ width: 132 }} />
+      </colgroup>
       <thead>
         <tr>
           <th>원본 파일명</th>
           <th>저장 파일명</th>
           <th>타입</th>
           <th>크기</th>
-          <th>업로드 시각</th>
-          <th>스트리밍</th>
-          <th>광고 만들기</th>
+          <th>업로드</th>
+          <th></th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
         {videos.map((video) => (
           <tr key={video.id || video.filename}>
             <td>
-              <strong>{video.originalName || "—"}</strong>
+              <div style={{ fontWeight: 600 }}>{video.originalName || "—"}</div>
               {video.id && (
-                <div className="muted" style={{ fontSize: 11 }}>
-                  id <code>{video.id}</code>
+                <div
+                  className="id-truncate muted"
+                  title={video.id}
+                  style={{ fontSize: 11, marginTop: 4 }}
+                >
+                  ID <code>{video.id}</code>
                 </div>
               )}
             </td>
-            <td className="id">{video.filename || "—"}</td>
-            <td>{video.mimeType || "—"}</td>
+            <td className="id" title={video.filename || ""}>
+              {video.filename || "—"}
+            </td>
+            <td className="muted">{video.mimeType || "—"}</td>
             <td>{formatBytes(video.sizeBytes)}</td>
-            <td>{formatUploadedAt(video.uploadedAt)}</td>
+            <td className="muted" style={{ fontSize: 12 }}>
+              {formatUploadedAt(video.uploadedAt)}
+            </td>
             <td>
               {video.url ? (
                 <a
@@ -80,7 +97,7 @@ export function VideosListTable({ videos }: VideosListTableProps) {
                 <span className="muted">—</span>
               )}
             </td>
-            <td>
+            <td style={{ textAlign: "right" }}>
               {video.filename ? (
                 <Link
                   className="btn"
@@ -93,7 +110,7 @@ export function VideosListTable({ videos }: VideosListTableProps) {
                     },
                   }}
                 >
-                  광고로 만들기
+                  광고 만들기
                 </Link>
               ) : (
                 <span className="muted">—</span>

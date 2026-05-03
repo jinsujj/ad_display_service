@@ -58,16 +58,25 @@ export function MyAdsList() {
     );
   }
   return (
-    <table className="data-table">
+    <table className="data-table" aria-label="내 광고 목록">
+      <colgroup>
+        <col style={{ width: 92 }} />
+        <col />
+        <col style={{ width: 200 }} />
+        <col style={{ width: 130 }} />
+        <col style={{ width: 92 }} />
+        <col style={{ width: 150 }} />
+        <col style={{ width: 92 }} />
+      </colgroup>
       <thead>
         <tr>
           <th>상태</th>
           <th>제목</th>
           <th>광고 ID</th>
-          <th>일일 시간 윈도우</th>
+          <th>일일 시간</th>
           <th>일일 횟수</th>
           <th>캠페인 기간</th>
-          <th>편집</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -79,21 +88,21 @@ export function MyAdsList() {
               </span>
             </td>
             <td>
-              <strong>{ad.title}</strong>
-              <div className="muted" style={{ fontSize: 11 }}>
-                영상 <code>{ad.videoFilename}</code>
+              <div style={{ fontWeight: 600 }}>{ad.title}</div>
+              <div className="id-truncate" title={ad.videoFilename} style={{ marginTop: 4 }}>
+                {ad.videoFilename}
               </div>
             </td>
-            <td className="id" style={{ userSelect: "all" }}>
+            <td className="id" title={ad.id}>
               <code>{ad.id}</code>
             </td>
-            <td>{ad.startTime} ~ {ad.endTime}</td>
-            <td>{ad.dailyPlayCount}</td>
-            <td className="muted" style={{ fontSize: 12 }}>
+            <td style={{ whiteSpace: "nowrap" }}>{ad.startTime} ~ {ad.endTime}</td>
+            <td>{ad.dailyPlayCount}회</td>
+            <td className="muted" style={{ fontSize: 12, whiteSpace: "nowrap" }}>
               {ad.campaignStartDate}<br />~ {ad.campaignEndDate}
             </td>
-            <td>
-              <Link className="btn" href={`/ads/${ad.id}`}>편집 ↗</Link>
+            <td style={{ textAlign: "right" }}>
+              <Link className="btn" href={`/ads/${ad.id}`}>편집</Link>
             </td>
           </tr>
         ))}

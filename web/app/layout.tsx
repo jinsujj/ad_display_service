@@ -13,6 +13,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ko">
+      <head>
+        {/* Pretendard 가변 폰트 — 한국어 친화 시스템 폰트가 없는 환경에 폴백 */}
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css"
+        />
+      </head>
       <body>
         <div className="app-shell">
           <header className="app-header">
