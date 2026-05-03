@@ -1,0 +1,31 @@
+# Gradle
+.gradle/
+build/
+bin/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Kotlin incremental compile cache
+.kotlin/
+
+# Spring Boot local data (H2 etc.)
+data/
+
+# Logs
+*.log
+
+# IDE
+.idea/
+*.iml
+out/
+.classpath
+.project
+.settings/
+.factorypath
+.apt_generated/
+.springBeans
+.sts4-cache/
+
+# OS
+.DS_Store

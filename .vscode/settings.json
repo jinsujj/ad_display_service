@@ -1,0 +1,31 @@
+{
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.compile.nullAnalysis.mode": "automatic",
+    "java.import.gradle.enabled": true,
+    "java.import.gradle.wrapper.enabled": true,
+    "java.import.projectSelection": "automatic",
+    "java.import.exclusions": [
+        "**/node_modules/**",
+        "**/.metadata/**",
+        "**/archetype-resources/**",
+        "**/META-INF/maven/**",
+        "android/**",
+        "web/**",
+        "deploy/**"
+    ],
+    "kotlin.compiler.jvm.target": "25",
+    "kotlin.languageServer.enabled": true,
+    "gradle.nestedProjects": ["backend"],
+    "files.exclude": {
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/bin": true,
+        "**/build": true
+    },
+    "files.watcherExclude": {
+        "**/bin/**": true,
+        "**/build/**": true,
+        "**/.gradle/**": true
+    },
+    "spring-boot.ls.problem.boot.BOOT_VERSION_VALIDATION_CODE": "IGNORE"
+}
