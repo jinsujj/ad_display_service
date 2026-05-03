@@ -146,14 +146,14 @@ export function DeviceRemapModal(props: DeviceRemapModalProps) {
       >
         <header className="modal__header">
           <h2 id={titleId} className="modal__title">
-            Remap device
+            디바이스 재할당
           </h2>
           <button
             type="button"
             className="modal__close"
             onClick={onClose}
             disabled={submitting}
-            aria-label="Close remap dialog"
+            aria-label="재할당 다이얼로그 닫기"
           >
             ×
           </button>
@@ -167,26 +167,26 @@ export function DeviceRemapModal(props: DeviceRemapModalProps) {
           }}
         >
           <div className="modal__row">
-            <span className="muted">Device:</span>{" "}
-            <strong>{device.deviceName || "(unnamed)"}</strong>
+            <span className="muted">디바이스:</span>{" "}
+            <strong>{device.deviceName || "(이름 없음)"}</strong>
             <div className="muted" style={{ fontSize: 12 }}>
               {device.deviceId}
             </div>
           </div>
 
           <div className="modal__row">
-            <span className="muted">Currently assigned:</span>{" "}
+            <span className="muted">현재 할당:</span>{" "}
             {current ? (
               <strong>
                 {current.restaurantName || current.restaurantId}
               </strong>
             ) : (
-              <span className="pill pill-warn">Unassigned</span>
+              <span className="pill pill-warn">미할당</span>
             )}
           </div>
 
           <label className="assignment-selector__label" htmlFor={selectId}>
-            Target restaurant
+            대상 음식점
           </label>
           <select
             id={selectId}
@@ -198,8 +198,8 @@ export function DeviceRemapModal(props: DeviceRemapModalProps) {
           >
             <option value="">
               {restaurants.length === 0
-                ? "No restaurants available"
-                : "Choose a restaurant…"}
+                ? "사용 가능한 음식점 없음"
+                : "음식점 선택…"}
             </option>
             {restaurants.map((r) => (
               <option key={r.restaurantId} value={r.restaurantId}>
@@ -209,13 +209,12 @@ export function DeviceRemapModal(props: DeviceRemapModalProps) {
           </select>
 
           <p className="muted" style={{ fontSize: 12, margin: "4px 0 0" }}>
-            Saving immediately remaps the device. The player updates within
-            seconds via SSE.
+            저장하는 즉시 디바이스가 재할당됩니다. SSE를 통해 수 초 내에 플레이어에 반영됩니다.
           </p>
 
           {errorMessage && (
             <div className="notice notice-error" role="alert">
-              Remap failed: {errorMessage}
+              재할당 실패: {errorMessage}
             </div>
           )}
 
@@ -226,10 +225,10 @@ export function DeviceRemapModal(props: DeviceRemapModalProps) {
               onClick={onClose}
               disabled={submitting}
             >
-              Cancel
+              취소
             </button>
             <button type="submit" className="btn" disabled={saveDisabled}>
-              {submitting ? "Saving…" : "Save"}
+              {submitting ? "저장 중…" : "저장"}
             </button>
           </div>
         </form>

@@ -52,25 +52,25 @@ export default async function VideosPage() {
     <section>
       <div className="page-header">
         <div>
-          <h1>Videos</h1>
+          <h1>영상</h1>
           <div className="subtitle">
-            Upload an MP4 ad and review every uploaded asset. The list below
-            reflects the live backend state — newest uploads first.
+            MP4 광고 영상을 업로드하고 업로드된 모든 자산을 확인합니다.
+            아래 목록은 실시간 백엔드 상태이며 최신 업로드가 위에 표시됩니다.
           </div>
         </div>
       </div>
 
-      <h2 className="section-heading">Uploaded videos</h2>
+      <h2 className="section-heading">업로드된 영상</h2>
       {videosError && (
         <div className="notice notice-error" role="alert">
-          Failed to load uploaded videos from backend: {videosError}
+          백엔드에서 영상 목록을 불러오지 못했습니다: {videosError}
         </div>
       )}
 
       {!videosError && videos.length === 0 && (
         <div className="empty-state">
-          No videos uploaded yet. Use the form below to upload your first
-          MP4 — once it succeeds, refresh the page to see it listed here.
+          아직 업로드된 영상이 없습니다. 아래 폼에서 첫 MP4를 업로드하고,
+          업로드가 끝나면 페이지를 새로고침해 목록을 확인하세요.
         </div>
       )}
 
@@ -79,24 +79,22 @@ export default async function VideosPage() {
       )}
 
       <h2 className="section-heading" style={{ marginTop: 32 }}>
-        Upload video
+        영상 업로드
       </h2>
       <p className="muted" style={{ marginTop: 0, marginBottom: 12 }}>
-        MP4 only · 500 MiB cap · validated client-side before upload. On
-        success the streaming URL appears in the success notice and the new
-        row will show in the list above on next refresh.
+        MP4 전용 · 최대 500 MiB · 업로드 전 클라이언트에서 사전 검증.
+        성공 시 알림에 스트리밍 URL이 표시되며, 새 행은 다음 새로고침 시
+        위 목록에 반영됩니다.
       </p>
 
       <VideoUploadForm />
 
       <p className="muted" style={{ marginTop: 24 }}>
-        Uploads land at <code>POST /api/videos</code> and the listing above
-        is fetched from <code>GET /api/videos</code> on the Spring Boot
-        backend; files are persisted under{" "}
-        <code>/var/lib/adsignage/videos</code> on the host. Both endpoints
-        require a JWT — store it under{" "}
-        <code>localStorage.adsignage_auth_token</code> (the login UI lands in
-        a sibling sub-AC).
+        업로드는 Spring Boot 백엔드의 <code>POST /api/videos</code> 로 전송되고,
+        위 목록은 <code>GET /api/videos</code> 에서 가져옵니다. 파일은 호스트의{" "}
+        <code>/var/lib/adsignage/videos</code> 에 저장됩니다. 두 엔드포인트
+        모두 JWT 인증이 필요하며, 토큰은 로그인 시
+        <code>localStorage.adsignage_auth_token</code> 에 저장됩니다.
       </p>
     </section>
   );
@@ -107,5 +105,5 @@ function describeError(err: unknown): string {
     return `HTTP ${err.status} (${err.url})`;
   }
   if (err instanceof Error) return err.message;
-  return "unknown error";
+  return "알 수 없는 오류";
 }

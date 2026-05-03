@@ -642,3 +642,95 @@ a:hover {
   border-radius: var(--radius);
   background: var(--bg-elev);
 }
+
+/* ---------- Auth header (헤더 우측 사용자 영역) ---------- */
+
+.auth-header {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.auth-header .auth-link {
+  color: var(--fg);
+  text-decoration: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.auth-header .auth-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.auth-header .auth-sep {
+  color: var(--muted);
+}
+
+.auth-header .auth-user {
+  color: var(--muted);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-header .auth-logout {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.auth-header .auth-logout:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ---------- Auth forms (로그인 / 회원가입) ---------- */
+
+.auth-form {
+  max-width: 420px;
+}
+
+.auth-form__fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+  padding: 16px 18px;
+}
+
+.auth-form__legend {
+  font-weight: 600;
+  padding: 0 6px;
+}
+
+.auth-form__label {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.auth-form__input {
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font: inherit;
+}
+
+.auth-form__input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.auth-form__actions {
+  margin-top: 8px;
+  justify-content: flex-end;
+}

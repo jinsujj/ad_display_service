@@ -19,7 +19,7 @@
  *   1. props로 초기 서버 fetch된 [DeviceListItem] 목록과 [RestaurantListItem]
  *      목록을 받음(디바이스 페이지 서버 컴포넌트가 렌더 전에 둘을 fetch).
  *      덕분에 클라이언트 스피너 없이 즉시 테이블을 그릴 수 있다.
- *   2. 디바이스 당 한 행을 인라인 "Reassign" 컨트롤과 함께 렌더 — 클릭하면
+ *   2. 디바이스 당 한 행을 인라인 "재할당" 컨트롤과 함께 렌더 — 클릭하면
  *      페이지를 떠나지 않고 행별 에디터(음식점 <select> 드롭다운 + Save /
  *      Cancel)가 펼쳐진다.
  *   3. 이 Sub-AC의 핵심인 **매핑 변경 핸들러** ([handleMappingChange] 아래)를
@@ -227,25 +227,25 @@ export function DevicesTableClient(props: DevicesTableClientProps) {
       <div className="toolbar" style={{ marginBottom: 8 }}>
         {isRefreshing ? (
           <span className="muted" role="status">
-            Refreshing list…
+            목록 새로고침 중…
           </span>
         ) : (
           <span className="muted">
-            {devices.length} device{devices.length === 1 ? "" : "s"}
+            디바이스 {devices.length}개
           </span>
         )}
       </div>
 
-      <table className="data-table" aria-label="Devices">
+      <table className="data-table" aria-label="디바이스">
         <thead>
           <tr>
-            <th scope="col">Device</th>
-            <th scope="col">Device ID</th>
-            <th scope="col">Registered</th>
-            <th scope="col">Current restaurant</th>
-            <th scope="col">Mapped at</th>
+            <th scope="col">디바이스</th>
+            <th scope="col">디바이스 ID</th>
+            <th scope="col">등록일</th>
+            <th scope="col">현재 음식점</th>
+            <th scope="col">매핑 시각</th>
             <th scope="col" style={{ width: 260 }}>
-              Remap
+              재할당
             </th>
           </tr>
         </thead>
@@ -352,7 +352,7 @@ function DeviceRow(props: DeviceRowProps) {
     <>
       <tr>
         <td>
-          <strong>{device.deviceName || "(unnamed)"}</strong>
+          <strong>{device.deviceName || "(이름 없음)"}</strong>
         </td>
         <td className="id" title={device.deviceId}>
           <Link href={`/devices/${encodeURIComponent(device.deviceId)}`}>
@@ -366,7 +366,7 @@ function DeviceRow(props: DeviceRowProps) {
           {current ? (
             <div>
               <div>
-                <strong>{current.restaurantName || "(unnamed restaurant)"}</strong>
+                <strong>{current.restaurantName || "(음식점 이름 없음)"}</strong>
               </div>
               <div className="muted" style={{ fontSize: 12 }}>
                 {shortId(current.restaurantId)}
@@ -374,7 +374,7 @@ function DeviceRow(props: DeviceRowProps) {
               </div>
             </div>
           ) : (
-            <span className="pill pill-warn">Unassigned</span>
+            <span className="pill pill-warn">미할당</span>
           )}
         </td>
         <td>
@@ -396,8 +396,8 @@ function DeviceRow(props: DeviceRowProps) {
                 disabled={submitting || restaurants.length === 0}
                 title={
                   restaurants.length === 0
-                    ? "No restaurants available to remap"
-                    : "Open the remap dialog for this device"
+                    ? "재할당 가능한 음식점이 없습니다"
+                    : "이 디바이스에 대한 재할당 다이얼로그 열기"
                 }
                 aria-label={`Edit mapping for ${device.deviceName || device.deviceId}`}
               >
@@ -410,15 +410,15 @@ function DeviceRow(props: DeviceRowProps) {
                 className="btn"
                 onClick={() => onToggleEdit(true)}
                 disabled={submitting || restaurants.length === 0}
-                title="Reassign inline without opening the modal"
+                title="다이얼로그 없이 행에서 바로 재할당"
               >
-                {current ? "Reassign" : "Assign"}
+                {current ? "재할당" : "할당"}
               </button>
             </div>
           )}
           {edit.open && (
             <span className="muted" style={{ fontSize: 12 }}>
-              Editing…
+              편집 중…
             </span>
           )}
         </td>
@@ -437,13 +437,13 @@ function DeviceRow(props: DeviceRowProps) {
               aria-label={`Reassign ${device.deviceName || device.deviceId}`}
             >
               <div className="assignment-selector__current">
-                <span className="muted">Currently assigned:</span>{" "}
+                <span className="muted">현재 할당:</span>{" "}
                 {current ? (
                   <strong>
                     {current.restaurantName || current.restaurantId}
                   </strong>
                 ) : (
-                  <span className="pill pill-warn">Unassigned</span>
+                  <span className="pill pill-warn">미할당</span>
                 )}
               </div>
 
@@ -451,7 +451,7 @@ function DeviceRow(props: DeviceRowProps) {
                 className="assignment-selector__label"
                 htmlFor={`reassign-select-${device.deviceId}`}
               >
-                Target restaurant
+                대상 음식점
               </label>
               <select
                 id={`reassign-select-${device.deviceId}`}
@@ -462,8 +462,8 @@ function DeviceRow(props: DeviceRowProps) {
               >
                 <option value="">
                   {restaurants.length === 0
-                    ? "No restaurants available"
-                    : "Choose a restaurant…"}
+                    ? "사용 가능한 음식점 없음"
+                    : "음식점 선택…"}
                 </option>
                 {restaurants.map((r) => (
                   <option key={r.restaurantId} value={r.restaurantId}>
@@ -474,13 +474,13 @@ function DeviceRow(props: DeviceRowProps) {
 
               {submit.kind === "error" && (
                 <div className="notice notice-error" role="alert">
-                  Assignment failed: {submit.message}
+                  할당 실패: {submit.message}
                 </div>
               )}
 
               <div className="toolbar" style={{ marginTop: 8 }}>
                 <button type="submit" className="btn" disabled={saveDisabled}>
-                  {submitting ? "Saving…" : "Save"}
+                  {submitting ? "저장 중…" : "저장"}
                 </button>
                 <button
                   type="button"
@@ -512,10 +512,10 @@ function DeviceRow(props: DeviceRowProps) {
                 marginBottom: 0,
               }}
             >
-              Mapping updated.
+              매핑이 업데이트되었습니다.
               {submit.result.assignmentId ? (
                 <>
-                  {" "}Active assignment{" "}
+                  {" "}활성 할당{" "}
                   <code>{shortId(submit.result.assignmentId)}</code>
                   {submit.result.assignedAt
                     ? ` at ${submit.result.assignedAt}`

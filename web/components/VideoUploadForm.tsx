@@ -152,7 +152,7 @@ export function VideoUploadForm() {
           setState({
             kind: "failed",
             file: current.file,
-            message: "Unknown upload failure",
+            message: "알 수 없는 업로드 오류",
             status: null,
           });
         }
@@ -193,10 +193,10 @@ export function VideoUploadForm() {
     if (state.kind !== "uploading") return null;
     const { loaded, total, lengthComputable } = state.progress;
     if (!lengthComputable || !total) {
-      return `Uploading… ${formatBytes(loaded)} sent`;
+      return `업로드 중… ${formatBytes(loaded)} 전송됨`;
     }
     const pct = Math.round((loaded / total) * 100);
-    return `${pct}% — ${formatBytes(loaded)} of ${formatBytes(total)}`;
+    return `${pct}% — ${formatBytes(loaded)} / ${formatBytes(total)}`;
   }, [state]);
 
   /* -------- 렌더 */
@@ -204,13 +204,13 @@ export function VideoUploadForm() {
   return (
     <form className="upload-form" onSubmit={handleSubmit} noValidate>
       <fieldset className="upload-form__fieldset" disabled={uploading}>
-        <legend className="upload-form__legend">Upload an MP4</legend>
+        <legend className="upload-form__legend">MP4 업로드</legend>
 
         <label htmlFor="video-file" className="upload-form__label">
-          Video file
+          영상 파일
           <span className="muted upload-form__hint">
             {" "}
-            · MP4 only · max {formatBytes(MAX_UPLOAD_SIZE_BYTES)}
+            · MP4 전용 · 최대 {formatBytes(MAX_UPLOAD_SIZE_BYTES)}
           </span>
         </label>
         <input
@@ -241,7 +241,7 @@ export function VideoUploadForm() {
               className="upload-form__bar"
               max={1}
               value={progressPercent ?? undefined}
-              aria-label="Upload progress"
+              aria-label="업로드 진행률"
             />
             <div className="upload-form__progress-label">
               {progressLabel}
@@ -251,14 +251,13 @@ export function VideoUploadForm() {
 
         {state.kind === "failed" && (
           <div className="notice notice-error" role="alert">
-            <strong>Upload failed.</strong>{" "}
+            <strong>업로드 실패.</strong>{" "}
             {state.status ? `[HTTP ${state.status}] ` : ""}
             {state.message}
             {state.status === 401 && (
               <div className="muted" style={{ marginTop: 6 }}>
-                The upload endpoint requires authentication. Sign in (or store
-                a JWT under <code>localStorage.adsignage_auth_token</code>)
-                and retry.
+                업로드 엔드포인트는 인증이 필요합니다. 먼저 로그인 후 다시
+                시도해 주세요.
               </div>
             )}
           </div>
@@ -274,7 +273,7 @@ export function VideoUploadForm() {
               color: "var(--ok)",
             }}
           >
-            <strong>Upload complete.</strong> Stored as{" "}
+            <strong>업로드 완료.</strong> 저장 파일명{" "}
             <code>{state.result.filename}</code> ({formatBytes(state.result.sizeBytes)}).
             <div style={{ marginTop: 6 }}>
               <a
@@ -282,11 +281,11 @@ export function VideoUploadForm() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Play in browser ↗
+                브라우저에서 재생 ↗
               </a>
               {"  ·  "}
               <span className="muted">
-                id <code>{state.result.id}</code>
+                ID <code>{state.result.id}</code>
               </span>
             </div>
           </div>
@@ -299,16 +298,16 @@ export function VideoUploadForm() {
             disabled={submitDisabled}
             aria-busy={uploading}
           >
-            {uploading ? "Uploading…" : "Upload video"}
+            {uploading ? "업로드 중…" : "영상 업로드"}
           </button>
           {uploading && (
             <button type="button" className="btn" onClick={handleCancel}>
-              Cancel
+              취소
             </button>
           )}
           {!uploading && (state.kind === "succeeded" || state.kind === "failed") && (
             <button type="button" className="btn" onClick={handleReset}>
-              {succeeded ? "Upload another" : "Reset"}
+              {succeeded ? "다른 영상 업로드" : "초기화"}
             </button>
           )}
         </div>
@@ -327,7 +326,7 @@ function FilePreview({ file }: { file: File }) {
       </div>
       <div className="muted upload-form__preview-meta">
         {formatBytes(file.size)}
-        {file.type ? ` · ${file.type}` : " · (no MIME reported by browser)"}
+        {file.type ? ` · ${file.type}` : " · (브라우저가 MIME을 보고하지 않음)"}
       </div>
     </div>
   );

@@ -39,12 +39,12 @@ export function AdLookupForm() {
     event.preventDefault();
     const trimmed = adId.trim();
     if (!trimmed) {
-      setError("Ad id is required.");
+      setError("광고 ID를 입력해 주세요.");
       return;
     }
     if (!ADID_REGEX.test(trimmed)) {
       setError(
-        "That doesn't look like a UUID. Paste the ad id from the create-ad response.",
+        "UUID 형식이 아닙니다. 광고 생성 응답에서 받은 ID를 붙여 넣으세요.",
       );
       return;
     }
@@ -55,7 +55,7 @@ export function AdLookupForm() {
   return (
     <form className="ad-lookup-form" onSubmit={handleSubmit} noValidate>
       <label htmlFor="ad-lookup-id" className="schedule-form__label">
-        Ad id (UUID)
+        광고 ID (UUID)
       </label>
       <input
         id="ad-lookup-id"
@@ -80,7 +80,7 @@ export function AdLookupForm() {
       )}
       <div className="toolbar" style={{ marginTop: 12 }}>
         <button type="submit" className="btn">
-          Open schedule editor
+          스케줄 에디터 열기
         </button>
       </div>
     </form>

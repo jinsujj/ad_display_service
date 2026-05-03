@@ -66,33 +66,32 @@ export default async function DevicesPage() {
     <section>
       <div className="page-header">
         <div>
-          <h1>Devices</h1>
+          <h1>디바이스</h1>
           <div className="subtitle">
-            All registered signage devices and the restaurant each one is
-            currently mapped to. Use the per-row Reassign button to remap a
-            device — the change is pushed to the device immediately via SSE.
+            등록된 모든 광고판 디바이스와 현재 매핑된 음식점입니다.
+            행의 재할당 버튼을 누르면 SSE로 즉시 디바이스에 변경이 전달됩니다.
           </div>
         </div>
       </div>
 
       {devicesError && (
         <div className="notice notice-error" role="alert">
-          Failed to load devices from backend: {devicesError}
+          백엔드에서 디바이스 목록을 불러오지 못했습니다: {devicesError}
         </div>
       )}
 
       {!devicesError && restaurantsError && (
         <div className="notice notice-error" role="alert">
-          Devices loaded, but the restaurant list is unavailable:{" "}
-          {restaurantsError}. Reassignment is disabled until the
-          <code> /api/restaurants </code> endpoint recovers.
+          디바이스는 불러왔지만 음식점 목록이 사용 불가능합니다:{" "}
+          {restaurantsError}. <code>/api/restaurants</code> 엔드포인트가
+          복구되기 전까지 재할당이 비활성화됩니다.
         </div>
       )}
 
       {!devicesError && devices.length === 0 && (
         <div className="empty-state">
-          No devices registered yet. Boot a signage device pointing at this
-          backend and refresh this page.
+          아직 등록된 디바이스가 없습니다. 광고판 디바이스를 이 백엔드를 향해
+          부팅한 뒤 페이지를 새로고침하세요.
         </div>
       )}
 
@@ -111,5 +110,5 @@ function describeError(err: unknown): string {
     return `HTTP ${err.status} (${err.url})`;
   }
   if (err instanceof Error) return err.message;
-  return "unknown error";
+  return "알 수 없는 오류";
 }

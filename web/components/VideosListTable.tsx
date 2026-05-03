@@ -41,12 +41,12 @@ export function VideosListTable({ videos }: VideosListTableProps) {
     <table className="data-table">
       <thead>
         <tr>
-          <th>Original name</th>
-          <th>Filename</th>
-          <th>Type</th>
-          <th>Size</th>
-          <th>Uploaded</th>
-          <th>Stream</th>
+          <th>원본 파일명</th>
+          <th>저장 파일명</th>
+          <th>타입</th>
+          <th>크기</th>
+          <th>업로드 시각</th>
+          <th>스트리밍</th>
         </tr>
       </thead>
       <tbody>
@@ -71,7 +71,7 @@ export function VideosListTable({ videos }: VideosListTableProps) {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Play ↗
+                  재생 ↗
                 </a>
               ) : (
                 <span className="muted">—</span>

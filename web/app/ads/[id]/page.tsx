@@ -42,36 +42,35 @@ export default function AdEditPage({ params }: AdEditPageProps) {
     <section>
       <div className="page-header">
         <div>
-          <h1>Edit ad schedule</h1>
+          <h1>광고 스케줄 편집</h1>
           <div className="subtitle">
-            Update the daily playback window and target play count for this
-            ad. Changes are saved immediately on submit and the next playlist
-            refresh will pick them up.
+            이 광고의 일일 송출 윈도우(시작/종료 시간)와 목표 송출 횟수를
+            수정합니다. 저장 즉시 적용되며 다음 플레이리스트 새로고침에
+            반영됩니다.
           </div>
         </div>
         <Link href="/ads" className="btn">
-          ← Back to ads
+          ← 광고 목록으로
         </Link>
       </div>
 
-      <h2 className="section-heading">Ad reference</h2>
+      <h2 className="section-heading">광고 정보</h2>
       <div className="ad-id-banner">
-        <span className="muted">Ad id</span>{" "}
+        <span className="muted">광고 ID</span>{" "}
         <code className="ad-id-banner__id">{adId}</code>
       </div>
 
       <h2 className="section-heading" style={{ marginTop: 24 }}>
-        Schedule
+        스케줄
       </h2>
       <AdScheduleForm adId={adId} />
 
       <p className="muted" style={{ marginTop: 24 }}>
-        Submits to <code>PUT /api/ads/{adId}/schedule</code> on the Spring
-        Boot backend. The endpoint is JWT-authenticated — store a token under{" "}
-        <code>localStorage.adsignage_auth_token</code> (the login UI lands in
-        a sibling AC). Server-side cross-field validation enforces{" "}
-        <code>endTime &gt; startTime</code> and a daily count of{" "}
-        <code>1..10000</code>.
+        Spring Boot 백엔드의 <code>PUT /api/ads/{adId}/schedule</code> 로
+        제출됩니다. 이 엔드포인트는 JWT 인증이 필요하므로 먼저 로그인하면{" "}
+        <code>localStorage.adsignage_auth_token</code> 에 토큰이 자동
+        저장됩니다. 서버 측 교차 검증으로 <code>endTime &gt; startTime</code>{" "}
+        과 일일 송출 횟수 <code>1..10000</code> 범위가 강제됩니다.
       </p>
     </section>
   );

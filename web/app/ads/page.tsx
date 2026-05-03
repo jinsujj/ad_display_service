@@ -33,21 +33,22 @@ export default function AdsIndexPage() {
     <section>
       <div className="page-header">
         <div>
-          <h1>Ads</h1>
+          <h1>광고</h1>
           <div className="subtitle">
-            Find an ad by id and edit its daily playback schedule.
+            광고 ID를 입력해 일일 송출 스케줄을 편집합니다.
           </div>
         </div>
       </div>
 
       <div className="notice" role="note">
-        <strong>Hackathon scope note.</strong> The backend currently exposes
-        only <code>PUT/PATCH /api/ads/&#123;id&#125;/schedule</code> (no list
-        endpoint yet). Paste the ad UUID below to jump to its schedule
-        editor — the create/list endpoints land in a sibling AC.
+        <strong>해커톤 범위 안내.</strong> 현재 백엔드에는{" "}
+        <code>PUT/PATCH /api/ads/&#123;id&#125;/schedule</code> 만 노출되어
+        있습니다(목록 엔드포인트 미구현). 아래에 광고 UUID를 붙여 넣어
+        스케줄 에디터로 이동하세요. 생성/목록 엔드포인트는 후속 AC에서
+        추가됩니다.
       </div>
 
-      <h2 className="section-heading">Open an ad</h2>
+      <h2 className="section-heading">광고 열기</h2>
       <AdLookupForm />
     </section>
   );

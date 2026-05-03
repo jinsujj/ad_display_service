@@ -125,7 +125,7 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
   /**
    * 사용자가 다시 편집을 시작하는 순간 제출 후 알림(성공 OR 오류)이
    * 지워지도록 setter를 감싼다 — 그렇지 않으면 운영자가 새 값을 타이핑한
-   * 후에도 stale "Schedule saved." 배너가 남아 현재 영속화된 상태를 잘못
+   * 후에도 stale "스케줄이 저장되었습니다." 배너가 남아 현재 영속화된 상태를 잘못
    * 표현한다. 사용자가 수정을 시도하는 즉시 인라인 메시지가 사라지도록
    * 매칭되는 필드별 클라이언트 오류도 지운다.
    */
@@ -225,18 +225,17 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
   return (
     <form className="schedule-form" onSubmit={handleSubmit} noValidate>
       <fieldset className="schedule-form__fieldset" disabled={submitting}>
-        <legend className="schedule-form__legend">Daily playback schedule</legend>
+        <legend className="schedule-form__legend">일일 송출 스케줄</legend>
         <p className="muted schedule-form__hint">
-          Pick the daily wall-clock window the ad should play within and the
-          target number of plays inside that window. The schedule replaces the
-          ad&apos;s current configuration in full (PUT semantics).
+          광고가 송출될 일일 시계 윈도우와 그 안에서의 목표 송출 횟수를 정합니다.
+          스케줄은 광고의 현재 설정을 전체 교체합니다(PUT 시맨틱).
         </p>
 
         <div className="schedule-form__grid">
           {/* startTime */}
           <div className="schedule-form__field">
             <label htmlFor="ad-schedule-start" className="schedule-form__label">
-              Start time
+              시작 시간
             </label>
             <input
               id="ad-schedule-start"
@@ -264,7 +263,7 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
           {/* endTime */}
           <div className="schedule-form__field">
             <label htmlFor="ad-schedule-end" className="schedule-form__label">
-              End time
+              종료 시간
             </label>
             <input
               id="ad-schedule-end"
@@ -292,7 +291,7 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
           {/* dailyPlayCount */}
           <div className="schedule-form__field">
             <label htmlFor="ad-schedule-count" className="schedule-form__label">
-              Daily play count
+              일일 송출 횟수
               <span className="muted schedule-form__hint">
                 {" "}
                 · {DAILY_PLAY_COUNT_MIN}–{DAILY_PLAY_COUNT_MAX}
@@ -328,14 +327,12 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
         {/* 폼 레벨 오류 */}
         {submitState.kind === "error" && (
           <div className="notice notice-error" role="alert">
-            <strong>Failed to save schedule.</strong>{" "}
+            <strong>스케줄 저장에 실패했습니다.</strong>{" "}
             {submitState.status ? `[HTTP ${submitState.status}] ` : ""}
             {submitState.message}
             {submitState.status === 401 && (
               <div className="muted" style={{ marginTop: 6 }}>
-                The schedule endpoint requires authentication. Sign in (or
-                store a JWT under <code>localStorage.adsignage_auth_token</code>)
-                and retry.
+                스케줄 엔드포인트는 인증이 필요합니다. 로그인 후 다시 시도해 주세요.
               </div>
             )}
           </div>
@@ -352,15 +349,15 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
               color: "var(--ok)",
             }}
           >
-            <strong>Schedule saved.</strong> {submitState.result.startTime}–
+            <strong>스케줄이 저장되었습니다.</strong> {submitState.result.startTime}–
             {submitState.result.endTime} · {submitState.result.dailyPlayCount}{" "}
-            plays/day. The next playlist refresh will reflect the new window.
+            회/일 — 다음 플레이리스트 새로고침에 반영됩니다.
           </div>
         )}
 
         <div className="toolbar schedule-form__actions">
           <button type="submit" className="btn" disabled={submitting} aria-busy={submitting}>
-            {submitting ? "Saving…" : "Save schedule"}
+            {submitting ? "저장 중…" : "스케줄 저장"}
           </button>
         </div>
       </fieldset>
@@ -373,7 +370,7 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
 /**
  * `updateAdSchedule`에서 throw된 오류를 `kind: "error"`의 [SubmitState]로
  * 변환. 폼이 서버 측 거절을 문제 컨트롤(들)에 재귀속할 수 있도록(예:
- * 크로스 필드 "endTime > startTime"이 End time 입력에 떨어짐) 백엔드의
+ * 크로스 필드 "endTime > startTime"이 종료 시간 입력에 떨어짐) 백엔드의
  * 구조화된 `fieldErrors` 맵을 최선을 다해 추출한다.
  */
 function buildErrorState(err: unknown): SubmitState {
