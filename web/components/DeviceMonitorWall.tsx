@@ -17,7 +17,7 @@
  * 폴링 주기는 상위(`MyDevicesList`) 의 AUTO_REFRESH_MS 가 결정한다.
  */
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import Link from "next/link";
 
 import { apiUrl } from "@/lib/api";
@@ -235,6 +235,37 @@ function LivePane({ currentAd }: { currentAd: CurrentAd }) {
     [currentAd.videoFilename],
   );
 
+  // 디바이스가 광고 N초째 재생 중일 때, 모니터 영상을 *같은 N초 위치* 로
+  // 점프시켜 시각적 동기를 맞춘다. 이 시킹이 없으면 모니터는 항상 0초부터
+  // 시작해 운영자 눈에 "디바이스랑 어긋나 보이는" 딜레이로 보인다.
+  //
+  // 시킹 정책:
+  //   - <video> 의 metadata 가 로드되면(`onLoadedMetadata`) duration 사용 가능.
+  //   - 디바이스 STARTED 이벤트가 광고 N번째 loop 인지 모르므로, 경과 시간을
+  //     duration 으로 modulo 해서 현재 loop 의 진행 위치를 계산.
+  //   - duration 미상(라이브 스트림 등) 이면 시킹 생략.
+  //   - currentTime > duration 이면 브라우저가 reject 할 수 있어 가드 필수.
+  const handleLoadedMetadata = useCallback(
+    (e: React.SyntheticEvent<HTMLVideoElement>) => {
+      const video = e.currentTarget;
+      const duration = video.duration;
+      if (!Number.isFinite(duration) || duration <= 0) return;
+      try {
+        const startedMs = new Date(currentAd.startedAt).getTime();
+        if (Number.isNaN(startedMs)) return;
+        const elapsedSec = (Date.now() - startedMs) / 1000;
+        if (elapsedSec < 0) return;
+        // 광고가 loop=true 라 디바이스도 끝나면 처음부터 → modulo 로 현재 loop 위치.
+        const seekTo = elapsedSec % duration;
+        // duration 에 너무 가까이 가면 브라우저가 자동 loop 트리거하므로 살짝 안쪽.
+        video.currentTime = Math.min(seekTo, Math.max(0, duration - 0.1));
+      } catch {
+        // seek 실패는 시각적 딜레이로 보일 뿐, 재생 자체는 계속됨 — swallow.
+      }
+    },
+    [currentAd.startedAt],
+  );
+
   return (
     <div
       style={{
@@ -252,7 +283,8 @@ function LivePane({ currentAd }: { currentAd: CurrentAd }) {
         autoPlay
         playsInline
         loop
-        preload="metadata"
+        preload="auto"
+        onLoadedMetadata={handleLoadedMetadata}
         style={{
           width: "100%",
           height: "100%",

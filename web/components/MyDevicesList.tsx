@@ -16,11 +16,11 @@ import { listRestaurants, type RestaurantListItem } from "@/lib/restaurants";
 import { DeviceMonitorWall } from "./DeviceMonitorWall";
 import { DevicesTableClient } from "./DevicesTableClient";
 
-/** 모니터링 자동 새로고침 주기(밀리초). 광고가 보통 15-30초 길이라 3초마다
- *  새로고침해도 같은 광고를 계속 다시 그리는 일이 적고, 디바이스가 다음
- *  광고로 넘어가면 거의 즉시 카드에 반영된다. /api/devices 가 가벼운
- *  read-only 쿼리라 부담은 거의 없다. */
-const AUTO_REFRESH_MS = 3_000;
+/** 모니터링 자동 새로고침 주기(밀리초). 1.5초면 디바이스가 다음 광고로 넘어가
+ *  자마자 어드민 카드도 따라 잡힌다. /api/devices 는 read-only batch 쿼리라
+ *  서버 부담은 미미. 카드 비디오 자체는 onLoadedMetadata 시점에 시킹해서
+ *  디바이스 progress 와 시각 동기를 맞춘다. */
+const AUTO_REFRESH_MS = 1_500;
 
 type State =
   | { kind: "loading" }
