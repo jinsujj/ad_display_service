@@ -98,6 +98,47 @@ class DeviceListController(
         return ResponseEntity.noContent().build()
     }
 
+    /**
+     * 단일 디바이스 상세 + 매핑 이력 (활성/비활성 모두, 최신순).
+     * /devices/{deviceId} 페이지가 사용.
+     */
+    @GetMapping(
+        "/api/devices/{deviceId}",
+        produces = [MediaType.APPLICATION_JSON_VALUE],
+    )
+    @Transactional(readOnly = true)
+    fun getDeviceDetail(@PathVariable deviceId: String): ResponseEntity<DeviceDetailResponse> {
+        val device = deviceRepository.findById(deviceId).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+
+        val assignmentsRaw = assignmentRepository.findAllByDeviceIdOrderByAssignedAtDesc(deviceId)
+        val restaurantsById = restaurantRepository.findAll().associateBy { it.restaurantId }
+
+        val history = assignmentsRaw.map { a ->
+            val r = restaurantsById[a.restaurantId]
+            AssignmentHistoryItem(
+                assignmentId = a.id,
+                restaurantId = a.restaurantId,
+                restaurantName = r?.name ?: "(삭제된 음식점)",
+                address = r?.address,
+                assignedAt = a.assignedAt,
+                active = a.active,
+            )
+        }
+        val current = history.firstOrNull { it.active }
+
+        return ResponseEntity.ok(
+            DeviceDetailResponse(
+                deviceId = device.deviceId,
+                deviceName = device.deviceName,
+                registeredAt = device.registeredAt,
+                lastSeenAt = device.lastSeenAt,
+                currentAssignment = current,
+                history = history,
+            ),
+        )
+    }
+
     @GetMapping(
         "/api/devices",
         produces = [MediaType.APPLICATION_JSON_VALUE],
@@ -188,4 +229,22 @@ data class RestaurantListItem(
     val restaurantId: String,
     val restaurantName: String,
     val address: String?,
+)
+
+data class DeviceDetailResponse(
+    val deviceId: String,
+    val deviceName: String,
+    val registeredAt: Instant,
+    val lastSeenAt: Instant?,
+    val currentAssignment: AssignmentHistoryItem?,
+    val history: List<AssignmentHistoryItem>,
+)
+
+data class AssignmentHistoryItem(
+    val assignmentId: String,
+    val restaurantId: String,
+    val restaurantName: String,
+    val address: String?,
+    val assignedAt: Instant,
+    val active: Boolean,
 )
