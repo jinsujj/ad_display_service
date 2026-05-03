@@ -1,0 +1,128 @@
+# =============================================================================
+# Docker 이미지 publish — push 시 ghcr.io 로 backend / web 두 이미지를 빌드
+# 해 올린다.
+#
+# 태그 전략:
+#   - main 브랜치 push      → :main, :sha-<short>, :latest
+#   - tag (vX.Y.Z) push     → :X.Y.Z, :X.Y, :latest
+#   - PR                    → 빌드만, push 안 함 (Dockerfile 깨짐 조기 발견)
+#
+# 사용:
+#   git push origin main
+#   git tag v0.2.0 && git push origin v0.2.0
+#
+# 운영 호스트(owl-SER8) 에서:
+#   docker compose pull && docker compose up -d
+# =============================================================================
+name: docker-publish
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  # 소문자 owner/repo 사용 — ghcr 가 요구.
+  IMAGE_BACKEND: ghcr.io/${{ github.repository_owner }}/adsignage-backend
+  IMAGE_WEB:     ghcr.io/${{ github.repository_owner }}/adsignage-web
+
+jobs:
+  backend:
+    name: backend image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate metadata (tags + labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_BACKEND }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # GitHub-hosted runner 의 BuildKit 캐시 — push 마다 deps layer 를
+          # 다시 다운로드하지 않게 한다.
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+  web:
+    name: web image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate metadata (tags + labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_WEB }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./web
+          file: ./web/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # 빌드 타임 NEXT_PUBLIC_* 는 GitHub variable 로 조절 가능
+          # (Settings → Variables → Actions). 미설정 시 빈 문자열 = 동일도메인.
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max

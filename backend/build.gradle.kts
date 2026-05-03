@@ -27,6 +27,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    // /actuator/health — deploy/scripts/install-backend.sh, nginx 프로브,
+    // Docker HEALTHCHECK 가 모두 의존하는 최소 운영 인터페이스.
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
 
     // Kotlin
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")

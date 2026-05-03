@@ -57,6 +57,8 @@
 
 ## 빠른 시작 (로컬 개발)
 
+### 옵션 A — 호스트에서 직접
+
 ```bash
 # 1. 백엔드
 cd backend && ./gradlew bootRun
@@ -68,20 +70,44 @@ cd web && npm install && npm run dev
 cd android && ./gradlew assembleDebug
 ```
 
-## 배포
+### 옵션 B — Docker compose
 
 ```bash
-# 백엔드 jar 업로드
-scp backend/build/libs/adsignage-0.0.1-SNAPSHOT.jar \
-    owl@110.8.21.243:/opt/adsignage/
-
-# 서버에서
-ssh owl@110.8.21.243 \
-  'sudo bash /opt/adsignage/install-backend.sh'
-
-# nginx + TLS
-ssh owl@110.8.21.243 \
-  'sudo bash /opt/adsignage/provision-tls.sh'
+cp .env.example .env
+# JWT_SECRET 채우고
+docker compose up --build
+# → backend  http://127.0.0.1:8080
+# → web      http://127.0.0.1:3000
 ```
 
-자세한 내용은 각 컴포넌트 README 참고.
+자세한 도커 운영은 [`deploy/DOCKER.md`](deploy/DOCKER.md).
+
+## 배포
+
+### Docker (권장)
+
+CI(`.github/workflows/docker-publish.yml`) 가 main push 마다 ghcr 로 두 이미지를
+푸시한다:
+
+- `ghcr.io/jinsujj/adsignage-backend:{main,sha-XXXXXXX,latest}`
+- `ghcr.io/jinsujj/adsignage-web:{main,sha-XXXXXXX,latest}`
+
+서버(owl-SER8) 에서:
+
+```bash
+cd /opt/adsignage/src
+git pull --ff-only
+docker compose pull
+docker compose up -d
+```
+
+### Legacy (systemd jar)
+
+```bash
+scp backend/build/libs/adsignage-0.0.1-SNAPSHOT.jar \
+    owl@110.8.21.243:/opt/adsignage/
+ssh owl@110.8.21.243 'sudo bash /opt/adsignage/install-backend.sh'
+ssh owl@110.8.21.243 'sudo bash /opt/adsignage/provision-tls.sh'
+```
+
+자세한 내용은 각 컴포넌트 README 와 [`deploy/`](deploy/) 디렉토리 참고.

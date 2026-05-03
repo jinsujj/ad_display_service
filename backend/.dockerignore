@@ -1,0 +1,39 @@
+# Build context 를 작게 유지 — gradle 결과물, IDE, 로컬 데이터는 전부 제외.
+# Dockerfile 의 build stage 가 안에서 다시 ./gradlew bootJar 를 도므로 호스트의
+# build/ 결과를 가지고 들어갈 필요가 없다.
+
+# Gradle / build outputs
+build/
+.gradle/
+out/
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# 로컬 영속화 데이터(혹시 호스트에 H2 파일이 있으면 차단)
+data/
+videos/
+*.db
+*.mv.db
+*.trace.db
+
+# 비밀 / 환경파일
+.env
+.env.*
+backend.env
+backend.env.local
+
+# Docker 자체
+Dockerfile
+.dockerignore
+
+# git 메타
+.git
+.gitignore
+
+# 테스트 산출물
+test-results/
+*.log

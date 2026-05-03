@@ -1,0 +1,29 @@
+# Build context 최소화 — local node_modules / .next 은 절대 보내지 않는다.
+# 빌드 안에서 npm ci + next build 를 돌리는 게 결정적이고 호스트 OS 와도
+# 무관하다.
+
+node_modules/
+.next/
+out/
+coverage/
+.cache/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# 환경 / 비밀
+.env
+.env.local
+.env.*.local
+
+# Docker / git
+Dockerfile
+.dockerignore
+.git
+.gitignore
+
+# 잡다
+*.log
+README.md
