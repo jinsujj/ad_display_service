@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 
-import { AuthHeader } from "@/components/AuthHeader";
+import { AppChrome } from "@/components/AppChrome";
 
 export const metadata: Metadata = {
   title: "AdSignage 어드민",
@@ -21,20 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body>
-        <div className="app-shell">
-          <header className="app-header">
-            <a href="/" className="brand">
-              AdSignage&nbsp;어드민
-            </a>
-            <nav className="primary-nav">
-              <a href="/videos">영상</a>
-              <a href="/ads">광고</a>
-              <a href="/devices">디바이스</a>
-            </nav>
-            <AuthHeader />
-          </header>
-          <main className="app-main">{children}</main>
-        </div>
+        <AppChrome>{children}</AppChrome>
       </body>
     </html>
   );
