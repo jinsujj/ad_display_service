@@ -1,5 +1,6 @@
 package me.owldev.adsignage.domain.ad
 
+import me.owldev.adsignage.domain.queue.DeviceAdQueueRepository
 import me.owldev.adsignage.sse.PlaylistUpdatedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
@@ -52,6 +53,14 @@ class AdService(
      * 부팅함.
      */
     private val eventPublisher: ApplicationEventPublisher,
+    /**
+     * 광고가 삭제되면 그 광고를 담고 있던 모든 디바이스 큐 행도 함께 정리해
+     * dangling reference 가 남지 않도록 한다. PlaylistController 가 큐에 있는
+     * 광고 id 만으로 ads 를 가져오므로 큐 행이 남아 있어도 곧바로 사라지긴
+     * 하지만, 어드민 큐 화면에서 "삭제된 광고" 가 보이는 것을 막기 위해
+     * 명시적으로 지운다.
+     */
+    private val queueRepository: DeviceAdQueueRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(AdService::class.java)
@@ -186,8 +195,13 @@ class AdService(
     fun delete(adId: String, advertiserId: String) {
         val ad = adRepository.findByIdAndAdvertiserId(adId, advertiserId)
             .orElseThrow { AdNotFoundException(adId) }
+        // 큐 행을 먼저 정리해야 ads(parent) 삭제 후 dangling 큐 행이 남지 않는다.
+        val removedQueueRows = queueRepository.deleteAllByAdId(adId)
         adRepository.delete(ad)
-        log.info("delete: adId={} advertiserId={}", adId, advertiserId)
+        log.info(
+            "delete: adId={} advertiserId={} removed_queue_rows={}",
+            adId, advertiserId, removedQueueRows,
+        )
         publishPlaylistUpdated(ad)
     }
 

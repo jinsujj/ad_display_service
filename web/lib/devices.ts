@@ -37,12 +37,29 @@ export interface CurrentRestaurant {
   assignedAt: string;
 }
 
+/**
+ * 디바이스 큐에 담긴 광고의 모니터링 썸네일용 요약.
+ * `videoFilename` 으로 `/api/videos/{filename}` Range 엔드포인트에 접근.
+ */
+export interface QueuedAdSummary {
+  adId: string;
+  title: string;
+  videoFilename: string;
+  /** SCHEDULED / ACTIVE / EXPIRED — 캠페인 기간 기반 상태 라벨. */
+  status: "SCHEDULED" | "ACTIVE" | "EXPIRED";
+}
+
 /** 관리자 Devices 리스트의 단일 디바이스 행에 대한 와이어 형태. */
 export interface DeviceListItem {
   deviceId: string;
   deviceName: string;
   registeredAt: string;
   currentRestaurant: CurrentRestaurant | null;
+  /**
+   * 이 디바이스 큐에 담긴 광고 요약 — 어드민 디바이스 탭에서 송출 모니터링
+   * 썸네일을 렌더링하는 데 쓴다. 큐가 비면 빈 배열.
+   */
+  queuedAds: QueuedAdSummary[];
 }
 
 /** 레거시/대체 백엔드 형태에 관대한 변형. */
@@ -107,11 +124,39 @@ function normaliseDevice(raw: RawDevice): DeviceListItem {
     };
   }
 
+  const rawQueued = (raw as { queuedAds?: unknown }).queuedAds;
+  const queuedAds: QueuedAdSummary[] = Array.isArray(rawQueued)
+    ? rawQueued
+        .map((q): QueuedAdSummary | null => {
+          if (!q || typeof q !== "object") return null;
+          const o = q as Record<string, unknown>;
+          const adId = typeof o.adId === "string" ? o.adId : "";
+          const videoFilename =
+            typeof o.videoFilename === "string" ? o.videoFilename : "";
+          if (!adId || !videoFilename) return null;
+          const statusRaw = typeof o.status === "string" ? o.status : "ACTIVE";
+          const status =
+            statusRaw === "SCHEDULED" ||
+            statusRaw === "ACTIVE" ||
+            statusRaw === "EXPIRED"
+              ? statusRaw
+              : "ACTIVE";
+          return {
+            adId,
+            title: typeof o.title === "string" ? o.title : "",
+            videoFilename,
+            status,
+          };
+        })
+        .filter((q): q is QueuedAdSummary => q !== null)
+    : [];
+
   return {
     deviceId,
     deviceName,
     registeredAt,
     currentRestaurant: current,
+    queuedAds,
   };
 }
 

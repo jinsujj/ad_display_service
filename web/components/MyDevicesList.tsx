@@ -8,12 +8,17 @@
  * 마운트 후 클라이언트에서 수행한다.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 
 import { ApiError } from "@/lib/api";
 import { listDevices, type DeviceListItem } from "@/lib/devices";
 import { listRestaurants, type RestaurantListItem } from "@/lib/restaurants";
+import { DeviceMonitorWall } from "./DeviceMonitorWall";
 import { DevicesTableClient } from "./DevicesTableClient";
+
+/** 모니터링 자동 새로고침 주기(밀리초). 큐 변경이 즉시 반영되진 않아도
+ * 어드민 입장에서 충분히 "라이브" 로 느낄 정도. */
+const AUTO_REFRESH_MS = 30_000;
 
 type State =
   | { kind: "loading" }
@@ -27,38 +32,59 @@ type State =
 
 export function MyDevicesList() {
   const [state, setState] = useState<State>({ kind: "loading" });
+  const [refreshing, startRefresh] = useTransition();
 
-  useEffect(() => {
-    let cancelled = false;
-    Promise.allSettled([listDevices(), listRestaurants()]).then((results) => {
-      if (cancelled) return;
+  const loadAll = useCallback(
+    async (mode: "initial" | "refresh"): Promise<void> => {
+      const results = await Promise.allSettled([
+        listDevices(),
+        listRestaurants(),
+      ]);
       const [devicesResult, restaurantsResult] = results;
       if (devicesResult.status === "rejected") {
-        setState({
-          kind: "error",
-          message: describeError(devicesResult.reason),
-        });
+        if (mode === "initial") {
+          setState({
+            kind: "error",
+            message: describeError(devicesResult.reason),
+          });
+        }
+        // refresh 실패 시에는 기존 화면 유지 — 모니터링이 깜빡이지 않게.
         return;
       }
       const devices = devicesResult.value;
-      let restaurants: RestaurantListItem[] = [];
-      let restaurantsError: string | null = null;
-      if (restaurantsResult.status === "fulfilled") {
-        restaurants = restaurantsResult.value;
-      } else {
-        restaurantsError = describeError(restaurantsResult.reason);
-      }
-      setState({
-        kind: "ready",
-        devices,
-        restaurants,
-        restaurantsError,
-      });
+      const restaurants =
+        restaurantsResult.status === "fulfilled" ? restaurantsResult.value : [];
+      const restaurantsError =
+        restaurantsResult.status === "rejected"
+          ? describeError(restaurantsResult.reason)
+          : null;
+      setState({ kind: "ready", devices, restaurants, restaurantsError });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    loadAll("initial").catch(() => {
+      // loadAll 안에서 이미 setState 처리됨.
     });
+    const interval = setInterval(() => {
+      if (cancelled) return;
+      startRefresh(() => {
+        loadAll("refresh");
+      });
+    }, AUTO_REFRESH_MS);
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
-  }, []);
+  }, [loadAll]);
+
+  const onManualRefresh = useCallback(() => {
+    startRefresh(() => {
+      loadAll("refresh");
+    });
+  }, [loadAll]);
 
   if (state.kind === "loading") {
     return <div className="muted">디바이스 목록을 불러오는 중…</div>;
@@ -84,10 +110,17 @@ export function MyDevicesList() {
           부팅한 뒤 페이지를 새로고침하세요.
         </div>
       ) : (
-        <DevicesTableClient
-          initialDevices={state.devices}
-          restaurants={state.restaurants}
-        />
+        <>
+          <DeviceMonitorWall
+            devices={state.devices}
+            onRefresh={onManualRefresh}
+            refreshing={refreshing}
+          />
+          <DevicesTableClient
+            initialDevices={state.devices}
+            restaurants={state.restaurants}
+          />
+        </>
       )}
     </>
   );

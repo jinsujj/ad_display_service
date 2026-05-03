@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
+import me.owldev.adsignage.domain.ad.AdRepository
+import me.owldev.adsignage.domain.ad.computeStatus
 import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
+import me.owldev.adsignage.domain.queue.DeviceAdQueueRepository
 import me.owldev.adsignage.domain.restaurant.RestaurantRepository
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -40,6 +43,8 @@ class DeviceListController(
     private val deviceRepository: DeviceRepository,
     private val assignmentRepository: DeviceAssignmentRepository,
     private val restaurantRepository: RestaurantRepository,
+    private val queueRepository: DeviceAdQueueRepository,
+    private val adRepository: AdRepository,
 ) {
     private val log = LoggerFactory.getLogger(DeviceListController::class.java)
 
@@ -85,15 +90,16 @@ class DeviceListController(
     @DeleteMapping("/api/devices/{deviceId}")
     @Transactional
     fun deleteDevice(@PathVariable deviceId: String): ResponseEntity<Void> {
-        // 매핑 이력 먼저 (활성/비활성 불문, 외래 데이터 모두 정리)
+        // 큐 + 매핑 이력 먼저 (외래 데이터 모두 정리)
+        val removedQueue = queueRepository.deleteAllByDeviceId(deviceId)
         val removedAssignments = assignmentRepository.deleteAllByDeviceId(deviceId)
         // 그 다음 디바이스 자체. 없는 id 면 deleteById가 EmptyResultDataAccessException
         // 을 던지므로 existsById 로 가드.
         val existed = deviceRepository.existsById(deviceId)
         if (existed) deviceRepository.deleteById(deviceId)
         log.info(
-            "DELETE /api/devices/{} removed_device={} removed_assignments={}",
-            deviceId, existed, removedAssignments,
+            "DELETE /api/devices/{} removed_device={} removed_queue={} removed_assignments={}",
+            deviceId, existed, removedQueue, removedAssignments,
         )
         return ResponseEntity.noContent().build()
     }
@@ -152,9 +158,31 @@ class DeviceListController(
             .associateBy { it.deviceId }
         val restaurantsById = restaurantRepository.findAll().associateBy { it.restaurantId }
 
+        // 디바이스 큐를 한 번에 모아 device_id 별로 묶어두면 N+1 을 피할 수 있다.
+        // 어드민 디바이스 탭에서 모니터링 썸네일을 그리는 데 쓰이며, 결과는
+        // addedAt 내림차순으로 정렬되어 운영자가 큐에 쌓은 순서를 그대로 본다.
+        val queueByDevice = queueRepository.findAll()
+            .sortedByDescending { it.addedAt }
+            .groupBy { it.id.deviceId }
+        val queuedAdIds = queueByDevice.values.flatten().map { it.id.adId }.toSet()
+        val adsById = if (queuedAdIds.isEmpty()) {
+            emptyMap()
+        } else {
+            adRepository.findAllById(queuedAdIds).associateBy { it.id }
+        }
+
         val items = devices.map { d ->
             val a = activeAssignments[d.deviceId]
             val r = a?.let { restaurantsById[it.restaurantId] }
+            val queuedAds = (queueByDevice[d.deviceId] ?: emptyList()).mapNotNull { q ->
+                val ad = adsById[q.id.adId] ?: return@mapNotNull null
+                QueuedAdSummary(
+                    adId = ad.id,
+                    title = ad.title,
+                    videoFilename = ad.videoFilename,
+                    status = ad.computeStatus().name,
+                )
+            }
             DeviceListItem(
                 deviceId = d.deviceId,
                 deviceName = d.deviceName,
@@ -167,6 +195,7 @@ class DeviceListController(
                         assignedAt = a.assignedAt,
                     )
                 } else null,
+                queuedAds = queuedAds,
             )
         }
         return ResponseEntity.ok(items)
@@ -216,6 +245,19 @@ data class DeviceListItem(
     val deviceName: String,
     val registeredAt: Instant,
     val currentRestaurant: CurrentRestaurantDto?,
+    val queuedAds: List<QueuedAdSummary> = emptyList(),
+)
+
+/**
+ * 어드민 디바이스 탭의 모니터링 썸네일용 가벼운 광고 요약. 풀 광고 메타가
+ * 필요하면 디바이스 상세에서 `GET /api/devices/{id}/ads` 사용.
+ */
+data class QueuedAdSummary(
+    val adId: String,
+    val title: String,
+    val videoFilename: String,
+    /** SCHEDULED / ACTIVE / EXPIRED — Ad.computeStatus() 결과. */
+    val status: String,
 )
 
 data class CurrentRestaurantDto(

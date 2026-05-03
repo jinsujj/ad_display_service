@@ -181,6 +181,12 @@ import {
   type DailyCounters,
 } from "@/lib/dailyCount";
 /*
+ * 큐에 담긴 광고가 매 사이클 새 순서로 섞여 보이도록 하는 보조 셔플.
+ * 라운드 로빈 자체는 그대로 두고, 라운드 로빈이 도는 *배열의 순서* 만
+ * 매 사이클 바꾼다 — 결정적 PRNG 라 테스트 가능하다.
+ */
+import { adIdSetKey, shuffleWithSeed } from "@/lib/shufflePlaylist";
+/*
  * AC 20202 Sub-AC 2 — emit play events (STARTED / FINISHED) from the
  * player to the backend. The helper is fire-and-forget by design: a
  * failed POST must not interrupt playback, so the wrapper swallows
@@ -211,6 +217,20 @@ interface RemapSplash {
   startedAt: number;
 }
 const SPLASH_MS = 2500;
+
+/**
+ * 32-bit FNV-like 문자열 해시. 플레이리스트 셔플 seed 의 한 입력으로만
+ * 쓰이며, 보안 용도가 아니므로 충돌 위험은 무관하다. 같은 입력에 같은
+ * 정수를 돌려주는 결정성만 보장하면 된다.
+ */
+function hashString(s: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i += 1) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
 
 export function PlayerClient({ deviceId }: PlayerClientProps) {
   const [playlistState, setPlaylistState] = useState<PlaylistState>({
@@ -656,7 +676,46 @@ export function PlayerClient({ deviceId }: PlayerClientProps) {
   // (`adsLength > 0 ? ads[safeIndex] : null`) keeps reading naturally.
   const rrIndex = roundRobinSafeIndex(currentIndex, adsLength);
   const safeIndex = rrIndex < 0 ? 0 : rrIndex;
-  const currentAd = adsLength > 0 ? ads[safeIndex] : null;
+
+  /**
+   * "쌓아둔 광고가 잘 섞여서 보이도록" — 라운드 로빈이 순회하는 배열의
+   * 순서를 매 사이클 새 순열로 바꾼다. 라운드 로빈 자체(인덱스 advance,
+   * onEnded 카운팅 등) 는 그대로 두고, "어떤 배열을 도는지" 만 셔플한 사본
+   * 으로 교체.
+   *
+   * shuffleVer 가 다음 두 시점에 bump 된다:
+   *   1. ads 의 *식별 집합* 이 바뀔 때 (광고 추가/제거/만료) — adIdSetKey
+   *      변화로 자동 reshuffle.
+   *   2. 한 사이클이 끝나서 인덱스가 0 으로 wrap 될 때 — 같은 세트라도
+   *      순서를 매번 바꿔 지루함을 줄인다.
+   */
+  const adIdsKey = useMemo(() => adIdSetKey(ads), [ads]);
+  const [shuffleVer, setShuffleVer] = useState(0);
+  const prevSafeIndexRef = useRef(0);
+  useEffect(() => {
+    // 사이클 wrap 감지: 직전 safeIndex 가 마지막 슬롯이었고 이번에 0 으로
+    // 돌아왔으면 한 바퀴 완성 → reshuffle. ads 가 1 개 이하면 셔플 의미 없음.
+    if (
+      adsLength > 1 &&
+      prevSafeIndexRef.current === adsLength - 1 &&
+      safeIndex === 0
+    ) {
+      setShuffleVer((v) => v + 1);
+    }
+    prevSafeIndexRef.current = safeIndex;
+  }, [safeIndex, adsLength]);
+
+  const shuffledAds = useMemo(() => {
+    if (ads.length <= 1) return ads;
+    // seed 는 광고 집합 + 사이클 카운터 + 플레이리스트 세대의 조합. 같은
+    // 입력에 같은 결과(테스트 가능) 를 주되 사이클이 바뀌면 새 순열이 나오게.
+    const seed =
+      hashString(adIdsKey) ^ shuffleVer ^ (playlistGen | 0) ^ (deviceId.charCodeAt(0) || 0);
+    return shuffleWithSeed(ads, seed);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adIdsKey, shuffleVer, playlistGen, deviceId]);
+
+  const currentAd = adsLength > 0 ? shuffledAds[safeIndex] ?? ads[safeIndex] : null;
 
   /**
    * AC 60203 Sub-AC 3 — single source of truth for "which ad is selected".

@@ -5,6 +5,7 @@ import me.owldev.adsignage.domain.ad.AdRepository
 import me.owldev.adsignage.domain.ad.AdStatus
 import me.owldev.adsignage.domain.ad.computeStatus
 import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
+import me.owldev.adsignage.domain.queue.DeviceAdQueueRepository
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -23,11 +24,11 @@ import java.time.LocalTime
  *     이미 permitAll 로 화이트리스트되어 있다.
  *
  * 계산:
- *   1. device → 활성 매핑(restaurant_id) 조회. 매핑이 없으면 빈 ads 반환
- *      → 플레이어가 splash.png 표시.
- *   2. 매핑이 있으면 *모든 광고주*의 광고 중 캠페인 기간이 ACTIVE 인 것만
- *      모아 반환. (해커톤 모델에서 광고는 음식점 화이트리스트가 없고, 매핑된
- *      디바이스 전체에 라운드 로빈으로 분배된다.)
+ *   1. device → 활성 매핑(restaurant_id) 조회. 위치/식별 용도로만 응답에
+ *      포함되며, 광고 선정에는 더 이상 매핑 존재 여부가 영향을 주지 않는다.
+ *   2. **device_ad_queue 가 진실의 원천**. 운영자가 이 디바이스 큐에 담아둔
+ *      광고들 중에서 캠페인 기간이 ACTIVE 인 것만 송출 대상으로 반환한다.
+ *      큐가 비었으면 빈 ads → 플레이어가 splash.png 표시.
  *   3. 일일 시간 윈도우(start_time / end_time)와 dailyPlayCount 는 응답에
  *      그대로 실어 보내고 시간 필터는 플레이어가 책임진다 — 그래야 자정 경계
  *      처리, 하루 안 카운팅, day-rollover 등이 디바이스 로컬 시각 기준으로
@@ -37,6 +38,7 @@ import java.time.LocalTime
 class PlaylistController(
     private val adRepository: AdRepository,
     private val assignmentRepository: DeviceAssignmentRepository,
+    private val queueRepository: DeviceAdQueueRepository,
 ) {
     private val log = LoggerFactory.getLogger(PlaylistController::class.java)
 
@@ -50,28 +52,29 @@ class PlaylistController(
         val assignment = assignmentRepository.findByDeviceIdAndActiveTrue(deviceId).orElse(null)
         val restaurantId = assignment?.restaurantId
 
-        val ads: List<PlaylistAdResponse> =
-            if (restaurantId == null) {
-                emptyList()
-            } else {
-                adRepository.findAll()
-                    .filter { it.computeStatus() == AdStatus.ACTIVE }
-                    .map { ad ->
-                        PlaylistAdResponse(
-                            adId = ad.id,
-                            title = ad.title,
-                            videoUrl = "/api/videos/${ad.videoFilename}",
-                            scheduleId = ad.id, // 1:1 임베드 — schedule_id == ad_id
-                            startTime = ad.startTime,
-                            endTime = ad.endTime,
-                            dailyCount = ad.dailyPlayCount,
-                        )
-                    }
-            }
+        val queueRows = queueRepository.findAllByIdDeviceIdOrderByAddedAtDesc(deviceId)
+        val ads: List<PlaylistAdResponse> = if (queueRows.isEmpty()) {
+            emptyList()
+        } else {
+            val queuedIds = queueRows.map { it.id.adId }
+            adRepository.findAllById(queuedIds)
+                .filter { it.computeStatus() == AdStatus.ACTIVE }
+                .map { ad ->
+                    PlaylistAdResponse(
+                        adId = ad.id,
+                        title = ad.title,
+                        videoUrl = "/api/videos/${ad.videoFilename}",
+                        scheduleId = ad.id, // 1:1 임베드 — schedule_id == ad_id
+                        startTime = ad.startTime,
+                        endTime = ad.endTime,
+                        dailyCount = ad.dailyPlayCount,
+                    )
+                }
+        }
 
         log.info(
-            "GET /api/devices/{}/playlist restaurantId={} ads={}",
-            deviceId, restaurantId, ads.size,
+            "GET /api/devices/{}/playlist restaurantId={} queued={} active_ads={}",
+            deviceId, restaurantId, queueRows.size, ads.size,
         )
         return ResponseEntity.ok(
             DevicePlaylistResponse(
