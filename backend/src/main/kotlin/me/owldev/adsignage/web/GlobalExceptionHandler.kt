@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.multipart.MultipartException
 import org.springframework.web.multipart.support.MissingServletRequestPartException
+import org.springframework.web.servlet.resource.NoResourceFoundException
 import java.time.Instant
 
 /**
@@ -363,6 +364,23 @@ class GlobalExceptionHandler {
             message = ex.mostSpecificCause.message ?: ex.message ?: "Malformed request body",
         )
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)
+    }
+
+    /**
+     * Spring 6.x의 기본 동작: 매핑된 컨트롤러가 없는 경로는 정적 리소스로
+     * 시도되어 [NoResourceFoundException] 으로 끝남. 이걸 catch-all 500 으로
+     * 떨어뜨리지 않고 명시적 404 로 매핑한다 — 그래야 어드민/프론트가
+     * "엔드포인트가 없다"를 정확히 인식하고 사용자에게 적절한 메시지를
+     * 보여준다.
+     */
+    @ExceptionHandler(NoResourceFoundException::class)
+    fun handleNoResourceFound(ex: NoResourceFoundException): ResponseEntity<ApiError> {
+        val body = ApiError(
+            status = HttpStatus.NOT_FOUND.value(),
+            error = "Not Found",
+            message = "No endpoint mapped for ${ex.resourcePath}",
+        )
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body)
     }
 
     @ExceptionHandler(Exception::class)

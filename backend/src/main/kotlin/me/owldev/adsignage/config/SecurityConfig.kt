@@ -86,6 +86,12 @@ class SecurityConfig(
                 auth
                     // --- 공개: 인증 (로그인/회원가입이 JWT 발급) ----------
                     .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
+                    // --- 공개: 디바이스 자기 등록 ---------------------------
+                    // 안드로이드 광고판은 JWT 가 없는 익명 클라이언트이므로
+                    // 부팅 시 자기 device_id 를 신고할 때 인증 면제.
+                    // 멱등하므로 악의적 호출자가 새 device_id 로 spam 해도
+                    // 데모 단계에서는 무해 (운영 시 rate limit 권장).
+                    .requestMatchers(HttpMethod.POST, "/api/devices/register").permitAll()
                     // --- 공개: 헬스 프로브 ---------------------------------
                     .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                     // --- 공개: 개발 전용 H2 콘솔 ---------------------------

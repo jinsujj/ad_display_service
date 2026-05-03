@@ -51,9 +51,19 @@ class MainActivity : AppCompatActivity() {
         // AC 12: 영구 device_id를 조회 또는 생성한 뒤 이를 사용해 플레이어 URL을
         // 구성한다. 최초 호출에서는 생성·저장하고, 이후 호출에서는 동일 값을 반환한다.
         val deviceId = DeviceIdManager.getOrCreateDeviceId(applicationContext)
+        val baseUrl = getString(R.string.player_base_url)
+
+        // 백엔드 devices 테이블에 자기 device_id 를 등록 (fire-and-forget,
+        // 멱등). 앱 lifecycle 당 한 번이면 충분하며, 응답은 무시한다.
+        DeviceRegistrar.registerAsync(
+            baseUrl = baseUrl,
+            deviceId = deviceId,
+            deviceName = DeviceRegistrar.defaultDeviceName(deviceId),
+        )
+
         val playerUrl = PlayerUrl.forDevice(
-            baseUrl = getString(R.string.player_base_url),
-            deviceId = deviceId
+            baseUrl = baseUrl,
+            deviceId = deviceId,
         )
         webView.loadUrl(playerUrl)
     }
