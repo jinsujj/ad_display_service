@@ -29,6 +29,7 @@ import {
   getDeviceDetail,
   type DeviceDetailResponse,
 } from "@/lib/deviceDetail";
+import { patchDevice } from "@/lib/devices";
 import { shortId } from "@/lib/format";
 
 type State =
@@ -96,7 +97,11 @@ export function DeviceDetailClient({ deviceId }: Props) {
       {/* 메타 배너 */}
       <div className="ad-id-banner" style={{ marginBottom: 12 }}>
         <div>
-          <strong>{d.deviceName}</strong>{" "}
+          <DeviceNameEditor
+            deviceId={d.deviceId}
+            currentName={d.deviceName}
+            onSaved={refetchDetail}
+          />{" "}
           {d.currentAssignment ? (
             <span className="pill pill-ok" style={{ marginLeft: 6 }}>
               위치 · {d.currentAssignment.restaurantName}
@@ -558,6 +563,153 @@ function AdPickerModal({
         </div>
       </div>
     </div>
+  );
+}
+
+/* ----------------------------------------------------- 디바이스 별칭 편집 */
+
+/**
+ * 디바이스 이름 인라인 편집. 평소엔 strong 으로 큼지막하게 표시, ✎ 버튼
+ * 누르면 input 으로 전환. Enter 저장 / Esc 취소.
+ *
+ * 자동 생성된 이름 ("Google sdk_gphone16k_arm64 (Android 15) · …") 대신 운영
+ * 친화적 별칭 ("강남 1호점") 으로 식별 가능.
+ */
+function DeviceNameEditor({
+  deviceId,
+  currentName,
+  onSaved,
+}: {
+  deviceId: string;
+  currentName: string;
+  onSaved: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(currentName);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function open() {
+    setDraft(currentName);
+    setError(null);
+    setEditing(true);
+  }
+  function cancel() {
+    setEditing(false);
+    setError(null);
+  }
+  async function save() {
+    const trimmed = draft.trim();
+    if (!trimmed) {
+      setError("이름은 1자 이상이어야 합니다.");
+      return;
+    }
+    if (trimmed === currentName) {
+      setEditing(false);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await patchDevice(deviceId, { deviceName: trimmed });
+      setEditing(false);
+      onSaved();
+    } catch (err) {
+      const msg =
+        err instanceof ApiError
+          ? `HTTP ${err.status}`
+          : err instanceof Error
+            ? err.message
+            : "알 수 없는 오류";
+      setError(msg);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!editing) {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+        <strong>{currentName || "(이름 없음)"}</strong>
+        <button
+          type="button"
+          className="btn"
+          onClick={open}
+          aria-label="별칭 편집"
+          title="이 디바이스의 별칭을 수정"
+          style={{ padding: "2px 8px", fontSize: 12 }}
+        >
+          ✎ 별칭
+        </button>
+      </span>
+    );
+  }
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        flexWrap: "wrap",
+      }}
+    >
+      <input
+        type="text"
+        value={draft}
+        autoFocus
+        disabled={busy}
+        maxLength={255}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            save();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            cancel();
+          }
+        }}
+        style={{
+          fontWeight: 600,
+          fontSize: 16,
+          padding: "4px 8px",
+          background: "var(--bg-elev)",
+          border: "1px solid var(--border)",
+          borderRadius: 6,
+          color: "var(--fg)",
+          minWidth: 200,
+        }}
+        aria-label="디바이스 별칭"
+        placeholder="예: 강남 1호점"
+      />
+      <button
+        type="button"
+        className="btn"
+        onClick={save}
+        disabled={busy}
+        style={{ padding: "4px 10px", fontSize: 12 }}
+      >
+        {busy ? "저장 중…" : "저장"}
+      </button>
+      <button
+        type="button"
+        className="btn"
+        onClick={cancel}
+        disabled={busy}
+        style={{ padding: "4px 10px", fontSize: 12 }}
+      >
+        취소
+      </button>
+      {error && (
+        <span
+          role="alert"
+          style={{ color: "var(--err)", fontSize: 12, marginLeft: 8 }}
+        >
+          {error}
+        </span>
+      )}
+    </span>
   );
 }
 

@@ -102,6 +102,14 @@ data class UpdateDeviceRequest(
 
     @field:Size(min = 1, max = 128, message = "groupName must be 1..128 characters when present")
     val groupName: String? = null,
+
+    /**
+     * 디바이스 별칭 — 어드민 UI 가 자동 생성된 모델명/시리얼 대신 운영 친화적
+     * 라벨 ("강남 1호점", "홍대 카운터") 로 식별할 수 있게 해 준다. 빈 문자열은
+     * "그대로 두기" 와 "지우기" 모호성을 피하기 위해 거절 — 1자 이상.
+     */
+    @field:Size(min = 1, max = 255, message = "deviceName must be 1..255 characters when present")
+    val deviceName: String? = null,
 ) {
     /**
      * 요청 본문이 서비스가 적용 방법을 아는 필드를 하나도 담지 않은 경우
@@ -109,7 +117,7 @@ data class UpdateDeviceRequest(
      * 400으로 단락하기 위해 사용한다.
      */
     fun isEmpty(): Boolean =
-        restaurantId == null && screenName == null && groupName == null
+        restaurantId == null && screenName == null && groupName == null && deviceName == null
 }
 
 /**

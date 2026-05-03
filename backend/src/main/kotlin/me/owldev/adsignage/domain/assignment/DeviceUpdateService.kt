@@ -2,6 +2,7 @@ package me.owldev.adsignage.domain.assignment
 
 import me.owldev.adsignage.domain.assignment.dto.DeviceResponse
 import me.owldev.adsignage.domain.assignment.dto.UpdateDeviceRequest
+import me.owldev.adsignage.domain.device.DeviceRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional
 class DeviceUpdateService(
     private val assignmentService: DeviceAssignmentService,
     private val deviceLookup: DeviceLookup,
+    private val deviceRepository: DeviceRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(DeviceUpdateService::class.java)
@@ -77,6 +79,22 @@ class DeviceUpdateService(
                 "applyPatch: device={} restaurantId={} (assignmentId={})",
                 deviceId, request.restaurantId, currentAssignment.id,
             )
+        }
+
+        // 1.5) deviceName (별칭): devices 테이블의 device_name 직접 수정.
+        //      DTO 검증으로 이미 1..255 길이 보장. trim 해서 양 끝 공백만 들어가는
+        //      케이스도 거절.
+        if (request.deviceName != null) {
+            val trimmed = request.deviceName.trim()
+            if (trimmed.isEmpty()) {
+                throw DeviceFieldUnsupportedException("deviceName")
+            }
+            val device = deviceRepository.findById(deviceId).orElseThrow {
+                DeviceNotFoundException(deviceId)
+            }
+            device.deviceName = trimmed
+            deviceRepository.save(device)
+            log.info("applyPatch: device={} deviceName=\"{}\"", deviceId, trimmed)
         }
 
         // 2) screenName / groupName: 스키마가 아직 준비되지 않음. API

@@ -236,6 +236,8 @@ export interface DevicePatchRequest {
   restaurantId?: string;
   screenName?: string;
   groupName?: string;
+  /** 디바이스 별칭. 1..255 자, trim 후 빈 문자열 불가. */
+  deviceName?: string;
 }
 
 /**
@@ -276,7 +278,7 @@ export async function patchDevice(
   patch: DevicePatchRequest,
 ): Promise<DevicePatchResponse> {
   if (!deviceId) throw new Error("deviceId is required");
-  if (!patch || (patch.restaurantId === undefined && patch.screenName === undefined && patch.groupName === undefined)) {
+  if (!patch || (patch.restaurantId === undefined && patch.screenName === undefined && patch.groupName === undefined && patch.deviceName === undefined)) {
     // 백엔드의 "PATCH 본문에는 업데이트 가능한 필드가 최소 하나 포함되어야
     // 함" 400 응답을 그대로 반영 — 무의미한 왕복을 막기 위해 클라이언트에서
     // 즉시 실패시킨다.
