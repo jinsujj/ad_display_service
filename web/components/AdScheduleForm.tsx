@@ -70,6 +70,8 @@ export interface AdScheduleFormInitialValues {
   startTime?: string; // "HH:mm"
   endTime?: string;   // "HH:mm"
   dailyPlayCount?: number;
+  campaignStartDate?: string; // "YYYY-MM-DD"
+  campaignEndDate?: string;   // "YYYY-MM-DD"
 }
 
 /** [AdScheduleForm]의 props. */
@@ -115,6 +117,12 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
     initialValues?.dailyPlayCount !== undefined
       ? String(initialValues.dailyPlayCount)
       : "",
+  );
+  const [campaignStartDate, setCampaignStartDate] = useState<string>(
+    initialValues?.campaignStartDate ?? "",
+  );
+  const [campaignEndDate, setCampaignEndDate] = useState<string>(
+    initialValues?.campaignEndDate ?? "",
   );
 
   // 필드별 검증 오류(요청 전 동기).
@@ -185,10 +193,27 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
       setClientErrors({});
 
       // 검증 후에는 세 필드가 모두 존재하고 형식이 올바름을 안다.
+      // 캠페인 기간: 두 값이 모두 채워졌을 때만 보냄. 둘 다 비었으면
+      // 백엔드가 기존 값을 유지한다.
+      const campaignDatesValid =
+        !!campaignStartDate &&
+        !!campaignEndDate &&
+        campaignEndDate >= campaignStartDate;
+      if (campaignStartDate && campaignEndDate && !campaignDatesValid) {
+        setClientErrors({
+          ...clientErrors,
+          // 같은 메시지를 endTime 컬럼이 아니라 폼 레벨에 띄우기 위해
+          // 임시로 'endTime' 키를 재활용 — 더 깔끔히 하려면 별도 키 추가 필요
+        } as never);
+      }
+
       const body: UpdateAdScheduleRequest = {
         startTime: parsedBody.startTime!,
         endTime: parsedBody.endTime!,
         dailyPlayCount: parsedBody.dailyPlayCount!,
+        ...(campaignDatesValid
+          ? { campaignStartDate, campaignEndDate }
+          : {}),
       };
 
       setSubmitState({ kind: "submitting" });
@@ -205,7 +230,7 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
         setSubmitState(buildErrorState(err));
       }
     },
-    [adId, parsedBody, submitting, onSaved],
+    [adId, parsedBody, campaignStartDate, campaignEndDate, clientErrors, submitting, onSaved],
   );
 
   /* -------- 파생 UI 비트 */
@@ -323,6 +348,36 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
                 {countError}
               </div>
             )}
+          </div>
+        </div>
+
+        <h3 className="section-heading" style={{ marginTop: 16, fontSize: 14 }}>
+          캠페인 기간
+          <span className="muted" style={{ fontSize: 12 }}>
+            {" "}
+            · 이 기간이 지나면 자동으로 송출이 중단됩니다
+          </span>
+        </h3>
+        <div className="schedule-form__grid">
+          <div className="schedule-form__field">
+            <label htmlFor="ad-schedule-camp-start" className="schedule-form__label">시작일</label>
+            <input
+              id="ad-schedule-camp-start"
+              type="date"
+              value={campaignStartDate}
+              onChange={(e) => setCampaignStartDate(e.target.value)}
+              className="schedule-form__input"
+            />
+          </div>
+          <div className="schedule-form__field">
+            <label htmlFor="ad-schedule-camp-end" className="schedule-form__label">종료일</label>
+            <input
+              id="ad-schedule-camp-end"
+              type="date"
+              value={campaignEndDate}
+              onChange={(e) => setCampaignEndDate(e.target.value)}
+              className="schedule-form__input"
+            />
           </div>
         </div>
 

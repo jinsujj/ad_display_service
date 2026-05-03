@@ -5,6 +5,7 @@ import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalTime
 import java.util.UUID
 
@@ -103,6 +104,21 @@ class Ad(
      */
     @Column(name = "daily_play_count", nullable = false)
     var dailyPlayCount: Int,
+
+    /**
+     * 캠페인 시작일 (운영자 로컬 zone, 포함). V41에서 추가.
+     * 오늘 날짜가 [campaignStartDate]와 [campaignEndDate] 사이에 있을 때만
+     * 광고가 디바이스에 송출된다.
+     */
+    @Column(name = "campaign_start_date", nullable = false)
+    var campaignStartDate: LocalDate,
+
+    /**
+     * 캠페인 종료일 (운영자 로컬 zone, 포함). [campaignStartDate] 이상이어야 함
+     * (DB CHECK `ck_ads_campaign_window`).
+     */
+    @Column(name = "campaign_end_date", nullable = false)
+    var campaignEndDate: LocalDate,
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),

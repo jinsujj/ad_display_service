@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDate
 import java.time.LocalTime
 
 /**
@@ -72,10 +73,13 @@ class AdController(
         val startTime: LocalTime = body.startTime!!
         val endTime: LocalTime = body.endTime!!
         val dailyPlayCount: Int = body.dailyPlayCount!!
+        val campaignStartDate: LocalDate = body.campaignStartDate!!
+        val campaignEndDate: LocalDate = body.campaignEndDate!!
 
         log.info(
-            "POST /api/ads advertiserId={} title='{}' videoFilename={} startTime={} endTime={} dailyPlayCount={}",
+            "POST /api/ads advertiserId={} title='{}' videoFilename={} startTime={} endTime={} dailyPlayCount={} campaign={}..{}",
             principal.advertiserId, title, videoFilename, startTime, endTime, dailyPlayCount,
+            campaignStartDate, campaignEndDate,
         )
 
         val saved = adService.create(
@@ -85,6 +89,8 @@ class AdController(
             startTime = startTime,
             endTime = endTime,
             dailyPlayCount = dailyPlayCount,
+            campaignStartDate = campaignStartDate,
+            campaignEndDate = campaignEndDate,
         )
         return ResponseEntity.status(HttpStatus.CREATED).body(AdResponse.from(saved))
     }
@@ -182,6 +188,8 @@ class AdController(
             startTime = startTime,
             endTime = endTime,
             dailyPlayCount = dailyPlayCount,
+            campaignStartDate = body.campaignStartDate,
+            campaignEndDate = body.campaignEndDate,
         )
         return ResponseEntity.ok(AdResponse.from(saved))
     }

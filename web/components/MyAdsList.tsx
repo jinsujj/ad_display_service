@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { ApiError } from "@/lib/api";
-import { listMyAds, type AdResponse } from "@/lib/ads";
+import { AD_STATUS_LABEL, listMyAds, type AdResponse, type AdStatus } from "@/lib/ads";
 
 type State =
   | { kind: "loading" }
@@ -61,32 +61,53 @@ export function MyAdsList() {
     <table className="data-table">
       <thead>
         <tr>
+          <th>상태</th>
           <th>제목</th>
           <th>광고 ID</th>
-          <th>영상 파일명</th>
-          <th>스케줄</th>
+          <th>일일 시간 윈도우</th>
           <th>일일 횟수</th>
+          <th>캠페인 기간</th>
           <th>편집</th>
         </tr>
       </thead>
       <tbody>
         {state.ads.map((ad) => (
           <tr key={ad.id}>
-            <td><strong>{ad.title}</strong></td>
+            <td>
+              <span className={statusPillClass(ad.status)}>
+                {AD_STATUS_LABEL[ad.status]}
+              </span>
+            </td>
+            <td>
+              <strong>{ad.title}</strong>
+              <div className="muted" style={{ fontSize: 11 }}>
+                영상 <code>{ad.videoFilename}</code>
+              </div>
+            </td>
             <td className="id" style={{ userSelect: "all" }}>
               <code>{ad.id}</code>
             </td>
-            <td className="id">{ad.videoFilename}</td>
             <td>{ad.startTime} ~ {ad.endTime}</td>
             <td>{ad.dailyPlayCount}</td>
+            <td className="muted" style={{ fontSize: 12 }}>
+              {ad.campaignStartDate}<br />~ {ad.campaignEndDate}
+            </td>
             <td>
-              <Link className="btn" href={`/ads/${ad.id}`}>스케줄 편집 ↗</Link>
+              <Link className="btn" href={`/ads/${ad.id}`}>편집 ↗</Link>
             </td>
           </tr>
         ))}
       </tbody>
     </table>
   );
+}
+
+function statusPillClass(status: AdStatus): string {
+  switch (status) {
+    case "ACTIVE": return "pill pill-ok";
+    case "EXPIRED": return "pill pill-warn";
+    case "SCHEDULED": return "pill";
+  }
 }
 
 export default MyAdsList;

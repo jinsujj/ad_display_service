@@ -54,6 +54,14 @@ export function CreateAdForm() {
   const [endTime, setEndTime] = useState("23:00");
   const [countStr, setCountStr] = useState("30");
 
+  // 캠페인 기간 기본값: 오늘 ~ 30일 후
+  const today = new Date();
+  const thirtyLater = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const [campaignStartDate, setCampaignStartDate] = useState(fmt(today));
+  const [campaignEndDate, setCampaignEndDate] = useState(fmt(thirtyLater));
+
   const [state, setState] = useState<State>({ kind: "idle" });
 
   const submitting = state.kind === "submitting";
@@ -79,6 +87,15 @@ export function CreateAdForm() {
       if (!Number.isInteger(dailyCount) || dailyCount < DAILY_PLAY_COUNT_MIN || dailyCount > DAILY_PLAY_COUNT_MAX) {
         errs.dailyPlayCount = `일일 송출 횟수는 ${DAILY_PLAY_COUNT_MIN}~${DAILY_PLAY_COUNT_MAX} 사이여야 합니다.`;
       }
+      if (!campaignStartDate) errs.campaignStartDate = "시작일을 입력해 주세요.";
+      if (!campaignEndDate) errs.campaignEndDate = "종료일을 입력해 주세요.";
+      if (
+        !errs.campaignStartDate &&
+        !errs.campaignEndDate &&
+        campaignEndDate < campaignStartDate
+      ) {
+        errs.campaignEndDate = "종료일은 시작일 이후여야 합니다.";
+      }
       if (Object.keys(errs).length > 0) {
         setState({
           kind: "error",
@@ -97,6 +114,8 @@ export function CreateAdForm() {
           startTime,
           endTime,
           dailyPlayCount: dailyCount,
+          campaignStartDate,
+          campaignEndDate,
         });
         setState({ kind: "success", result });
       } catch (err) {
@@ -117,7 +136,7 @@ export function CreateAdForm() {
         }
       }
     },
-    [title, videoFilename, startTime, endTime, dailyCount, submitting],
+    [title, videoFilename, startTime, endTime, dailyCount, campaignStartDate, campaignEndDate, submitting],
   );
 
   const fieldErrors = state.kind === "error" ? state.fieldErrors ?? {} : {};
@@ -217,6 +236,40 @@ export function CreateAdForm() {
             />
             {fieldErrors.dailyPlayCount && (
               <div className="schedule-form__field-error" role="alert">{fieldErrors.dailyPlayCount}</div>
+            )}
+          </div>
+        </div>
+
+        <h3 className="section-heading" style={{ marginTop: 16, fontSize: 14 }}>
+          캠페인 기간 (이 기간이 지나면 자동으로 송출이 중단됩니다)
+        </h3>
+        <div className="schedule-form__grid">
+          <div className="schedule-form__field">
+            <label htmlFor="ad-camp-start" className="schedule-form__label">시작일</label>
+            <input
+              id="ad-camp-start"
+              type="date"
+              required
+              value={campaignStartDate}
+              onChange={(e) => setCampaignStartDate(e.target.value)}
+              className="schedule-form__input"
+            />
+            {fieldErrors.campaignStartDate && (
+              <div className="schedule-form__field-error" role="alert">{fieldErrors.campaignStartDate}</div>
+            )}
+          </div>
+          <div className="schedule-form__field">
+            <label htmlFor="ad-camp-end" className="schedule-form__label">종료일</label>
+            <input
+              id="ad-camp-end"
+              type="date"
+              required
+              value={campaignEndDate}
+              onChange={(e) => setCampaignEndDate(e.target.value)}
+              className="schedule-form__input"
+            />
+            {fieldErrors.campaignEndDate && (
+              <div className="schedule-form__field-error" role="alert">{fieldErrors.campaignEndDate}</div>
             )}
           </div>
         </div>

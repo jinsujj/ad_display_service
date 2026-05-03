@@ -45,6 +45,9 @@ import { apiFetch } from "./api";
 
 /* --------------------------------------------------------------- types */
 
+/** 캠페인 기간 기준 광고 라이프사이클 상태 (서버 계산). */
+export type AdStatus = "SCHEDULED" | "ACTIVE" | "EXPIRED";
+
 /** `PUT /api/ads/{id}/schedule`이 반환하는 와이어 형태. */
 export interface AdResponse {
   /** 광고를 식별하는 서버 생성 UUID. */
@@ -61,6 +64,12 @@ export interface AdResponse {
   endTime: string;
   /** 윈도우 내 목표 일일 재생 수. 항상 `>= 1`. */
   dailyPlayCount: number;
+  /** 캠페인 시작일, "YYYY-MM-DD". */
+  campaignStartDate: string;
+  /** 캠페인 종료일, "YYYY-MM-DD". start 이상이어야 한다. */
+  campaignEndDate: string;
+  /** 응답 시점에 서버가 계산한 라이프사이클 상태. */
+  status: AdStatus;
   /** 광고 행이 최초 생성된 ISO-8601 instant. */
   createdAt: string;
 }
@@ -73,6 +82,10 @@ export interface UpdateAdScheduleRequest {
   endTime: string;
   /** 윈도우 내 목표 일일 재생 수. 서버에서 `[1, 10000]`로 검증. */
   dailyPlayCount: number;
+  /** "YYYY-MM-DD" — 캠페인 시작일 (선택, 누락 시 기존 값 유지). */
+  campaignStartDate?: string;
+  /** "YYYY-MM-DD" — 캠페인 종료일 (선택, 누락 시 기존 값 유지). */
+  campaignEndDate?: string;
 }
 
 /* ------------------------------------------------- client-side validation */
@@ -178,14 +191,23 @@ export async function updateAdSchedule(
   );
 }
 
-/** `POST /api/ads` 요청 본문 — 광고 생성 시 영상 + 제목 + 스케줄을 묶어 전달. */
+/** `POST /api/ads` 요청 본문 — 광고 생성 시 영상 + 제목 + 스케줄 + 캠페인 기간. */
 export interface CreateAdRequest {
   title: string;
   videoFilename: string;
-  startTime: string;       // "HH:mm"
-  endTime: string;         // "HH:mm"
+  startTime: string;          // "HH:mm"
+  endTime: string;            // "HH:mm"
   dailyPlayCount: number;
+  campaignStartDate: string;  // "YYYY-MM-DD"
+  campaignEndDate: string;    // "YYYY-MM-DD"
 }
+
+/** 한국어 상태 라벨 + UI 색상 매핑. */
+export const AD_STATUS_LABEL: Record<AdStatus, string> = {
+  SCHEDULED: "예정",
+  ACTIVE: "송출 중",
+  EXPIRED: "종료",
+};
 
 /** `POST /api/ads` — 새 광고 생성. */
 export async function createAd(body: CreateAdRequest): Promise<AdResponse> {

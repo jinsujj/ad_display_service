@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { ApiError } from "@/lib/api";
-import { getAd, type AdResponse } from "@/lib/ads";
+import { AD_STATUS_LABEL, getAd, type AdResponse } from "@/lib/ads";
 import { AdScheduleForm } from "./AdScheduleForm";
 
 type State =
@@ -83,7 +83,13 @@ export function AdEditClient({ adId }: Props) {
     <>
       <div className="ad-id-banner" style={{ marginBottom: 12 }}>
         <div>
-          <strong>{ad.title}</strong>
+          <strong>{ad.title}</strong>{" "}
+          <span
+            className={`pill pill-${ad.status === "ACTIVE" ? "ok" : ad.status === "EXPIRED" ? "warn" : ""}`}
+            style={{ marginLeft: 6 }}
+          >
+            {AD_STATUS_LABEL[ad.status]}
+          </span>
           <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
             광고 ID <code className="ad-id-banner__id">{ad.id}</code>
           </div>
@@ -92,6 +98,9 @@ export function AdEditClient({ adId }: Props) {
           </div>
           <div className="muted" style={{ fontSize: 12 }}>
             현재 스케줄: {ad.startTime} ~ {ad.endTime} · 일일 {ad.dailyPlayCount}회
+          </div>
+          <div className="muted" style={{ fontSize: 12 }}>
+            캠페인 기간: {ad.campaignStartDate} ~ {ad.campaignEndDate}
           </div>
         </div>
       </div>
@@ -103,6 +112,8 @@ export function AdEditClient({ adId }: Props) {
           startTime: ad.startTime,
           endTime: ad.endTime,
           dailyPlayCount: ad.dailyPlayCount,
+          campaignStartDate: ad.campaignStartDate,
+          campaignEndDate: ad.campaignEndDate,
         }}
       />
     </>

@@ -7,7 +7,10 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import me.owldev.adsignage.domain.ad.Ad
+import me.owldev.adsignage.domain.ad.AdStatus
+import me.owldev.adsignage.domain.ad.computeStatus
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalTime
 
 /**
@@ -41,6 +44,14 @@ data class CreateAdRequest(
     @field:Min(value = 1, message = "dailyPlayCount must be at least 1")
     @field:Max(value = 10_000, message = "dailyPlayCount must be at most 10000")
     val dailyPlayCount: Int?,
+
+    @field:NotNull(message = "campaignStartDate must not be null")
+    @field:JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    val campaignStartDate: LocalDate?,
+
+    @field:NotNull(message = "campaignEndDate must not be null")
+    @field:JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    val campaignEndDate: LocalDate?,
 )
 
 /**
@@ -79,6 +90,17 @@ data class UpdateAdScheduleRequest(
     @field:Min(value = 1, message = "dailyPlayCount must be at least 1")
     @field:Max(value = 10_000, message = "dailyPlayCount must be at most 10000")
     val dailyPlayCount: Int?,
+
+    /**
+     * 캠페인 시작/종료 날짜. 기존 호출자가 캠페인 윈도우는 건드리지 않는
+     * 시나리오를 위해 둘 다 nullable — 두 값이 모두 제공된 경우에만 캠페인
+     * 윈도우가 갱신되고, 누락 시 기존 값을 유지한다.
+     */
+    @field:JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    val campaignStartDate: LocalDate? = null,
+
+    @field:JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    val campaignEndDate: LocalDate? = null,
 )
 
 /**
@@ -101,6 +123,12 @@ data class AdResponse(
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
     val endTime: LocalTime,
     val dailyPlayCount: Int,
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    val campaignStartDate: LocalDate,
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    val campaignEndDate: LocalDate,
+    /** 응답 시점에 계산된 라이프사이클 상태 — 영속화되지 않음. */
+    val status: AdStatus,
     val createdAt: Instant,
 ) {
     companion object {
@@ -112,6 +140,9 @@ data class AdResponse(
             startTime = entity.startTime,
             endTime = entity.endTime,
             dailyPlayCount = entity.dailyPlayCount,
+            campaignStartDate = entity.campaignStartDate,
+            campaignEndDate = entity.campaignEndDate,
+            status = entity.computeStatus(),
             createdAt = entity.createdAt,
         )
     }

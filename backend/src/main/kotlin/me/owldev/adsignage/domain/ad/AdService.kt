@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 import java.time.LocalTime
 
 /**
@@ -70,8 +71,13 @@ class AdService(
         startTime: LocalTime,
         endTime: LocalTime,
         dailyPlayCount: Int,
+        campaignStartDate: LocalDate? = null,
+        campaignEndDate: LocalDate? = null,
     ): Ad {
         validateScheduleWindow(startTime, endTime)
+        if (campaignStartDate != null && campaignEndDate != null) {
+            validateCampaignWindow(campaignStartDate, campaignEndDate)
+        }
 
         val ad = adRepository.findByIdAndAdvertiserId(adId, advertiserId)
             .orElseThrow {
@@ -85,6 +91,8 @@ class AdService(
         ad.startTime = startTime
         ad.endTime = endTime
         ad.dailyPlayCount = dailyPlayCount
+        if (campaignStartDate != null) ad.campaignStartDate = campaignStartDate
+        if (campaignEndDate != null) ad.campaignEndDate = campaignEndDate
 
         // Hibernate는 @Transactional 경계 내에서 dirty-checking을 수행하지만,
         // 반환된 참조가 영속성 컨텍스트가 커밋한 것이도록(테스트가 플러시와
@@ -137,8 +145,11 @@ class AdService(
         startTime: LocalTime,
         endTime: LocalTime,
         dailyPlayCount: Int,
+        campaignStartDate: LocalDate,
+        campaignEndDate: LocalDate,
     ): Ad {
         validateScheduleWindow(startTime, endTime)
+        validateCampaignWindow(campaignStartDate, campaignEndDate)
 
         val saved = adRepository.save(
             Ad(
@@ -148,6 +159,8 @@ class AdService(
                 startTime = startTime,
                 endTime = endTime,
                 dailyPlayCount = dailyPlayCount,
+                campaignStartDate = campaignStartDate,
+                campaignEndDate = campaignEndDate,
             ),
         )
         log.info(
@@ -168,6 +181,16 @@ class AdService(
             throw InvalidScheduleException(
                 fieldErrors = mapOf(
                     "endTime" to "endTime must be strictly after startTime",
+                ),
+            )
+        }
+    }
+
+    private fun validateCampaignWindow(start: LocalDate, end: LocalDate) {
+        if (end.isBefore(start)) {
+            throw InvalidScheduleException(
+                fieldErrors = mapOf(
+                    "campaignEndDate" to "campaignEndDate must be on or after campaignStartDate",
                 ),
             )
         }
