@@ -71,6 +71,11 @@ class SecurityConfig(
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .csrf { csrf -> csrf.disable() }
+            // CorsConfig가 등록한 UrlBasedCorsConfigurationSource를 자동 사용.
+            // 분리된 도메인(stream.owl-dev.me 프론트 → stream-backend.owl-dev.me
+            // 백엔드)에서 발생하는 CORS preflight/실 요청을 SecurityFilterChain
+            // 위 단계에서 처리한다.
+            .cors { }
             .sessionManagement { sm ->
                 sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             }

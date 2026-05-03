@@ -54,7 +54,7 @@ class OpenApiConfig {
             )
             .servers(
                 listOf(
-                    Server().url("https://stream.owl-dev.me").description("운영(공인 IP / nginx HTTPS)"),
+                    Server().url("https://stream-backend.owl-dev.me").description("운영 백엔드 (nginx HTTPS, port 8082 reverse proxy)"),
                     Server().url("http://localhost:8080").description("로컬 개발"),
                 ),
             )
