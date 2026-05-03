@@ -18,7 +18,10 @@
 
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
+// 빌드 시점에 한 번만 생성해 정적 PNG 로 서빙. 매 요청마다 satori 가
+// 렌더 비용을 부담하지 않고 nginx/CDN 캐시도 활용 — 카카오·페이스북 스크래퍼
+// 같은 짧은 timeout 클라이언트도 안정적으로 가져간다.
+export const dynamic = "force-static";
 
 // OG 표준 권장 사이즈. 페이스북/카카오/슬랙 모두 이 비율을 잘 처리한다.
 export const size = {
