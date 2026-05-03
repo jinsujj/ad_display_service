@@ -44,9 +44,10 @@ services:
       - adsignage-data:/opt/adsignage/data
       - adsignage-videos:/var/lib/adsignage/videos
     ports:
-      # 호스트 nginx 가 http://127.0.0.1:8080 으로 프록시. 외부 노출은
-      # nginx 가 책임지므로 publish 는 loopback 으로 한정.
-      - "127.0.0.1:8080:8080"
+      # 기존 systemd 가 8080 을 점유 중인 환경에서는 BACKEND_HOST_PORT 를
+      # 18080 같은 다른 포트로 두고 양쪽이 공존하게 한다. 컨테이너 내부는
+      # 항상 8080 — 변하지 않는다.
+      - "${BACKEND_HOST_PORT:-8080}:8080"
     networks:
       - adsignage
     healthcheck:
@@ -72,7 +73,10 @@ services:
       PORT: 3000
       HOSTNAME: 0.0.0.0
     ports:
-      - "127.0.0.1:3000:3000"
+      # 마찬가지로 systemd 와 공존하려면 WEB_HOST_PORT 를 13000 같이 다른
+      # 포트로. 기존 nginx 가 13000 을 가리키도록 conf 를 바꿀 때까지는 docker
+      # 측은 LAN IP + 포트로 직접 접근(http://192.168.0.24:13000) 가능.
+      - "${WEB_HOST_PORT:-3000}:3000"
     networks:
       - adsignage
     depends_on:
