@@ -177,3 +177,25 @@ export async function updateAdSchedule(
     },
   );
 }
+
+/** `POST /api/ads` 요청 본문 — 광고 생성 시 영상 + 제목 + 스케줄을 묶어 전달. */
+export interface CreateAdRequest {
+  title: string;
+  videoFilename: string;
+  startTime: string;       // "HH:mm"
+  endTime: string;         // "HH:mm"
+  dailyPlayCount: number;
+}
+
+/** `POST /api/ads` — 새 광고 생성. */
+export async function createAd(body: CreateAdRequest): Promise<AdResponse> {
+  return apiFetch<AdResponse>("/api/ads", {
+    method: "POST",
+    body,
+  });
+}
+
+/** `GET /api/ads` — 호출 광고주가 소유한 광고 목록 (최신순). */
+export async function listMyAds(): Promise<AdResponse[]> {
+  return apiFetch<AdResponse[]>("/api/ads", { method: "GET" });
+}

@@ -3,13 +3,17 @@ package me.owldev.adsignage.domain.ad
 import jakarta.validation.Valid
 import me.owldev.adsignage.auth.jwt.AdvertiserPrincipal
 import me.owldev.adsignage.domain.ad.dto.AdResponse
+import me.owldev.adsignage.domain.ad.dto.CreateAdRequest
 import me.owldev.adsignage.domain.ad.dto.UpdateAdScheduleRequest
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -49,6 +53,57 @@ class AdController(
 ) {
 
     private val log = LoggerFactory.getLogger(AdController::class.java)
+
+    /**
+     * 새 광고 생성. 본문에는 영상 파일명 + 제목 + 일일 스케줄을 한 번에
+     * 담아 보낸다. 백엔드는 광고 행을 만들고 PLAYLIST_UPDATE SSE 이벤트를
+     * 트랜잭션 커밋 후 발행한다.
+     */
+    @PostMapping(
+        consumes = [MediaType.APPLICATION_JSON_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE],
+    )
+    fun createAd(
+        @Valid @RequestBody body: CreateAdRequest,
+        @AuthenticationPrincipal principal: AdvertiserPrincipal,
+    ): ResponseEntity<AdResponse> {
+        val title: String = body.title!!.trim()
+        val videoFilename: String = body.videoFilename!!.trim()
+        val startTime: LocalTime = body.startTime!!
+        val endTime: LocalTime = body.endTime!!
+        val dailyPlayCount: Int = body.dailyPlayCount!!
+
+        log.info(
+            "POST /api/ads advertiserId={} title='{}' videoFilename={} startTime={} endTime={} dailyPlayCount={}",
+            principal.advertiserId, title, videoFilename, startTime, endTime, dailyPlayCount,
+        )
+
+        val saved = adService.create(
+            advertiserId = principal.advertiserId,
+            title = title,
+            videoFilename = videoFilename,
+            startTime = startTime,
+            endTime = endTime,
+            dailyPlayCount = dailyPlayCount,
+        )
+        return ResponseEntity.status(HttpStatus.CREATED).body(AdResponse.from(saved))
+    }
+
+    /**
+     * 호출 광고주가 소유한 광고 목록을 최신 순으로 반환. 어드민의
+     * `/ads` 페이지가 사용.
+     */
+    @GetMapping(produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun listMyAds(
+        @AuthenticationPrincipal principal: AdvertiserPrincipal,
+    ): ResponseEntity<List<AdResponse>> {
+        val ads = adService.listOwned(principal.advertiserId)
+        log.info(
+            "GET /api/ads advertiserId={} returning {} ad(s)",
+            principal.advertiserId, ads.size,
+        )
+        return ResponseEntity.ok(ads.map(AdResponse::from))
+    }
 
     /**
      * 광고 [id]에 대한 스케줄을 업데이트. PUT 시맨틱 — 호출자가 완전한

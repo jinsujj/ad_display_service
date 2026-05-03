@@ -29,6 +29,8 @@
  *   JS가 하이드레이트되기 전에 테이블이 렌더된다.
  */
 
+import Link from "next/link";
+
 import { apiUrl } from "@/lib/api";
 import { formatBytes, type VideoListItem } from "@/lib/videos";
 
@@ -47,6 +49,7 @@ export function VideosListTable({ videos }: VideosListTableProps) {
           <th>크기</th>
           <th>업로드 시각</th>
           <th>스트리밍</th>
+          <th>광고 만들기</th>
         </tr>
       </thead>
       <tbody>
@@ -73,6 +76,25 @@ export function VideosListTable({ videos }: VideosListTableProps) {
                 >
                   재생 ↗
                 </a>
+              ) : (
+                <span className="muted">—</span>
+              )}
+            </td>
+            <td>
+              {video.filename ? (
+                <Link
+                  className="btn"
+                  href={{
+                    pathname: "/ads/new",
+                    query: {
+                      videoFilename: video.filename,
+                      originalName: video.originalName ?? "",
+                      title: video.originalName?.replace(/\.[^.]+$/, "") ?? "",
+                    },
+                  }}
+                >
+                  광고로 만들기
+                </Link>
               ) : (
                 <span className="muted">—</span>
               )}

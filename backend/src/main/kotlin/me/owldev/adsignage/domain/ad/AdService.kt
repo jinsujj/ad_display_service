@@ -115,6 +115,50 @@ class AdService(
         adRepository.findByIdAndAdvertiserId(adId, advertiserId)
             .orElseThrow { AdNotFoundException(adId) }
 
+    /** 호출 광고주가 소유한 모든 광고를 최신 순으로 반환. */
+    @Transactional(readOnly = true)
+    fun listOwned(advertiserId: String): List<Ad> =
+        adRepository.findAllByAdvertiserIdOrderByCreatedAtDesc(advertiserId)
+
+    /**
+     * 새 광고 생성. 호출자는 이미 업로드된 영상의 [videoFilename] 을 들고
+     * 와서 제목과 스케줄과 함께 묶는다.
+     *
+     * 한 트랜잭션에서 영속화하고, 커밋 후 PLAYLIST_UPDATE SSE 이벤트를
+     * 발행해 디바이스가 새 플레이리스트를 즉시 반영하게 한다.
+     *
+     * @throws InvalidScheduleException `endTime <= startTime`일 때
+     */
+    @Transactional
+    fun create(
+        advertiserId: String,
+        title: String,
+        videoFilename: String,
+        startTime: LocalTime,
+        endTime: LocalTime,
+        dailyPlayCount: Int,
+    ): Ad {
+        validateScheduleWindow(startTime, endTime)
+
+        val saved = adRepository.save(
+            Ad(
+                advertiserId = advertiserId,
+                title = title,
+                videoFilename = videoFilename,
+                startTime = startTime,
+                endTime = endTime,
+                dailyPlayCount = dailyPlayCount,
+            ),
+        )
+        log.info(
+            "create: adId={} advertiserId={} videoFilename={} startTime={} endTime={} dailyPlayCount={}",
+            saved.id, saved.advertiserId, saved.videoFilename,
+            saved.startTime, saved.endTime, saved.dailyPlayCount,
+        )
+        publishPlaylistUpdated(saved)
+        return saved
+    }
+
     // -------------------------------------------------------------------------
     // 내부 구현
     // -------------------------------------------------------------------------

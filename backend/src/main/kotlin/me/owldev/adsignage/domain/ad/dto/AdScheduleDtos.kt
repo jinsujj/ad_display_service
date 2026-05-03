@@ -3,10 +3,45 @@ package me.owldev.adsignage.domain.ad.dto
 import com.fasterxml.jackson.annotation.JsonFormat
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
+import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Size
 import me.owldev.adsignage.domain.ad.Ad
 import java.time.Instant
 import java.time.LocalTime
+
+/**
+ * `POST /api/ads` 요청 본문.
+ *
+ * 광고 생성 = 영상 + 제목 + 일일 스케줄을 한 행에 묶는 동작.
+ *  - [videoFilename]: 이미 업로드된 영상의 디스크 파일명 (Video.filename
+ *    / VideoResponse.filename). 어드민 UI는 보통 `/videos` 목록에서 사용자가
+ *    고른 영상의 filename을 그대로 채워 넣는다.
+ *  - [title]/[startTime]/[endTime]/[dailyPlayCount] 는 [UpdateAdScheduleRequest]
+ *    의 검증 규칙과 동일.
+ */
+data class CreateAdRequest(
+    @field:NotBlank(message = "title must not be blank")
+    @field:Size(max = 255, message = "title must be at most 255 characters")
+    val title: String?,
+
+    @field:NotBlank(message = "videoFilename must not be blank")
+    @field:Size(max = 255, message = "videoFilename must be at most 255 characters")
+    val videoFilename: String?,
+
+    @field:NotNull(message = "startTime must not be null")
+    @field:JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
+    val startTime: LocalTime?,
+
+    @field:NotNull(message = "endTime must not be null")
+    @field:JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
+    val endTime: LocalTime?,
+
+    @field:NotNull(message = "dailyPlayCount must not be null")
+    @field:Min(value = 1, message = "dailyPlayCount must be at least 1")
+    @field:Max(value = 10_000, message = "dailyPlayCount must be at most 10000")
+    val dailyPlayCount: Int?,
+)
 
 /**
  * Request body for `PUT /api/ads/{id}/schedule`.
