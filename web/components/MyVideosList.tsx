@@ -8,9 +8,10 @@
  * 떨어지므로, 목록만 클라이언트 사이드로 분리.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { ApiError } from "@/lib/api";
+import { useDataChanged } from "@/lib/dataEvents";
 import { listVideos, type VideoListItem } from "@/lib/videos";
 import { VideosListTable } from "./VideosListTable";
 
@@ -22,26 +23,28 @@ type State =
 export function MyVideosList() {
   const [state, setState] = useState<State>({ kind: "loading" });
 
-  useEffect(() => {
-    let cancelled = false;
+  const refetch = useCallback(() => {
     listVideos()
-      .then((videos) => {
-        if (!cancelled) setState({ kind: "ready", videos });
-      })
+      .then((videos) => setState({ kind: "ready", videos }))
       .catch((err) => {
-        if (cancelled) return;
         const msg =
           err instanceof ApiError
             ? `HTTP ${err.status}`
             : err instanceof Error
               ? err.message
               : "알 수 없는 오류";
-        setState({ kind: "error", message: msg });
+        setState((prev) =>
+          prev.kind === "ready" ? prev : { kind: "error", message: msg },
+        );
       });
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  // 영상 업로드/삭제 시 자동 갱신. 광고 변경도 영상 사용 여부를 바꾸므로 함께 listen.
+  useDataChanged(["video", "ad"], refetch);
 
   if (state.kind === "loading") {
     return <div className="muted">영상 목록을 불러오는 중…</div>;

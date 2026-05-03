@@ -42,6 +42,7 @@
  */
 
 import { apiFetch } from "./api";
+import { notifyDataChanged } from "./dataEvents";
 
 /* --------------------------------------------------------------- types */
 
@@ -182,13 +183,15 @@ export async function updateAdSchedule(
   body: UpdateAdScheduleRequest,
 ): Promise<AdResponse> {
   if (!adId) throw new Error("adId is required");
-  return apiFetch<AdResponse>(
+  const result = await apiFetch<AdResponse>(
     `/api/ads/${encodeURIComponent(adId)}/schedule`,
     {
       method: "PUT",
       body,
     },
   );
+  notifyDataChanged("ad");
+  return result;
 }
 
 /** `POST /api/ads` 요청 본문 — 광고 생성 시 영상 + 제목 + 스케줄 + 캠페인 기간. */
@@ -211,10 +214,12 @@ export const AD_STATUS_LABEL: Record<AdStatus, string> = {
 
 /** `POST /api/ads` — 새 광고 생성. */
 export async function createAd(body: CreateAdRequest): Promise<AdResponse> {
-  return apiFetch<AdResponse>("/api/ads", {
+  const result = await apiFetch<AdResponse>("/api/ads", {
     method: "POST",
     body,
   });
+  notifyDataChanged("ad");
+  return result;
 }
 
 /** `GET /api/ads` — 호출 광고주가 소유한 광고 목록 (최신순). */
@@ -240,4 +245,7 @@ export async function deleteAd(adId: string): Promise<void> {
   await apiFetch<undefined>(`/api/ads/${encodeURIComponent(adId)}`, {
     method: "DELETE",
   });
+  // 광고 삭제는 그 광고를 큐에 담은 디바이스 모니터에도 영향이 있어 device-queue 도 함께 알림.
+  notifyDataChanged("ad");
+  notifyDataChanged("device-queue");
 }

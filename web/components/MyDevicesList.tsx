@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 
 import { ApiError } from "@/lib/api";
+import { useDataChanged } from "@/lib/dataEvents";
 import { listDevices, type DeviceListItem } from "@/lib/devices";
 import { listRestaurants, type RestaurantListItem } from "@/lib/restaurants";
 import { DeviceMonitorWall } from "./DeviceMonitorWall";
@@ -87,6 +88,9 @@ export function MyDevicesList() {
       loadAll("refresh");
     });
   }, [loadAll]);
+
+  // mutation 즉시 반영 — polling 1.5s 를 기다리지 않고 동일 탭 내 변경은 바로.
+  useDataChanged(["device", "device-queue", "ad"], onManualRefresh);
 
   if (state.kind === "loading") {
     return <div className="muted">디바이스 목록을 불러오는 중…</div>;

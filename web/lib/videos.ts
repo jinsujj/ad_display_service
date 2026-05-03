@@ -34,6 +34,7 @@
  */
 
 import { apiFetch, apiUrl } from "./api";
+import { notifyDataChanged } from "./dataEvents";
 
 /* --------------------------------------------------------------- types */
 
@@ -295,6 +296,7 @@ export function uploadVideo(
 
       if (status >= 200 && status < 300) {
         if (parsed && typeof parsed === "object") {
+          notifyDataChanged("video");
           resolve(parsed as VideoUploadResponse);
         } else {
           reject(

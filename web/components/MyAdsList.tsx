@@ -25,6 +25,7 @@ import {
   type AdResponse,
   type AdStatus,
 } from "@/lib/ads";
+import { useDataChanged } from "@/lib/dataEvents";
 import { shortId, SHORT_ID_TITLE_HINT } from "@/lib/format";
 
 type State =
@@ -36,26 +37,29 @@ export function MyAdsList() {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [removingId, setRemovingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const refetch = useCallback(() => {
     listMyAds()
-      .then((ads) => {
-        if (!cancelled) setState({ kind: "ready", ads });
-      })
+      .then((ads) => setState({ kind: "ready", ads }))
       .catch((err) => {
-        if (cancelled) return;
         const msg =
           err instanceof ApiError
             ? `HTTP ${err.status}`
             : err instanceof Error
               ? err.message
               : "알 수 없는 오류";
-        setState({ kind: "error", message: msg });
+        setState((prev) =>
+          prev.kind === "ready" ? prev : { kind: "error", message: msg },
+        );
       });
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  // 다른 화면에서 광고 mutation 일어나면 자동 새로고침. 영상 업로드도 다음
+  // 광고 만들기 흐름과 연결되는 경우가 많아 video 도 같이 listen.
+  useDataChanged(["ad", "video"], refetch);
 
   const handleDelete = useCallback(async (ad: AdResponse) => {
     const ok = window.confirm(

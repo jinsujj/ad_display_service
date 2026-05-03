@@ -28,6 +28,7 @@
  */
 
 import { apiFetch } from "./api";
+import { notifyDataChanged } from "./dataEvents";
 
 /** 디바이스에 현재 매핑된 식당. 매핑이 없으면 null. */
 export interface CurrentRestaurant {
@@ -282,13 +283,15 @@ export async function patchDevice(
     throw new Error("patch must include at least one field");
   }
 
-  return apiFetch<DevicePatchResponse>(
+  const result = await apiFetch<DevicePatchResponse>(
     `/api/devices/${encodeURIComponent(deviceId)}`,
     {
       method: "PATCH",
       body: patch,
     },
   );
+  notifyDataChanged("device");
+  return result;
 }
 
 /**
@@ -305,4 +308,5 @@ export async function deleteDevice(deviceId: string): Promise<void> {
     `/api/devices/${encodeURIComponent(deviceId)}`,
     { method: "DELETE" },
   );
+  notifyDataChanged("device");
 }

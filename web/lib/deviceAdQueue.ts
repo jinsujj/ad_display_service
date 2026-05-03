@@ -7,6 +7,7 @@
 
 import { apiFetch } from "./api";
 import type { AdStatus } from "./ads";
+import { notifyDataChanged } from "./dataEvents";
 
 export interface QueuedAdItem {
   adId: string;
@@ -50,13 +51,15 @@ export async function addAdToQueue(
 ): Promise<AddAdToQueueResponse> {
   if (!deviceId) throw new Error("deviceId is required");
   if (!adId) throw new Error("adId is required");
-  return apiFetch<AddAdToQueueResponse>(
+  const result = await apiFetch<AddAdToQueueResponse>(
     `/api/devices/${encodeURIComponent(deviceId)}/ads`,
     {
       method: "POST",
       body: { adId },
     },
   );
+  notifyDataChanged("device-queue");
+  return result;
 }
 
 /** `DELETE /api/devices/{deviceId}/ads/{adId}` — 큐에서 제거 (멱등). */
@@ -70,4 +73,5 @@ export async function removeAdFromQueue(
     `/api/devices/${encodeURIComponent(deviceId)}/ads/${encodeURIComponent(adId)}`,
     { method: "DELETE" },
   );
+  notifyDataChanged("device-queue");
 }

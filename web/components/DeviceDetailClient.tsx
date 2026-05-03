@@ -24,6 +24,7 @@ import {
   removeAdFromQueue,
   type QueuedAdItem,
 } from "@/lib/deviceAdQueue";
+import { useDataChanged } from "@/lib/dataEvents";
 import {
   getDeviceDetail,
   type DeviceDetailResponse,
@@ -43,14 +44,10 @@ interface Props {
 export function DeviceDetailClient({ deviceId }: Props) {
   const [state, setState] = useState<State>({ kind: "loading" });
 
-  useEffect(() => {
-    let cancelled = false;
+  const refetchDetail = useCallback(() => {
     getDeviceDetail(deviceId)
-      .then((detail) => {
-        if (!cancelled) setState({ kind: "ready", detail });
-      })
+      .then((detail) => setState({ kind: "ready", detail }))
       .catch((err) => {
-        if (cancelled) return;
         if (err instanceof ApiError && err.status === 404) {
           setState({ kind: "not-found" });
           return;
@@ -61,12 +58,18 @@ export function DeviceDetailClient({ deviceId }: Props) {
             : err instanceof Error
               ? err.message
               : "알 수 없는 오류";
-        setState({ kind: "error", message: msg });
+        setState((prev) =>
+          prev.kind === "ready" ? prev : { kind: "error", message: msg },
+        );
       });
-    return () => {
-      cancelled = true;
-    };
   }, [deviceId]);
+
+  useEffect(() => {
+    refetchDetail();
+  }, [refetchDetail]);
+
+  // 디바이스 메타/매핑 이력 갱신 — 재할당 등 device 변경 시.
+  useDataChanged(["device"], refetchDetail);
 
   if (state.kind === "loading") {
     return <div className="muted">디바이스 정보를 불러오는 중…</div>;
@@ -211,6 +214,9 @@ function DeviceAdQueueSection({ deviceId }: { deviceId: string }) {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // 다른 위치에서 큐 변경(or 광고 변경)이 일어나면 자동 갱신.
+  useDataChanged(["device-queue", "ad"], refresh);
 
   async function onRemove(adId: string) {
     if (!confirm("이 광고를 큐에서 제거할까요? 디바이스는 즉시 송출에서 제외됩니다.")) {
