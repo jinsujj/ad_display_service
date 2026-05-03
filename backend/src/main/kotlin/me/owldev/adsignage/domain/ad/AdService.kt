@@ -172,6 +172,25 @@ class AdService(
         return saved
     }
 
+    /**
+     * id 가 [adId] 이고 [advertiserId] 가 소유한 광고를 삭제. 다른 광고주의
+     * 광고 id 를 추측해도 [AdNotFoundException] (404) 으로 동일하게 응답하므로
+     * 존재 여부가 누설되지 않는다.
+     *
+     * 광고 행이 사라지면 그 광고가 들어 있던 모든 디바이스 플레이리스트도
+     * 의미가 변하므로 PLAYLIST_UPDATE 이벤트를 AFTER_COMMIT 에 발행한다.
+     * 디바이스는 SSE 로 알림을 받고 즉시 새 플레이리스트를 가져와 사라진
+     * 광고를 송출에서 제외한다.
+     */
+    @Transactional
+    fun delete(adId: String, advertiserId: String) {
+        val ad = adRepository.findByIdAndAdvertiserId(adId, advertiserId)
+            .orElseThrow { AdNotFoundException(adId) }
+        adRepository.delete(ad)
+        log.info("delete: adId={} advertiserId={}", adId, advertiserId)
+        publishPlaylistUpdated(ad)
+    }
+
     // -------------------------------------------------------------------------
     // 내부 구현
     // -------------------------------------------------------------------------

@@ -229,3 +229,15 @@ export async function getAd(adId: string): Promise<AdResponse> {
     method: "GET",
   });
 }
+
+/**
+ * `DELETE /api/ads/{id}` — 광고 삭제. 소유자만 가능.
+ * 백엔드가 PLAYLIST_UPDATE SSE 이벤트를 발행해, 그 광고를 송출 중이던
+ * 디바이스가 즉시 새 플레이리스트를 받아 사라진 광고를 재생에서 제외한다.
+ */
+export async function deleteAd(adId: string): Promise<void> {
+  if (!adId) throw new Error("adId is required");
+  await apiFetch<undefined>(`/api/ads/${encodeURIComponent(adId)}`, {
+    method: "DELETE",
+  });
+}
