@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Legacy fallback (API 24/25). API 26+은 mipmap-anydpi-v26 의 adaptive icon 사용. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_launcher_full"
+    android:inset="0dp" />

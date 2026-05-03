@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AdSignage</string>
-    <!-- Player base URL — the WebView will load $base/player/{deviceId}. -->
-    <string name="player_base_url">https://stream-backend.owl-dev.me</string>
+    <!-- 플레이어 베이스 URL — WebView 가 $base/player/{deviceId} 를 로드한다.
+         /player/* 라우트는 프론트엔드(Next.js)에 있으므로 stream.owl-dev.me
+         (백엔드 stream-backend.owl-dev.me 가 아님)를 가리켜야 한다. -->
+    <string name="player_base_url">https://stream.owl-dev.me</string>
 </resources>

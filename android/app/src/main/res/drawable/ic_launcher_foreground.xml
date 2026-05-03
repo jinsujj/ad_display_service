@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AdSignage 앱 아이콘 foreground.
+
+    Adaptive icon 안전 영역(108×108 dp 중 가운데 ~66×66 dp)에 들어가도록
+    구성된 광고판 픽토그램 — 8각 둥근 모니터 모양 + 송출 인디케이터 도트.
+    color는 어드민 액센트(앰버 #F5B042)와 일치.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 광고판 외곽: 둥근 사각형 (모니터 프레임) -->
+    <path
+        android:strokeColor="#F5B042"
+        android:strokeWidth="4"
+        android:fillColor="#00000000"
+        android:pathData="M30,30 h48 a8,8 0 0 1 8,8 v32 a8,8 0 0 1 -8,8 h-48 a8,8 0 0 1 -8,-8 v-32 a8,8 0 0 1 8,-8 z" />
+
+    <!-- 화면 안쪽 (광고 송출 빛) — 채움 -->
+    <path
+        android:fillColor="#F5B042"
+        android:fillAlpha="0.18"
+        android:pathData="M32,32 h44 a6,6 0 0 1 6,6 v28 a6,6 0 0 1 -6,6 h-44 a6,6 0 0 1 -6,-6 v-28 a6,6 0 0 1 6,-6 z" />
+
+    <!-- 받침대 (음식점 냉장고 위 거치대) -->
+    <path
+        android:fillColor="#F5B042"
+        android:pathData="M48,78 h12 v6 h-12 z" />
+    <path
+        android:fillColor="#F5B042"
+        android:pathData="M40,84 h28 v4 a2,2 0 0 1 -2,2 h-24 a2,2 0 0 1 -2,-2 z" />
+
+    <!-- 송출 인디케이터 도트 (우측 상단, 라이브 표시) -->
+    <path
+        android:fillColor="#FFC665"
+        android:pathData="M76,38 m-3.5,0 a3.5,3.5 0 1 0 7,0 a3.5,3.5 0 1 0 -7,0" />
+</vector>

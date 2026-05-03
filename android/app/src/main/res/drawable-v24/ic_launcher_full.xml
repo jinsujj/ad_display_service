@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Legacy launcher icon (API 24/25 fallback).
+
+    Adaptive icon은 API 26+에서만 동작하므로, 24/25 디바이스용으로 배경 +
+    foreground 가 합쳐진 단일 vector 를 둔다. 디자인은 mipmap-anydpi-v26
+    의 adaptive icon 과 동일.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 어두운 배경 -->
+    <path
+        android:fillColor="#0B0D10"
+        android:pathData="M0,0 h108 v108 h-108 z" />
+
+    <!-- 광고판 외곽 -->
+    <path
+        android:strokeColor="#F5B042"
+        android:strokeWidth="4"
+        android:fillColor="#00000000"
+        android:pathData="M30,30 h48 a8,8 0 0 1 8,8 v32 a8,8 0 0 1 -8,8 h-48 a8,8 0 0 1 -8,-8 v-32 a8,8 0 0 1 8,-8 z" />
+
+    <!-- 화면 안쪽 (광고 송출 빛) -->
+    <path
+        android:fillColor="#F5B042"
+        android:fillAlpha="0.18"
+        android:pathData="M32,32 h44 a6,6 0 0 1 6,6 v28 a6,6 0 0 1 -6,6 h-44 a6,6 0 0 1 -6,-6 v-28 a6,6 0 0 1 6,-6 z" />
+
+    <!-- 받침대 -->
+    <path
+        android:fillColor="#F5B042"
+        android:pathData="M48,78 h12 v6 h-12 z" />
+    <path
+        android:fillColor="#F5B042"
+        android:pathData="M40,84 h28 v4 a2,2 0 0 1 -2,2 h-24 a2,2 0 0 1 -2,-2 z" />
+
+    <!-- 송출 인디케이터 도트 -->
+    <path
+        android:fillColor="#FFC665"
+        android:pathData="M76,38 m-3.5,0 a3.5,3.5 0 1 0 7,0 a3.5,3.5 0 1 0 -7,0" />
+</vector>
