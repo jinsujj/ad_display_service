@@ -39,6 +39,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import type { DeviceListItem } from "@/lib/devices";
+import { shortId } from "@/lib/format";
 import type { RestaurantListItem } from "@/lib/restaurants";
 
 export interface DeviceRemapModalProps {
@@ -169,16 +170,16 @@ export function DeviceRemapModal(props: DeviceRemapModalProps) {
           <div className="modal__row">
             <span className="muted">디바이스:</span>{" "}
             <strong>{device.deviceName || "(이름 없음)"}</strong>
-            <div className="muted" style={{ fontSize: 12 }}>
-              {device.deviceId}
+            <div className="muted" style={{ fontSize: 12 }} title={device.deviceId}>
+              {shortId(device.deviceId)}
             </div>
           </div>
 
           <div className="modal__row">
             <span className="muted">현재 할당:</span>{" "}
             {current ? (
-              <strong>
-                {current.restaurantName || current.restaurantId}
+              <strong title={current.restaurantId}>
+                {current.restaurantName || shortId(current.restaurantId)}
               </strong>
             ) : (
               <span className="pill pill-warn">미할당</span>

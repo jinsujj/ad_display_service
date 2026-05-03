@@ -25,6 +25,7 @@ import {
   type AdResponse,
   type AdStatus,
 } from "@/lib/ads";
+import { shortId, SHORT_ID_TITLE_HINT } from "@/lib/format";
 
 type State =
   | { kind: "loading" }
@@ -143,8 +144,8 @@ export function MyAdsList() {
                   {ad.videoFilename}
                 </div>
               </td>
-              <td className="id" title={ad.id}>
-                <code>{ad.id}</code>
+              <td className="id" title={`${ad.id} — ${SHORT_ID_TITLE_HINT}`}>
+                <code>{shortId(ad.id)}</code>
               </td>
               <td style={{ whiteSpace: "nowrap" }}>
                 {ad.startTime} ~ {ad.endTime}

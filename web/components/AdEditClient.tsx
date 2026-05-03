@@ -16,6 +16,7 @@ import Link from "next/link";
 
 import { ApiError } from "@/lib/api";
 import { AD_STATUS_LABEL, getAd, type AdResponse } from "@/lib/ads";
+import { shortId } from "@/lib/format";
 import { AdScheduleForm } from "./AdScheduleForm";
 
 type State =
@@ -91,10 +92,10 @@ export function AdEditClient({ adId }: Props) {
             {AD_STATUS_LABEL[ad.status]}
           </span>
           <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-            광고 ID <code className="ad-id-banner__id">{ad.id}</code>
+            광고 ID <code className="ad-id-banner__id" title={ad.id}>{shortId(ad.id)}</code>
           </div>
           <div className="muted" style={{ fontSize: 12 }}>
-            영상 파일명 <code>{ad.videoFilename}</code>
+            영상 파일명 <code title={ad.videoFilename}>{shortId(ad.videoFilename)}</code>
           </div>
           <div className="muted" style={{ fontSize: 12 }}>
             현재 스케줄: {ad.startTime} ~ {ad.endTime} · 일일 {ad.dailyPlayCount}회

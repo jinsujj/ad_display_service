@@ -32,6 +32,7 @@
 import Link from "next/link";
 
 import { apiUrl } from "@/lib/api";
+import { shortId } from "@/lib/format";
 import { formatBytes, type VideoListItem } from "@/lib/videos";
 
 interface VideosListTableProps {
@@ -72,7 +73,7 @@ export function VideosListTable({ videos }: VideosListTableProps) {
                   title={video.id}
                   style={{ fontSize: 11, marginTop: 4 }}
                 >
-                  ID <code>{video.id}</code>
+                  ID <code>{shortId(video.id)}</code>
                 </div>
               )}
             </td>

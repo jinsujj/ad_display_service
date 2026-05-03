@@ -751,15 +751,60 @@ input[type="time"], input[type="date"] {
 
 @media (max-width: 720px) {
   .app-main { padding: var(--space-5) var(--space-4) var(--space-7); }
-  .app-header { padding: 12px var(--space-4); gap: var(--space-3); }
-  .primary-nav a { padding: 5px 10px; }
+  .app-header {
+    padding: 10px var(--space-4);
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+  .primary-nav {
+    flex-wrap: wrap;
+    gap: 4px 6px;
+  }
+  .primary-nav a { padding: 5px 10px; font-size: 13px; }
   h1 { font-size: 20px; }
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
   .page-header h1 { font-size: 22px; }
-  .data-table { font-size: 12.5px; }
+
+  /* 데이터 테이블: 좁은 화면에서는 가로 스크롤 허용 — 셀 부서지지 않게. */
+  .data-table {
+    font-size: 12.5px;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
   .data-table thead th { font-size: 10.5px; padding: 9px 10px; }
   .data-table tbody td { padding: 10px; }
-  /* 모바일에선 ID 셀 줄바꿈 허용 */
   .data-table .id { white-space: normal; word-break: break-all; }
+
+  /* 광고/디바이스 상세 배너: 좁은 폭에서 패딩 + 폰트 축소, code 줄바꿈. */
+  .ad-id-banner {
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-3);
+  }
+  .ad-id-banner__id { font-size: 11.5px; word-break: break-all; }
+  .ad-id-banner code { word-break: break-all; }
+}
+
+/* 매우 좁은 화면 (≤ 480px) — 폰북 사이즈 폰. 우선순위 높은 정보만. */
+@media (max-width: 480px) {
+  .app-main { padding: var(--space-4) var(--space-3) var(--space-6); }
+  .auth-user {
+    /* 헤더 이메일 표시는 작은 화면에서 옆 공간 잡아먹음. truncate. */
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .data-table thead th { font-size: 10px; padding: 7px 8px; }
+  .data-table tbody td { padding: 8px; font-size: 12px; }
+  /* 광고/디바이스 행의 액션 버튼 묶음을 한 줄로 강제하지 말고 wrap. */
+  .data-table td .toolbar { flex-wrap: wrap; gap: 4px; }
 }
 
 /* -------- 16. 유틸리티 ---------------------------------------------------- */

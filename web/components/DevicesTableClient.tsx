@@ -411,10 +411,11 @@ function DeviceRow(props: DeviceRowProps) {
               <div>
                 <strong>{current.restaurantName || "(음식점 이름 없음)"}</strong>
               </div>
-              <div className="muted" style={{ fontSize: 12 }}>
-                {shortId(current.restaurantId)}
-                {current.address ? ` · ${current.address}` : ""}
-              </div>
+              {current.address && (
+                <div className="muted" style={{ fontSize: 12 }}>
+                  {current.address}
+                </div>
+              )}
             </div>
           ) : (
             <span className="pill pill-warn">미할당</span>

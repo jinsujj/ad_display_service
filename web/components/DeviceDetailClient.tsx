@@ -28,6 +28,7 @@ import {
   getDeviceDetail,
   type DeviceDetailResponse,
 } from "@/lib/deviceDetail";
+import { shortId } from "@/lib/format";
 
 type State =
   | { kind: "loading" }
@@ -103,7 +104,10 @@ export function DeviceDetailClient({ deviceId }: Props) {
             </span>
           )}
           <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-            디바이스 ID <code className="ad-id-banner__id">{d.deviceId}</code>
+            디바이스 ID{" "}
+            <code className="ad-id-banner__id" title={d.deviceId}>
+              {shortId(d.deviceId)}
+            </code>
           </div>
           <div className="muted" style={{ fontSize: 12 }}>
             등록일 {formatDate(d.registeredAt)}

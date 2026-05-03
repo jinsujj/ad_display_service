@@ -22,6 +22,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 import { ApiError } from "@/lib/api";
+import { shortId } from "@/lib/format";
 import {
   DAILY_PLAY_COUNT_MAX,
   DAILY_PLAY_COUNT_MIN,
@@ -291,8 +292,11 @@ export function CreateAdForm() {
             <strong>광고가 생성되었습니다.</strong>
             <div style={{ marginTop: 6 }}>
               광고 ID:{" "}
-              <code style={{ fontSize: 14, userSelect: "all" }}>
-                {state.result.id}
+              <code
+                style={{ fontSize: 13, userSelect: "all" }}
+                title={state.result.id}
+              >
+                {shortId(state.result.id)}
               </code>
             </div>
             <div style={{ marginTop: 6 }}>

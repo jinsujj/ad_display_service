@@ -43,6 +43,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import { apiUrl } from "@/lib/api";
+import { shortId } from "@/lib/format";
 import {
   MAX_UPLOAD_SIZE_BYTES,
   VideoUploadError,
@@ -284,8 +285,8 @@ export function VideoUploadForm() {
                 브라우저에서 재생 ↗
               </a>
               {"  ·  "}
-              <span className="muted">
-                ID <code>{state.result.id}</code>
+              <span className="muted" title={state.result.id}>
+                ID <code>{shortId(state.result.id)}</code>
               </span>
             </div>
           </div>
