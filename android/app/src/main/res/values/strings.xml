@@ -5,4 +5,10 @@
          /player/* 라우트는 프론트엔드(Next.js)에 있으므로 stream.owl-dev.me
          (백엔드 stream-backend.owl-dev.me 가 아님)를 가리켜야 한다. -->
     <string name="player_base_url">https://stream.owl-dev.me</string>
+
+    <!-- 백엔드 베이스 URL — DeviceRegistrar 가 부팅 시 자기 등록할 때 호출.
+         도메인 분리 후 /api/* 라우트는 stream-backend.owl-dev.me 에서만
+         받으므로(stream.owl-dev.me 는 프론트 catch-all 만 처리) 이 도메인을
+         가리켜야 한다. -->
+    <string name="backend_base_url">https://stream-backend.owl-dev.me</string>
 </resources>
