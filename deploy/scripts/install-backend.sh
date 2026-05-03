@@ -66,7 +66,7 @@ need_java() {
   v="$(java -version 2>&1 | awk -F\" '/version/ {print $2; exit}')"
   # accept 17 / 21 / etc; reject 1.8 / 11
   case "$v" in
-    17.*|18.*|19.*|20.*|21.*|22.*|23.*|24.*) return 0 ;;
+    17.*|18.*|19.*|20.*|21.*|22.*|23.*|24.*|25.*) return 0 ;;
     *) return 1 ;;
   esac
 }

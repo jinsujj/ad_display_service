@@ -1,0 +1,30 @@
+[Unit]
+Description=AdSignage admin/player web (Next.js)
+Documentation=https://github.com/jinsujj/ad_display_service
+After=network-online.target adsignage-backend.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=owl
+Group=owl
+WorkingDirectory=/home/owl/dev/ad_display_service/web
+
+Environment=NODE_ENV=production
+Environment=PORT=3002
+Environment=HOSTNAME=127.0.0.1
+Environment=NEXT_PUBLIC_API_BASE_URL=https://stream-backend.owl-dev.me
+
+ExecStart=/usr/bin/npm run start -- -p 3002 -H 127.0.0.1
+SuccessExitStatus=143
+
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=120
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=adsignage-web
+
+[Install]
+WantedBy=multi-user.target
