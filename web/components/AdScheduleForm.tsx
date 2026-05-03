@@ -46,6 +46,7 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { ApiError } from "@/lib/api";
 import {
@@ -101,6 +102,7 @@ type SubmitState =
 
 export function AdScheduleForm(props: AdScheduleFormProps) {
   const { adId, initialValues, onSaved } = props;
+  const router = useRouter();
 
   // 컨트롤드 입력 상태. 사용자가 타이핑 도중 잠시 빈 입력을 유지할 수
   // 있도록 `dailyPlayCount`를 의도적으로 문자열로 둔다 — `Number("")`는
@@ -358,6 +360,14 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
         <div className="toolbar schedule-form__actions">
           <button type="submit" className="btn" disabled={submitting} aria-busy={submitting}>
             {submitting ? "저장 중…" : "스케줄 저장"}
+          </button>
+          <button
+            type="button"
+            className="btn"
+            disabled={submitting}
+            onClick={() => router.push("/ads")}
+          >
+            취소
           </button>
         </div>
       </fieldset>

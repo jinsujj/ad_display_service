@@ -106,6 +106,23 @@ class AdController(
     }
 
     /**
+     * 단일 광고 조회. 호출 광고주가 소유하지 않은 광고는 404로 매핑.
+     * 어드민의 `/ads/{id}` 스케줄 편집 페이지가 기존 스케줄을 폼에 미리
+     * 채우기 위해 사용한다.
+     */
+    @GetMapping(
+        "/{id}",
+        produces = [MediaType.APPLICATION_JSON_VALUE],
+    )
+    fun getAd(
+        @PathVariable("id") adId: String,
+        @AuthenticationPrincipal principal: AdvertiserPrincipal,
+    ): ResponseEntity<AdResponse> {
+        val ad = adService.findOwned(adId, principal.advertiserId)
+        return ResponseEntity.ok(AdResponse.from(ad))
+    }
+
+    /**
      * 광고 [id]에 대한 스케줄을 업데이트. PUT 시맨틱 — 호출자가 완전한
      * 스케줄(시작, 종료, 일일 횟수)을 보내고 서버가 행의 스케줄 필드를
      * 통째로 교체.

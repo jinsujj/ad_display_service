@@ -199,3 +199,11 @@ export async function createAd(body: CreateAdRequest): Promise<AdResponse> {
 export async function listMyAds(): Promise<AdResponse[]> {
   return apiFetch<AdResponse[]>("/api/ads", { method: "GET" });
 }
+
+/** `GET /api/ads/{id}` — 단일 광고 조회 (소유자 검증 포함, 404로 누설 차단). */
+export async function getAd(adId: string): Promise<AdResponse> {
+  if (!adId) throw new Error("adId is required");
+  return apiFetch<AdResponse>(`/api/ads/${encodeURIComponent(adId)}`, {
+    method: "GET",
+  });
+}
