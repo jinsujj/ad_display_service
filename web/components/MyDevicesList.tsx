@@ -16,9 +16,11 @@ import { listRestaurants, type RestaurantListItem } from "@/lib/restaurants";
 import { DeviceMonitorWall } from "./DeviceMonitorWall";
 import { DevicesTableClient } from "./DevicesTableClient";
 
-/** 모니터링 자동 새로고침 주기(밀리초). 큐 변경이 즉시 반영되진 않아도
- * 어드민 입장에서 충분히 "라이브" 로 느낄 정도. */
-const AUTO_REFRESH_MS = 30_000;
+/** 모니터링 자동 새로고침 주기(밀리초). 광고가 보통 15-30초 길이라 3초마다
+ *  새로고침해도 같은 광고를 계속 다시 그리는 일이 적고, 디바이스가 다음
+ *  광고로 넘어가면 거의 즉시 카드에 반영된다. /api/devices 가 가벼운
+ *  read-only 쿼리라 부담은 거의 없다. */
+const AUTO_REFRESH_MS = 3_000;
 
 type State =
   | { kind: "loading" }

@@ -1,6 +1,7 @@
 package me.owldev.adsignage.sse
 
 import org.slf4j.LoggerFactory
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.io.IOException
@@ -185,6 +186,72 @@ class SseEmitterRegistry {
      * 테스트/디버그 헬퍼 — 운영 핫패스에는 포함되지 않음.
      */
     fun connectionCount(deviceId: String): Int = emitters[deviceId]?.size ?: 0
+
+    /**
+     * [deviceId] 의 디바이스가 현재 어떤 SSE 연결이라도 가지고 있는지.
+     * 어드민 모니터링 화면이 "송출 중" / "오프라인" 을 결정하는 가장 정확한
+     * 신호 — keepalive 와 결합되면 죽은 TCP 연결도 30초 안에 청소된다.
+     */
+    fun isDeviceConnected(deviceId: String): Boolean {
+        val list = emitters[deviceId] ?: return false
+        return list.isNotEmpty()
+    }
+
+    /**
+     * 모든 emitter 에 30초마다 SSE 주석(`:keepalive`) 을 보내, 클라이언트가
+     * 사라진 phantom 연결을 빨리 발견·제거한다.
+     *
+     * SSE 와이어 포맷에서 "콜론으로 시작하는 라인" 은 클라이언트가 무시하는
+     * 주석(comment)이다. EventSource 는 메시지로 surface 하지 않으므로
+     * 어떤 비즈니스 이벤트도 발생시키지 않으면서 TCP 측 살아있음을 검증할
+     * 수 있다. 쓰기가 실패하면 [broadcast] 와 동일한 cleanup 경로를 거쳐
+     * registry 에서 제거된다.
+     *
+     * fixedDelay(고정 지연) 대신 fixedRate(고정 주기) 를 쓰는 이유:
+     *   keepalive 의 정확한 주기보다는 "30초 안에 한 번은 dead connection
+     *   감지" 가 핵심. 한 사이클이 잠깐 늦더라도 다음 사이클이 같은 주기에
+     *   맞춰 발사된다.
+     */
+    @Scheduled(fixedRate = KEEPALIVE_INTERVAL_MS)
+    fun sendKeepalive() {
+        if (emitters.isEmpty()) return
+        var totalSent = 0
+        var totalRemoved = 0
+        for ((deviceId, list) in emitters) {
+            for (emitter in list) {
+                try {
+                    // SSE comment line — 클라이언트는 surface 하지 않지만
+                    // 서버는 socket write 를 강제해 dead connection 을 노출한다.
+                    emitter.send(SseEmitter.event().comment("keepalive"))
+                    totalSent++
+                } catch (ex: IOException) {
+                    remove(deviceId, emitter)
+                    totalRemoved++
+                    try { emitter.completeWithError(ex) } catch (_: Exception) { /* 베스트 에포트 */ }
+                } catch (ex: IllegalStateException) {
+                    // 이미 완료됨 — 청소.
+                    remove(deviceId, emitter)
+                    totalRemoved++
+                } catch (ex: Exception) {
+                    remove(deviceId, emitter)
+                    totalRemoved++
+                    try { emitter.completeWithError(ex) } catch (_: Exception) { /* 베스트 에포트 */ }
+                }
+            }
+        }
+        if (totalRemoved > 0 || log.isDebugEnabled) {
+            log.debug(
+                "SSE keepalive: sent={} removed={} liveDevices={}",
+                totalSent, totalRemoved, emitters.size,
+            )
+        }
+    }
+
+    companion object {
+        /** SSE keepalive 주기. 너무 짧으면 nginx idle timeout 보다 자주 깨우는
+         *  비효율, 너무 길면 dead 감지가 느려진다. 30초가 둘 사이 균형점. */
+        const val KEEPALIVE_INTERVAL_MS: Long = 30_000L
+    }
 }
 
 /**

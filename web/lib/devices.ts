@@ -49,17 +49,36 @@ export interface QueuedAdSummary {
   status: "SCHEDULED" | "ACTIVE" | "EXPIRED";
 }
 
+/**
+ * 디바이스가 *지금 실제로 송출 중* 인 광고. 서버가 가장 최근 STARTED
+ * 이벤트로 결정하므로 클라이언트의 큐 시뮬레이션이 아닌 서버 진실.
+ * 오프라인이거나 최근 활동이 없으면 null.
+ */
+export interface CurrentAd {
+  adId: string;
+  title: string;
+  videoFilename: string;
+  /** 디바이스가 광고 시작을 보고한 시각 (ISO-8601). */
+  startedAt: string;
+}
+
 /** 관리자 Devices 리스트의 단일 디바이스 행에 대한 와이어 형태. */
 export interface DeviceListItem {
   deviceId: string;
   deviceName: string;
   registeredAt: string;
+  /** 마지막 활동(register / play-event) 시각. ISO-8601. null 이면 미관측. */
+  lastSeenAt: string | null;
   currentRestaurant: CurrentRestaurant | null;
   /**
-   * 이 디바이스 큐에 담긴 광고 요약 — 어드민 디바이스 탭에서 송출 모니터링
-   * 썸네일을 렌더링하는 데 쓴다. 큐가 비면 빈 배열.
+   * 이 디바이스 큐에 담긴 광고 요약 — 디바이스 상세 페이지의 큐 카운트와
+   * 모니터 카드 보조 정보에 사용.
    */
   queuedAds: QueuedAdSummary[];
+  /** 디바이스가 지금 살아있는가? (SSE 연결 OR 최근 play-event) */
+  online: boolean;
+  /** 지금 송출 중인 광고. 오프라인이거나 최근 STARTED 없으면 null. */
+  currentAd: CurrentAd | null;
 }
 
 /** 레거시/대체 백엔드 형태에 관대한 변형. */
@@ -151,12 +170,38 @@ function normaliseDevice(raw: RawDevice): DeviceListItem {
         .filter((q): q is QueuedAdSummary => q !== null)
     : [];
 
+  // currentAd 안전 파싱.
+  const rawCurrent = (raw as { currentAd?: unknown }).currentAd;
+  let currentAd: CurrentAd | null = null;
+  if (rawCurrent && typeof rawCurrent === "object") {
+    const ca = rawCurrent as Record<string, unknown>;
+    const adId = typeof ca.adId === "string" ? ca.adId : "";
+    const videoFilename =
+      typeof ca.videoFilename === "string" ? ca.videoFilename : "";
+    if (adId && videoFilename) {
+      currentAd = {
+        adId,
+        title: typeof ca.title === "string" ? ca.title : "",
+        videoFilename,
+        startedAt: typeof ca.startedAt === "string" ? ca.startedAt : "",
+      };
+    }
+  }
+
+  const online = (raw as { online?: unknown }).online === true;
+  const lastSeenAtRaw = (raw as { lastSeenAt?: unknown }).lastSeenAt;
+  const lastSeenAt =
+    typeof lastSeenAtRaw === "string" && lastSeenAtRaw ? lastSeenAtRaw : null;
+
   return {
     deviceId,
     deviceName,
     registeredAt,
+    lastSeenAt,
     currentRestaurant: current,
     queuedAds,
+    online,
+    currentAd,
   };
 }
 

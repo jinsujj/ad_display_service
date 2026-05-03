@@ -51,4 +51,30 @@ interface PlayEventRepository : JpaRepository<PlayEvent, String> {
         @Param("adId") adId: String,
         @Param("eventType") eventType: PlayEventType,
     ): Long
+
+    /**
+     * [eventType] 의 이벤트들 중 [threshold] 이후에 발생한 것만 모아 device_id
+     * 별로 *가장 최근 한 건* 을 골라 반환. 어드민 디바이스 목록이 "지금 재생
+     * 중인 광고" 한 건을 디바이스마다 한 번에 가져갈 때 쓰는 batch 쿼리.
+     *
+     * NOT EXISTS 서브쿼리가 "동일 디바이스에 더 최신 행이 없을 것" 을 강제
+     * 하므로 디바이스당 정확히 0 또는 1 행이 떨어진다. 호출자는
+     * `threshold = now - 90s` 로 부르면 "최근 90초 안에 시작된 광고" 만
+     * 결과로 받는다.
+     */
+    @Query(
+        "SELECT pe FROM PlayEvent pe " +
+            "WHERE pe.eventType = :eventType " +
+            "AND pe.occurredAt >= :threshold " +
+            "AND NOT EXISTS (" +
+            "  SELECT 1 FROM PlayEvent pe2 " +
+            "  WHERE pe2.deviceId = pe.deviceId " +
+            "  AND pe2.eventType = :eventType " +
+            "  AND pe2.occurredAt > pe.occurredAt" +
+            ")",
+    )
+    fun findLatestPerDeviceByEventTypeSince(
+        @Param("eventType") eventType: PlayEventType,
+        @Param("threshold") threshold: Instant,
+    ): List<PlayEvent>
 }

@@ -7,8 +7,11 @@ import jakarta.validation.constraints.Size
 import me.owldev.adsignage.domain.ad.AdRepository
 import me.owldev.adsignage.domain.ad.computeStatus
 import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
+import me.owldev.adsignage.domain.playevent.PlayEventRepository
+import me.owldev.adsignage.domain.playevent.PlayEventType
 import me.owldev.adsignage.domain.queue.DeviceAdQueueRepository
 import me.owldev.adsignage.domain.restaurant.RestaurantRepository
+import me.owldev.adsignage.sse.SseEmitterRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -45,6 +48,17 @@ class DeviceListController(
     private val restaurantRepository: RestaurantRepository,
     private val queueRepository: DeviceAdQueueRepository,
     private val adRepository: AdRepository,
+    /**
+     * 어드민 모니터링 화면이 "이 디바이스가 지금 살아있나" + "지금 어떤 광고를
+     * 송출 중인가" 를 알려주려면 두 가지 신호가 필요하다.
+     *
+     *   - SseEmitterRegistry.isDeviceConnected: SSE 연결의 살아있음 — 가장
+     *     정확한 online 신호. keepalive 가 30초마다 phantom 연결을 청소한다.
+     *   - PlayEventRepository.findLatestPerDeviceByEventTypeSince: 최근 90초
+     *     안의 STARTED 이벤트로 "지금 재생 중" 광고를 batch lookup.
+     */
+    private val playEventRepository: PlayEventRepository,
+    private val sseRegistry: SseEmitterRegistry,
 ) {
     private val log = LoggerFactory.getLogger(DeviceListController::class.java)
 
@@ -154,6 +168,11 @@ class DeviceListController(
         val devices = deviceRepository.findAllByOrderByRegisteredAtDesc()
         if (devices.isEmpty()) return ResponseEntity.ok(emptyList())
 
+        val now = Instant.now()
+        // online 판정의 fallback. SSE 연결이 없어도 최근 90초 안에 play-event
+        // 가 들어왔으면 살아있다고 본다. 한 광고 길이(보통 15-30초)의 ~3배.
+        val livenessThreshold = now.minusSeconds(LIVENESS_WINDOW_SECONDS)
+
         val activeAssignments = assignmentRepository.findAllByActiveTrue()
             .associateBy { it.deviceId }
         val restaurantsById = restaurantRepository.findAll().associateBy { it.restaurantId }
@@ -165,10 +184,20 @@ class DeviceListController(
             .sortedByDescending { it.addedAt }
             .groupBy { it.id.deviceId }
         val queuedAdIds = queueByDevice.values.flatten().map { it.id.adId }.toSet()
-        val adsById = if (queuedAdIds.isEmpty()) {
+
+        // "지금 재생 중인 광고" 를 디바이스마다 한 건씩 batch 조회. STARTED 만
+        // 보고 동일 디바이스의 더 최신 STARTED 가 없는 행만 떨어진다.
+        val latestStartedByDevice = playEventRepository
+            .findLatestPerDeviceByEventTypeSince(PlayEventType.STARTED, livenessThreshold)
+            .associateBy { it.deviceId }
+        val currentlyPlayingAdIds = latestStartedByDevice.values.map { it.adId }.toSet()
+
+        // 큐 광고 + 현재 재생 광고를 합쳐 한 번에 fetch.
+        val allAdIds = queuedAdIds + currentlyPlayingAdIds
+        val adsById = if (allAdIds.isEmpty()) {
             emptyMap()
         } else {
-            adRepository.findAllById(queuedAdIds).associateBy { it.id }
+            adRepository.findAllById(allAdIds).associateBy { it.id }
         }
 
         val items = devices.map { d ->
@@ -183,10 +212,32 @@ class DeviceListController(
                     status = ad.computeStatus().name,
                 )
             }
+
+            // online 판정: SSE 연결이 살아있거나(가장 정확) 최근 play-event 가
+            // 있거나(SSE 연결이 일시적으로 끊겼더라도 살아있다는 신호).
+            val sseConnected = sseRegistry.isDeviceConnected(d.deviceId)
+            val recentlyActive = d.lastSeenAt?.isAfter(livenessThreshold) == true
+            val online = sseConnected || recentlyActive
+
+            // currentAd 는 디바이스가 online 일 때만 의미가 있다. 오프라인이면
+            // 마지막 STARTED 가 stale 일 가능성이 커서 의도적으로 null 처리.
+            val currentAd = if (online) {
+                latestStartedByDevice[d.deviceId]?.let { ev ->
+                    val ad = adsById[ev.adId] ?: return@let null
+                    CurrentAdDto(
+                        adId = ad.id,
+                        title = ad.title,
+                        videoFilename = ad.videoFilename,
+                        startedAt = ev.occurredAt,
+                    )
+                }
+            } else null
+
             DeviceListItem(
                 deviceId = d.deviceId,
                 deviceName = d.deviceName,
                 registeredAt = d.registeredAt,
+                lastSeenAt = d.lastSeenAt,
                 currentRestaurant = if (a != null && r != null) {
                     CurrentRestaurantDto(
                         restaurantId = r.restaurantId,
@@ -196,9 +247,16 @@ class DeviceListController(
                     )
                 } else null,
                 queuedAds = queuedAds,
+                online = online,
+                currentAd = currentAd,
             )
         }
         return ResponseEntity.ok(items)
+    }
+
+    companion object {
+        /** 최근 활동(play-event 또는 lastSeenAt) 기준 online 판정 윈도우. */
+        const val LIVENESS_WINDOW_SECONDS: Long = 90L
     }
 }
 
@@ -244,8 +302,22 @@ data class DeviceListItem(
     val deviceId: String,
     val deviceName: String,
     val registeredAt: Instant,
+    /** 마지막으로 디바이스 활동(register / play-event) 이 관측된 시각. 모니터링
+     *  카드의 "마지막 활동 N분 전" 라벨이 사용. null 이면 아직 한 번도 안 본 것. */
+    val lastSeenAt: Instant?,
     val currentRestaurant: CurrentRestaurantDto?,
     val queuedAds: List<QueuedAdSummary> = emptyList(),
+    /**
+     * 디바이스가 지금 살아 있는가? SSE 연결 + 최근 90초 내 play-event 두 신호의
+     * OR. 어드민 모니터링 카드가 회색/컬러를 결정.
+     */
+    val online: Boolean = false,
+    /**
+     * 디바이스가 *현재 송출 중* 인 광고. STARTED 이벤트 기반이므로 서버
+     * 진실이며, 클라이언트가 큐를 시뮬레이션한 결과가 아니다. 오프라인이거나
+     * 90초 내 STARTED 가 없으면 null.
+     */
+    val currentAd: CurrentAdDto? = null,
 )
 
 /**
@@ -258,6 +330,19 @@ data class QueuedAdSummary(
     val videoFilename: String,
     /** SCHEDULED / ACTIVE / EXPIRED — Ad.computeStatus() 결과. */
     val status: String,
+)
+
+/**
+ * "지금 디바이스가 송출 중인 광고" 의 최소 메타. 모니터 카드에 동일한 영상을
+ * autoplay 로 미러링하는 데 필요한 만큼만 운반.
+ */
+data class CurrentAdDto(
+    val adId: String,
+    val title: String,
+    val videoFilename: String,
+    /** 디바이스가 광고를 시작했다고 보고한 시각(occurredAt). 운영자 UI 가
+     *  "▶ 0:24 째 송출 중" 같은 경과 시간 라벨에 사용 가능. */
+    val startedAt: Instant,
 )
 
 data class CurrentRestaurantDto(

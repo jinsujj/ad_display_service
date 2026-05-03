@@ -1,5 +1,6 @@
 package me.owldev.adsignage.domain.playevent
 
+import me.owldev.adsignage.domain.device.DeviceRepository
 import me.owldev.adsignage.domain.playevent.dto.CreatePlayEventRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -54,6 +55,13 @@ import java.time.ZoneId
 @Service
 class PlayEventService(
     private val playEventRepository: PlayEventRepository,
+    /**
+     * 디바이스가 광고를 시작/종료할 때 device.lastSeenAt 을 갱신해 어드민
+     * 모니터링이 "이 디바이스가 살아있다" 신호로 사용할 수 있게 한다.
+     * play-event 자체가 가장 자연스러운 heartbeat 라(15-30초마다 발생) 별도
+     * heartbeat 엔드포인트를 두지 않고 이 경로에서 함께 갱신.
+     */
+    private val deviceRepository: DeviceRepository,
     @Value("\${adsignage.daily-count.zone-id:Asia/Seoul}")
     private val zoneIdProperty: String,
 ) {
@@ -109,6 +117,17 @@ class PlayEventService(
                 occurredAt = occurredAt,
             ),
         )
+        // 디바이스 활동 신호 갱신. 디바이스가 register 후 다시 호출하지 않아도
+        // 광고 송출이 실제로 일어나는 동안에는 이 경로로 lastSeenAt 이 계속
+        // 갱신된다. 어드민 /api/devices 의 online 판정이 이 값을 fallback 으로
+        // 사용한다(SSE 연결이 끊어졌어도 최근 play-event 가 있으면 살아있는 것).
+        // device 행이 사라졌어도(아직 register 안 했거나 삭제됨) 텔레메트리
+        // 자체는 그대로 기록 — orElse(null) 후 ?.also 로 best-effort.
+        deviceRepository.findById(deviceId).orElse(null)?.also {
+            it.lastSeenAt = Instant.now()
+            deviceRepository.save(it)
+        }
+
         // 같은 트랜잭션 내에서 증가 후 카운트를 읽어 방금 쓴 행을 관찰함.
         // 어떤 이벤트 타입이 기록되었든 무관하게 항상 FINISHED — cap 시맨틱 —
         // 를 보고함.
