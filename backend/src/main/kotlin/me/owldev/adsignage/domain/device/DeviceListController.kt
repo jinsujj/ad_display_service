@@ -172,6 +172,12 @@ class DeviceListController(
         // online 판정의 fallback. SSE 연결이 없어도 최근 90초 안에 play-event
         // 가 들어왔으면 살아있다고 본다. 한 광고 길이(보통 15-30초)의 ~3배.
         val livenessThreshold = now.minusSeconds(LIVENESS_WINDOW_SECONDS)
+        // currentAd lookup 은 더 긴 윈도우. <video loop> 가 단일 광고를 무한
+        // 재생할 때 HTML5 의 `play` 이벤트가 매 loop 마다 다시 발사되지 않아
+        // STARTED 가 자주 안 들어온다. online 은 SSE 가 따로 보장하므로
+        // currentAd 만 길게 잡아도 ghost LIVE 위험 낮음(디바이스 죽으면 SSE 가
+        // 끊겨 online=false → currentAd 도 null 로 폴백).
+        val currentAdThreshold = now.minusSeconds(CURRENT_AD_WINDOW_SECONDS)
 
         val activeAssignments = assignmentRepository.findAllByActiveTrue()
             .associateBy { it.deviceId }
@@ -188,7 +194,7 @@ class DeviceListController(
         // "지금 재생 중인 광고" 를 디바이스마다 한 건씩 batch 조회. STARTED 만
         // 보고 동일 디바이스의 더 최신 STARTED 가 없는 행만 떨어진다.
         val latestStartedByDevice = playEventRepository
-            .findLatestPerDeviceByEventTypeSince(PlayEventType.STARTED, livenessThreshold)
+            .findLatestPerDeviceByEventTypeSince(PlayEventType.STARTED, currentAdThreshold)
             .associateBy { it.deviceId }
         val currentlyPlayingAdIds = latestStartedByDevice.values.map { it.adId }.toSet()
 
@@ -257,6 +263,11 @@ class DeviceListController(
     companion object {
         /** 최근 활동(play-event 또는 lastSeenAt) 기준 online 판정 윈도우. */
         const val LIVENESS_WINDOW_SECONDS: Long = 90L
+        /** "지금 재생 중인 광고" 추론 윈도우. <video loop> 단일 광고가 STARTED
+         *  이벤트를 자주 다시 보내지 않는 한계를 흡수하기 위해 더 긴 윈도우.
+         *  online 신호는 SSE 가 별도로 책임지므로 디바이스가 죽으면 online=false
+         *  로 떨어져 currentAd 도 자동 무효화된다. */
+        const val CURRENT_AD_WINDOW_SECONDS: Long = 1800L
     }
 }
 

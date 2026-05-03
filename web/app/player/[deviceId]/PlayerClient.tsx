@@ -251,6 +251,12 @@ export function PlayerClient({ deviceId }: PlayerClientProps) {
    * still resets cleanly after a remap.
    */
   const [currentIndex, setCurrentIndex] = useState<number>(0);
+  /**
+   * 광고가 끝나서 다음으로 advance 한 횟수. selectedAdKey 에 포함되어
+   * 단일 광고 케이스에서도 매 loop 마다 video 가 remount 되도록 보장 —
+   * 그래야 onPlay 가 다시 발사돼 STARTED 이벤트와 일일 cap 카운터가 동작.
+   */
+  const [cycleCount, setCycleCount] = useState<number>(0);
 
   /**
    * AC 3 Sub-AC 2 — per-ad daily play counters.
@@ -743,7 +749,7 @@ export function PlayerClient({ deviceId }: PlayerClientProps) {
    * happily keep buffering the *old* (potentially stale) file URL.
    */
   const selectedAdKey = currentAd
-    ? `${currentAd.adId}:${safeIndex}:${playlistGen}`
+    ? `${currentAd.adId}:${safeIndex}:${playlistGen}:${cycleCount}`
     : `__no_ad__:${playlistGen}`;
 
   /**
@@ -787,6 +793,10 @@ export function PlayerClient({ deviceId }: PlayerClientProps) {
     // setter functional preserves AC 7's race semantics (a refetch landing
     // mid-`onEnded` still composes correctly).
     setCurrentIndex((i) => roundRobinAdvance(i, adsLength));
+    // 단일 광고 케이스에서도 selectedAdKey 가 변경되도록 cycle counter 증가.
+    // 그래야 video remount → onPlay → STARTED 이벤트 재발사 → 일일 cap 카운트
+    // 도 정상 증가. cycleCount 자체는 모듈로 없이 영구 증가(overflow 까지 한참).
+    setCycleCount((c) => c + 1);
   }, [adsLength]);
 
   /**
@@ -1127,13 +1137,19 @@ export function PlayerClient({ deviceId }: PlayerClientProps) {
           autoPlay
           muted
           /*
-           * Loop only when there is exactly one ad. With `loop=true` the
-           * `ended` event never fires, so for a multi-ad playlist we need
-           * to leave it off and rely on `onEnded` → `advanceToNext` for
-           * round-robin rotation. For a single-ad playlist looping avoids
-           * a one-frame flicker on each end/restart.
+           * `loop` 은 *항상 false*. true 로 두면 HTML5 <video> 가 자동으로
+           * seek-and-replay 하지만 `ended` 이벤트가 발사되지 않아 두 가지
+           * 핵심 기능이 깨진다:
+           *   1) 일일 횟수 cap 카운터 증가 — onEnded 가 incrementCount 호출 →
+           *      cap 미발동 → 무한 상영 버그
+           *   2) STARTED play-event 재발사 — 어드민 모니터링 currentAd 윈도우
+           *      안에 데이터가 안 들어와 "송출 대기" 로 잘못 표시
+           *
+           * 단일 광고 케이스도 onEnded → advanceToNext 가 같은 인덱스(=0)를
+           * 반환하지만 selectedAdKey 가 cycleCount 까지 포함하므로 video
+           * 가 강제 remount 되어 onPlay 가 다시 발사된다 → STARTED 재보고.
            */
-          loop={adsLength === 1}
+          loop={false}
           playsInline
           controls={false}
           // Range-stream friendly: `preload="auto"` lets the WebView
