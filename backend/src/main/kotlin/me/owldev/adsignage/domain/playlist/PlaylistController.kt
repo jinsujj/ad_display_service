@@ -3,7 +3,6 @@ package me.owldev.adsignage.domain.playlist
 import com.fasterxml.jackson.annotation.JsonFormat
 import me.owldev.adsignage.domain.ad.AdRepository
 import me.owldev.adsignage.domain.ad.AdStatus
-import me.owldev.adsignage.domain.ad.computeStatus
 import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
 import me.owldev.adsignage.domain.queue.DeviceAdQueueRepository
 import org.slf4j.LoggerFactory

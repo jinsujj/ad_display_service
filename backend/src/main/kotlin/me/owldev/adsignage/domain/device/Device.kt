@@ -22,6 +22,15 @@ class Device(
     @Column(name = "last_seen_at")
     var lastSeenAt: Instant? = null,
 ) {
+    /**
+     * 디바이스 활동 신호를 갱신. register / play-event / 향후 heartbeat 등
+     * "이 디바이스가 살아있다" 는 신호가 들어올 때마다 호출. 시각 결정은
+     * 도메인 책임이므로 [Instant.now] 도 여기서 잡는다.
+     */
+    fun touch() {
+        this.lastSeenAt = Instant.now()
+    }
+
     override fun equals(other: Any?): Boolean = other is Device && other.deviceId == deviceId
     override fun hashCode(): Int = deviceId.hashCode()
 }

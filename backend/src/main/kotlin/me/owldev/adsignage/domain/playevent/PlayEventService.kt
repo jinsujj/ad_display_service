@@ -124,7 +124,7 @@ class PlayEventService(
         // device 행이 사라졌어도(아직 register 안 했거나 삭제됨) 텔레메트리
         // 자체는 그대로 기록 — orElse(null) 후 ?.also 로 best-effort.
         deviceRepository.findById(deviceId).orElse(null)?.also {
-            it.lastSeenAt = Instant.now()
+            it.touch()
             deviceRepository.save(it)
         }
 

@@ -83,11 +83,6 @@ class AdService(
         campaignStartDate: LocalDate? = null,
         campaignEndDate: LocalDate? = null,
     ): Ad {
-        validateScheduleWindow(startTime, endTime)
-        if (campaignStartDate != null && campaignEndDate != null) {
-            validateCampaignWindow(campaignStartDate, campaignEndDate)
-        }
-
         val ad = adRepository.findByIdAndAdvertiserId(adId, advertiserId)
             .orElseThrow {
                 log.info(
@@ -97,11 +92,12 @@ class AdService(
                 AdNotFoundException(adId)
             }
 
-        ad.startTime = startTime
-        ad.endTime = endTime
-        ad.dailyPlayCount = dailyPlayCount
-        if (campaignStartDate != null) ad.campaignStartDate = campaignStartDate
-        if (campaignEndDate != null) ad.campaignEndDate = campaignEndDate
+        // 도메인 룰은 entity 가 강제. validation 위반 시 InvalidScheduleException
+        // 이 도메인 layer 에서 직접 던져진다.
+        ad.changeSchedule(startTime, endTime, dailyPlayCount)
+        if (campaignStartDate != null && campaignEndDate != null) {
+            ad.changeCampaign(campaignStartDate, campaignEndDate)
+        }
 
         // Hibernate는 @Transactional 경계 내에서 dirty-checking을 수행하지만,
         // 반환된 참조가 영속성 컨텍스트가 커밋한 것이도록(테스트가 플러시와
@@ -157,11 +153,10 @@ class AdService(
         campaignStartDate: LocalDate,
         campaignEndDate: LocalDate,
     ): Ad {
-        validateScheduleWindow(startTime, endTime)
-        validateCampaignWindow(campaignStartDate, campaignEndDate)
-
+        // [Ad.create] 팩토리가 모든 도메인 룰을 강제 후 인스턴스를 만든다.
+        // 직접 생성자 호출 대신 팩토리를 거치므로 잘못된 광고가 절대 영속화되지 않는다.
         val saved = adRepository.save(
-            Ad(
+            Ad.create(
                 advertiserId = advertiserId,
                 title = title,
                 videoFilename = videoFilename,
@@ -208,26 +203,6 @@ class AdService(
     // -------------------------------------------------------------------------
     // 내부 구현
     // -------------------------------------------------------------------------
-
-    private fun validateScheduleWindow(startTime: LocalTime, endTime: LocalTime) {
-        if (!endTime.isAfter(startTime)) {
-            throw InvalidScheduleException(
-                fieldErrors = mapOf(
-                    "endTime" to "endTime must be strictly after startTime",
-                ),
-            )
-        }
-    }
-
-    private fun validateCampaignWindow(start: LocalDate, end: LocalDate) {
-        if (end.isBefore(start)) {
-            throw InvalidScheduleException(
-                fieldErrors = mapOf(
-                    "campaignEndDate" to "campaignEndDate must be on or after campaignStartDate",
-                ),
-            )
-        }
-    }
 
     /**
      * [me.owldev.adsignage.sse.PlaylistUpdatedSseListener]가 소비하는

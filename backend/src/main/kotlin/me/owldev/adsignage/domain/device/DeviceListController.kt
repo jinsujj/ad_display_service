@@ -5,7 +5,6 @@ import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import me.owldev.adsignage.domain.ad.AdRepository
-import me.owldev.adsignage.domain.ad.computeStatus
 import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
 import me.owldev.adsignage.domain.playevent.PlayEventRepository
 import me.owldev.adsignage.domain.playevent.PlayEventType
@@ -74,9 +73,10 @@ class DeviceListController(
             ?: "Device-${deviceId.take(8)}"
 
         val saved = deviceRepository.findById(deviceId).orElse(null)?.also {
-            it.lastSeenAt = Instant.now()
+            // 도메인 메서드 호출 — 시각 결정/필드 변경은 Device 가 책임.
             // device_name 은 처음 생성된 값을 유지(클라이언트가 매번 갱신하면 운영자 라벨이
             // 덮어 쓰일 수 있으므로). 명시적 patch 가 필요하면 별도 엔드포인트.
+            it.touch()
         } ?: deviceRepository.save(
             Device(
                 deviceId = deviceId,

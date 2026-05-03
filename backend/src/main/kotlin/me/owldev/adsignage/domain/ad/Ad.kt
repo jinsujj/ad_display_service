@@ -4,6 +4,7 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -123,6 +124,48 @@ class Ad(
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 ) {
+    /* ----------------------------------------------------------- 도메인 룰
+     * Rich-domain: 광고 자체가 자기 불변식을 강제. 서비스는 transaction +
+     * 이벤트 발행만 책임지고, 어떤 변경이 유효한지는 Ad 가 결정한다.
+     */
+
+    /**
+     * 일일 송출 윈도우와 일일 횟수를 한 번에 교체. 크로스 필드 룰
+     * (`endTime > startTime`, `dailyPlayCount > 0`) 위반은
+     * [InvalidScheduleException] 으로 즉시 거부한다 — DB CHECK 가
+     * 최후의 가드로 남지만, 사용자에게는 깔끔한 field-error 응답이 가게.
+     */
+    fun changeSchedule(startTime: LocalTime, endTime: LocalTime, dailyPlayCount: Int) {
+        validateTimeWindow(startTime, endTime)
+        validateDailyPlayCount(dailyPlayCount)
+        this.startTime = startTime
+        this.endTime = endTime
+        this.dailyPlayCount = dailyPlayCount
+    }
+
+    /**
+     * 캠페인 기간을 교체. `end >= start` 강제.
+     */
+    fun changeCampaign(start: LocalDate, end: LocalDate) {
+        validateCampaignWindow(start, end)
+        this.campaignStartDate = start
+        this.campaignEndDate = end
+    }
+
+    /**
+     * 캠페인 기간 기준 라이프사이클 상태(SCHEDULED/ACTIVE/EXPIRED) 를 계산.
+     * Clock 인자로 테스트가 시간을 고정 가능. 인스턴스 메서드 형태로 모이며,
+     * 호출자는 `ad.computeStatus()` 같은 자연스러운 표현으로 사용 가능.
+     */
+    fun computeStatus(clock: Clock = Clock.systemDefaultZone()): AdStatus {
+        val today = LocalDate.now(clock)
+        return when {
+            today.isBefore(campaignStartDate) -> AdStatus.SCHEDULED
+            today.isAfter(campaignEndDate) -> AdStatus.EXPIRED
+            else -> AdStatus.ACTIVE
+        }
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Ad) return false
@@ -130,4 +173,60 @@ class Ad(
     }
 
     override fun hashCode(): Int = id.hashCode()
+
+    companion object {
+        /**
+         * 새 광고 인스턴스를 만들기 전에 모든 필드 룰을 검증하고 생성한다.
+         * 컨트롤러/서비스가 직접 `Ad(...)` 생성자를 호출하는 대신 이 팩토리를
+         * 거치면 어떤 경로로 만들어진 광고든 같은 룰을 통과한다.
+         */
+        fun create(
+            advertiserId: String,
+            title: String,
+            videoFilename: String,
+            startTime: LocalTime,
+            endTime: LocalTime,
+            dailyPlayCount: Int,
+            campaignStartDate: LocalDate,
+            campaignEndDate: LocalDate,
+        ): Ad {
+            validateTimeWindow(startTime, endTime)
+            validateDailyPlayCount(dailyPlayCount)
+            validateCampaignWindow(campaignStartDate, campaignEndDate)
+            return Ad(
+                advertiserId = advertiserId,
+                title = title,
+                videoFilename = videoFilename,
+                startTime = startTime,
+                endTime = endTime,
+                dailyPlayCount = dailyPlayCount,
+                campaignStartDate = campaignStartDate,
+                campaignEndDate = campaignEndDate,
+            )
+        }
+
+        private fun validateTimeWindow(start: LocalTime, end: LocalTime) {
+            if (!end.isAfter(start)) {
+                throw InvalidScheduleException(
+                    fieldErrors = mapOf("endTime" to "endTime must be strictly after startTime"),
+                )
+            }
+        }
+
+        private fun validateDailyPlayCount(count: Int) {
+            if (count <= 0) {
+                throw InvalidScheduleException(
+                    fieldErrors = mapOf("dailyPlayCount" to "dailyPlayCount must be positive"),
+                )
+            }
+        }
+
+        private fun validateCampaignWindow(start: LocalDate, end: LocalDate) {
+            if (end.isBefore(start)) {
+                throw InvalidScheduleException(
+                    fieldErrors = mapOf("campaignEndDate" to "campaignEndDate must be on or after campaignStartDate"),
+                )
+            }
+        }
+    }
 }

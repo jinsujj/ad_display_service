@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import me.owldev.adsignage.domain.ad.AdRepository
 import me.owldev.adsignage.domain.ad.AdStatus
-import me.owldev.adsignage.domain.ad.computeStatus
 import me.owldev.adsignage.domain.device.DeviceRepository
 import me.owldev.adsignage.sse.PlaylistUpdatedEvent
 import org.slf4j.LoggerFactory

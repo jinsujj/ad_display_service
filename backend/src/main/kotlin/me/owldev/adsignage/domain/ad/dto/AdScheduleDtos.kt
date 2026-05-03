@@ -8,7 +8,6 @@ import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import me.owldev.adsignage.domain.ad.Ad
 import me.owldev.adsignage.domain.ad.AdStatus
-import me.owldev.adsignage.domain.ad.computeStatus
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime

@@ -1,8 +1,5 @@
 package me.owldev.adsignage.domain.ad
 
-import java.time.Clock
-import java.time.LocalDate
-
 /**
  * 캠페인 기간(=상영 기간)을 기준으로 광고가 현재 어떤 라이프사이클 단계에
  * 있는지를 나타내는 계산값.
@@ -16,18 +13,8 @@ import java.time.LocalDate
  * 별도의 `active` 컬럼을 두지 않는 이유: 시간 변경이 외부 요인이라(시계가
  * 흘러가면 자동으로 ACTIVE → EXPIRED 가 됨) 컬럼으로 보관하면 매일 자정에
  * 갱신해야 한다. 매번 계산하면 그 비동기성이 사라진다.
+ *
+ * 계산 로직은 [Ad.computeStatus] 인스턴스 메서드로 옮겨져 있다 — rich-domain
+ * 원칙에 따라 도메인 룰이 자기 엔터티에 응집.
  */
 enum class AdStatus { SCHEDULED, ACTIVE, EXPIRED }
-
-/**
- * 광고의 [AdStatus] 계산 — 운영자 로컬 zone 기준의 오늘 날짜와 캠페인
- * 윈도우를 비교한다. [clock] 인자를 두어 테스트가 시간을 고정할 수 있다.
- */
-fun Ad.computeStatus(clock: Clock = Clock.systemDefaultZone()): AdStatus {
-    val today = LocalDate.now(clock)
-    return when {
-        today.isBefore(campaignStartDate) -> AdStatus.SCHEDULED
-        today.isAfter(campaignEndDate)    -> AdStatus.EXPIRED
-        else                              -> AdStatus.ACTIVE
-    }
-}
