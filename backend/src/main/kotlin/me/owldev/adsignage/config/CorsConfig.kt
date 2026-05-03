@@ -23,14 +23,15 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 @Configuration
 class CorsConfig(
     @Value("\${adsignage.cors.allowed-origins:https://stream.owl-dev.me,http://localhost:3000,http://localhost:3002}")
-    private val allowedOrigins: String,
+    private val allowedOriginsCsv: String,
 ) {
 
     @Bean
     fun corsConfigurationSource(): UrlBasedCorsConfigurationSource {
+        val originList = allowedOriginsCsv.split(",").map { it.trim() }.filter { it.isNotEmpty() }
         val cfg = CorsConfiguration().apply {
-            // 정확 일치 origin 목록 — 콤마로 분리, 공백 trim.
-            this.allowedOrigins = allowedOrigins.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+            // 정확 일치 origin 목록 — 콤마로 분리, 공백 trim 후 setter 호출.
+            allowedOrigins = originList
             allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD")
             allowedHeaders = listOf("*")
             // 클라이언트가 읽어야 할 응답 헤더(특히 SSE/Range 응답 디버깅용).
