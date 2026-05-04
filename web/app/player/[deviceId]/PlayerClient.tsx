@@ -239,32 +239,6 @@ export function PlayerClient({ deviceId }: PlayerClientProps) {
   const [splash, setSplash] = useState<RemapSplash | null>(null);
 
   /**
-   * 디바이스 heartbeat — 5초마다 backend 에 lightweight ping. backend 의
-   * LIVENESS_WINDOW_SECONDS 가 15초라 한두 번 놓쳐도 복구되며, 앱이 진짜로
-   * 종료되면 ping 이 멎어 ~15초 안에 어드민 모니터가 오프라인으로 전환.
-   *
-   * sendBeacon(pagehide) 와의 역할 분담:
-   *   - 정상 종료 / 탭 닫기 → pagehide → sendBeacon → 즉시(1.5s) 오프라인
-   *   - 앱 process kill / network drop → ping 이 끊겨 ~15s 안에 오프라인
-   */
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const HEARTBEAT_MS = 5_000;
-    const url = `${process.env.NEXT_PUBLIC_API_BASE_URL ?? ""}/api/devices/${encodeURIComponent(deviceId)}/heartbeat`;
-    const tick = () => {
-      // fetch + keepalive — page unload 에도 견디는 옵션. 응답 무시.
-      fetch(url, { method: "POST", keepalive: true }).catch(() => {
-        /* 네트워크 일시 끊김 — 다음 tick 에서 복구 */
-      });
-    };
-    tick(); // 첫 ping 즉시 (mount 직후 lastSeenAt fresh 보장)
-    const id = window.setInterval(tick, HEARTBEAT_MS);
-    return () => {
-      window.clearInterval(id);
-    };
-  }, [deviceId]);
-
-  /**
    * 앱/탭이 닫힐 때 backend 에 명시적 "offline" 신호 보내기. SSE 가 끊기는
    * 것만으론 keepalive 30초 주기 + lastSeenAt fresh 이면 어드민 모니터에
    * 짧게 phantom LIVE 가 남을 수 있는데, sendBeacon 한 번이면 즉시 해제된다.

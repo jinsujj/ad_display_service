@@ -261,10 +261,11 @@ class SseEmitterRegistry {
     }
 
     companion object {
-        /** SSE keepalive 주기. 짧을수록 dead TCP 감지가 빠르다. 5초면 디바이스
-         *  앱 종료 후 어드민 모니터에 거의 즉시(다음 폴링 1.5s + keepalive 5s)
-         *  반영. 트래픽 비용은 미미 — comment 한 줄(~10 bytes). */
-        const val KEEPALIVE_INTERVAL_MS: Long = 5_000L
+        /** SSE keepalive 주기. SSE 연결 자체가 디바이스 liveness 신호이므로
+         *  HTTP heartbeat 없이 이 keepalive write 가 dead TCP 감지의 유일한
+         *  메커니즘. 10초면 50K 디바이스 환경에서 평균 5K writes/s — idle TCP
+         *  write 라 부담 거의 0, 앱 종료 후 ~10s 안에 SSE cleanup. */
+        const val KEEPALIVE_INTERVAL_MS: Long = 10_000L
     }
 }
 

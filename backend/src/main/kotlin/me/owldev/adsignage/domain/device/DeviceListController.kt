@@ -301,10 +301,12 @@ class DeviceListController(
     }
 
     companion object {
-        /** 최근 활동(play-event / heartbeat / lastSeenAt) 기준 online 판정 윈도우.
-         *  heartbeat 가 5초 주기로 오므로 15초면 한 번 놓쳐도 다음 ping 으로
-         *  복구 가능 + 앱 종료 시 ~15초 안에 오프라인 전환. */
-        const val LIVENESS_WINDOW_SECONDS: Long = 15L
+        /** 최근 활동(play-event / lastSeenAt) 기준 online 판정 fallback 윈도우.
+         *  주 신호는 SSE 연결(`isDeviceConnected`) — keepalive 10s 가 dead TCP
+         *  를 빠르게 감지하므로 lastSeenAt 은 SSE 가 정상이 아닌 엣지 케이스
+         *  (디바이스가 SSE 끊겼는데 play-event 만 보내는 등) 의 보완. 60s 면
+         *  광고 길이(보통 ~30s) 의 2배 — 정상 송출 디바이스는 항상 fresh. */
+        const val LIVENESS_WINDOW_SECONDS: Long = 60L
         /** "지금 재생 중인 광고" 추론 윈도우. PlayerClient 가 loop=false +
          *  cycleCount 로 매 광고 종료마다 STARTED 를 다시 발사하므로 광고
          *  길이(~30s) 의 4배인 120s 면 정상 송출 중인 디바이스는 항상 윈도우
