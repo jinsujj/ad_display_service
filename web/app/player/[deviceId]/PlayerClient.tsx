@@ -126,6 +126,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError } from "@/lib/api";
+import { StandbyScreen } from "./StandbyScreen";
 import {
   fetchPlaylist,
   filterActiveAds,
@@ -1137,10 +1138,9 @@ export function PlayerClient({ deviceId }: PlayerClientProps) {
       {playlistState.kind === "ready" &&
         playlistState.playlist.ads.length > 0 &&
         adsLength === 0 && (
-          <PlayerEmpty
-            message="Outside scheduled window"
-            sub={describeNextWindow(playlistState.playlist.ads)}
-            splashImage="/splash.png"
+          <StandbyScreen
+            restaurantId={playlistState.playlist.restaurantId}
+            hint={describeNextWindow(playlistState.playlist.ads)}
           />
         )}
 
@@ -1233,33 +1233,18 @@ export function PlayerClient({ deviceId }: PlayerClientProps) {
       */}
       {playlistState.kind === "ready" &&
         playlistState.playlist.ads.length === 0 && (
-          <PlayerEmpty
-            message="No ads scheduled for this device yet."
-            sub="Waiting for SSE updates from the backend…"
-            splashImage="/splash.png"
+          <StandbyScreen
+            restaurantId={playlistState.playlist.restaurantId}
           />
         )}
 
-      {playlistState.kind === "loading" && (
-        <PlayerEmpty
-          message="Loading schedule…"
-          sub={`Device ${deviceId.slice(0, 8)}…`}
-        />
-      )}
-
-      {playlistState.kind === "initial" && (
-        <PlayerEmpty
-          message="Connecting to AdSignage…"
-          sub={`Device ${deviceId.slice(0, 8)}…`}
-        />
-      )}
-
+      {/* 연결 / 로딩 / 에러 — 운영자 디버그성 transient 상태도 손님 입장에선
+          그냥 standby 로 보이는 게 자연스럽다. 운영자가 확인할 정보는 어드민
+          모니터에서 별도로 노출된다. */}
+      {playlistState.kind === "loading" && <StandbyScreen />}
+      {playlistState.kind === "initial" && <StandbyScreen />}
       {playlistState.kind === "error" && (
-        <PlayerEmpty
-          message="Could not load schedule"
-          sub={playlistState.message}
-          tone="error"
-        />
+        <StandbyScreen hint="잠시 후 다시 연결합니다" />
       )}
 
       <style jsx>{`
@@ -1753,18 +1738,18 @@ function describeNextWindow(ads: PlaylistAd[]): string {
     if (Number.isFinite(min)) starts.push({ raw: ad.startTime, min });
   }
   if (starts.length === 0) {
-    return "Waiting for the next scheduled play window…";
+    return "잠시 후 광고가 다시 송출됩니다";
   }
   // First, look for the next window strictly after `now` today.
   const upcomingToday = starts
     .filter((s) => s.min > nowMin)
     .sort((a, b) => a.min - b.min)[0];
   if (upcomingToday) {
-    return `Next window starts at ${upcomingToday.raw}`;
+    return `다음 광고는 ${upcomingToday.raw} 부터`;
   }
   // Otherwise wrap to the first window of tomorrow.
   const firstTomorrow = [...starts].sort((a, b) => a.min - b.min)[0];
-  return `Next window starts at ${firstTomorrow.raw} (tomorrow)`;
+  return `내일 ${firstTomorrow.raw} 부터 다시 송출됩니다`;
 }
 
 export default PlayerClient;
