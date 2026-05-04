@@ -263,11 +263,13 @@ class DeviceListController(
     companion object {
         /** 최근 활동(play-event 또는 lastSeenAt) 기준 online 판정 윈도우. */
         const val LIVENESS_WINDOW_SECONDS: Long = 90L
-        /** "지금 재생 중인 광고" 추론 윈도우. <video loop> 단일 광고가 STARTED
-         *  이벤트를 자주 다시 보내지 않는 한계를 흡수하기 위해 더 긴 윈도우.
-         *  online 신호는 SSE 가 별도로 책임지므로 디바이스가 죽으면 online=false
-         *  로 떨어져 currentAd 도 자동 무효화된다. */
-        const val CURRENT_AD_WINDOW_SECONDS: Long = 1800L
+        /** "지금 재생 중인 광고" 추론 윈도우. PlayerClient 가 loop=false +
+         *  cycleCount 로 매 광고 종료마다 STARTED 를 다시 발사하므로 광고
+         *  길이(~30s) 의 4배인 120s 면 정상 송출 중인 디바이스는 항상 윈도우
+         *  안에 들어온다. 광고 시작 후 디바이스가 stuck/슬립되어 다음
+         *  STARTED 가 안 오는 케이스는 120s 안에 currentAd 에서 빠져 "송출
+         *  대기" 또는 "오프라인" 으로 정확히 표시된다. */
+        const val CURRENT_AD_WINDOW_SECONDS: Long = 120L
     }
 }
 
