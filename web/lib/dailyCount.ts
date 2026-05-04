@@ -273,23 +273,12 @@ function hasStorage(): boolean {
 export function loadCounters(deviceId: string): DailyCounters {
   const today = todayKey();
   if (!deviceId) return emptyCounters(today);
-  if (!hasStorage()) return emptyCounters(today);
-  let raw: string | null = null;
-  try {
-    raw = window.localStorage.getItem(storageKey(deviceId));
-  } catch {
-    return emptyCounters(today);
-  }
-  if (!raw) return emptyCounters(today);
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return emptyCounters(today);
-  }
-  const normalised = normaliseStoredCounters(parsed);
-  if (!normalised) return emptyCounters(today);
-  return rolloverIfNewDay(normalised, today);
+  // 클라 측 dailyCount 영구화는 *서버 측 play_events 의 daily-cap 카운트* 와
+  // 이중 카운팅을 만들고, localStorage 가 stale 한 채로 누적되면 *살아있는*
+  // 디바이스가 cap 도달해 영원히 standby 만 띄우는 stuck 버그를 만들었다.
+  // 권위 있는 daily-cap 은 서버에 두고, 클라 측은 *세션 단위* 메모리 카운터로
+  // 폭주 방지 정도만 책임지도록 영구화 제거 — 매 mount 시 빈 bag 으로 시작.
+  return emptyCounters(today);
 }
 
 /**
@@ -301,18 +290,17 @@ export function saveCounters(
   deviceId: string,
   state: DailyCounters,
 ): void {
+  // dailyCount 영구화 비활성 (loadCounters 주석 참조). 호환성을 위해
+  // 함수 시그니처는 유지 — 호출자(PlayerClient) 코드 변경 0.
+  // 또한 옛 누적 데이터가 남아 있다면 한 번에 정리.
   if (!deviceId) return;
   if (!hasStorage()) return;
   try {
-    window.localStorage.setItem(storageKey(deviceId), JSON.stringify(state));
-  } catch (err) {
-    // 할당량 초과 / 스토리지 비활성 / 시크릿 모드 제한 — 치명적이지 않음.
-    // 다음 리로드가 새로 시작되므로, 최악의 경우 상한 도달 광고가 몇 번 더
-    // 재생되는 정도다.
-    if (typeof console !== "undefined" && console.warn) {
-      console.warn("[dailyCount] saveCounters failed", err);
-    }
+    window.localStorage.removeItem(storageKey(deviceId));
+  } catch {
+    /* 시크릿 모드 등 — 무시 */
   }
+  void state; // 미사용 — emptyCounters 가 권위 상태
 }
 
 /**
