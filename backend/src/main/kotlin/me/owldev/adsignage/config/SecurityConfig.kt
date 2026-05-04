@@ -127,6 +127,10 @@ class SecurityConfig(
                     // 토큰을 도입할 때까지 deviceId 경로 파라미터가 신원의
                     // 운반자.
                     .requestMatchers(HttpMethod.POST, "/api/devices/*/play-events").permitAll()
+                    // 디바이스가 자신을 오프라인으로 신고. WebView pagehide 의
+                    // sendBeacon 으로 호출되며 앱 종료 즉시 어드민 모니터가
+                    // 오프라인으로 전환되도록 한다. permitAll — 디바이스에는 JWT 없음.
+                    .requestMatchers(HttpMethod.POST, "/api/devices/*/offline").permitAll()
                     // AC 4 (auth-and-isolation): 스트리밍 엔드포인트
                     // `GET /api/videos/{filename}`은 공개 유지하여 플레이어
                     // 페이지가 JWT 없이 MP4 바이트를 가져올 수 있게 하되,

@@ -198,6 +198,19 @@ class SseEmitterRegistry {
     }
 
     /**
+     * [deviceId] 의 모든 SSE emitter 를 즉시 종료. 디바이스가 명시적으로 종료를
+     * 알려올 때(`POST /api/devices/{id}/offline`) 호출되어 keepalive 30s 를
+     * 기다리지 않고 어드민 모니터에서 즉시 오프라인 표시되도록 한다.
+     */
+    fun forceCloseAll(deviceId: String) {
+        val list = emitters[deviceId] ?: return
+        for (emitter in list.toList()) {
+            try { emitter.complete() } catch (_: Exception) { /* best-effort */ }
+            remove(deviceId, emitter)
+        }
+    }
+
+    /**
      * 모든 emitter 에 30초마다 SSE 주석(`:keepalive`) 을 보내, 클라이언트가
      * 사라진 phantom 연결을 빨리 발견·제거한다.
      *

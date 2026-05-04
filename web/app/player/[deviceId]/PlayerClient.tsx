@@ -239,6 +239,40 @@ export function PlayerClient({ deviceId }: PlayerClientProps) {
   const [splash, setSplash] = useState<RemapSplash | null>(null);
 
   /**
+   * 앱/탭이 닫힐 때 backend 에 명시적 "offline" 신호 보내기. SSE 가 끊기는
+   * 것만으론 keepalive 30초 주기 + lastSeenAt fresh 이면 어드민 모니터에
+   * 짧게 phantom LIVE 가 남을 수 있는데, sendBeacon 한 번이면 즉시 해제된다.
+   *
+   * 왜 sendBeacon 인가:
+   *   - 페이지 unload 도중에도 비동기 큐로 전송이 보장됨 (fetch + keepalive
+   *     보다 호환성 더 좋음, Android WebView 도 지원)
+   *   - 응답 무시 — 어차피 페이지가 죽는 중
+   *
+   * 왜 pagehide 인가:
+   *   - beforeunload 는 모바일/SPA 에서 발사 안 되는 경우 흔함
+   *   - pagehide 는 BFCache, 앱 백그라운드, WebView destroy 모두에서 안정 발사
+   *   - visibilitychange + hidden 도 같이 쓰면 백그라운드만 갔을 때도 잡지만
+   *     "잠깐 다른 앱 봤다 왔을 때" 도 오프라인으로 표시되어 운영자에게 혼란.
+   *     pagehide 만 단독.
+   */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onHide = () => {
+      try {
+        const url = `${process.env.NEXT_PUBLIC_API_BASE_URL ?? ""}/api/devices/${encodeURIComponent(deviceId)}/offline`;
+        // Blob 으로 보내야 일부 브라우저가 sendBeacon body 를 수락한다.
+        navigator.sendBeacon?.(url, new Blob([""], { type: "application/json" }));
+      } catch {
+        /* 페이지 죽는 중 — swallow */
+      }
+    };
+    window.addEventListener("pagehide", onHide);
+    return () => {
+      window.removeEventListener("pagehide", onHide);
+    };
+  }, [deviceId]);
+
+  /**
    * AC 60202 Sub-AC 2 — round-robin index into `playlist.ads`.
    *
    * Lives next to `playlistState` because the two are tightly coupled: the

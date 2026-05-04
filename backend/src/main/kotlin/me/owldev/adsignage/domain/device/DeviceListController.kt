@@ -97,6 +97,30 @@ class DeviceListController(
     }
 
     /**
+     * 디바이스가 종료/슬립으로 들어가면서 자기 자신을 즉시 오프라인으로
+     * 알리는 신호. 인증 없음 — 디바이스가 토큰을 갖지 않으므로. 호출 효과:
+     *   1) SSE 연결 강제 close → online 즉시 false
+     *   2) lastSeenAt 을 90초 윈도우 밖으로 강제(현재시각 - 91s) → 어드민
+     *      모니터의 다음 폴링(1.5s)에서 즉시 오프라인 카드로 표시
+     *
+     * Android WebView 가 destroy 되면서 발사되는 `pagehide` 이벤트에서
+     * `navigator.sendBeacon` 으로 호출 — 비동기 보장 + 페이지 종료 중에도
+     * 안전하게 전송됨.
+     */
+    @PostMapping("/api/devices/{deviceId}/offline")
+    @Transactional
+    fun reportOffline(@PathVariable deviceId: String): ResponseEntity<Void> {
+        sseRegistry.forceCloseAll(deviceId)
+        deviceRepository.findById(deviceId).orElse(null)?.also {
+            // 90초 윈도우(LIVENESS_WINDOW_SECONDS) 보다 더 오래 전으로 강제.
+            it.lastSeenAt = Instant.now().minusSeconds(LIVENESS_WINDOW_SECONDS + 1)
+            deviceRepository.save(it)
+        }
+        log.info("device offline reported deviceId={}", deviceId)
+        return ResponseEntity.noContent().build()
+    }
+
+    /**
      * 어드민이 디바이스를 제거. device 행 + 활성/비활성 매핑 이력까지 일괄
      * 삭제한다. 디바이스 앱이 다시 켜지면 멱등 register 가 새 행을 만들어
      * 다시 등록되므로 재시작이나 분실/교체 디바이스 정리에 안전하다.
