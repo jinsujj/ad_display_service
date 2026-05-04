@@ -265,11 +265,22 @@ class DeviceListController(
             val recentlyActive = d.lastSeenAt?.isAfter(livenessThreshold) == true
             val online = sseConnected || recentlyActive
 
-            // currentAd 는 디바이스가 online 일 때만 의미가 있다. 오프라인이면
-            // 마지막 STARTED 가 stale 일 가능성이 커서 의도적으로 null 처리.
+            // currentAd 는 다음 *모든* 조건을 만족할 때만 채운다 — 그렇지
+            // 않으면 stale STARTED 이벤트가 디바이스 실제 송출과 어긋나는
+            // 버그(예: 큐를 비웠는데 직전 STARTED 가 윈도우 안이라 LIVE 로
+            // 잘못 표시).
+            //   1) online                  ← SSE 연결 또는 최근 활동
+            //   2) 그 광고가 *지금도 큐에 있음* ← 운영자가 빼면 즉시 무효
+            //   3) 그 광고가 캠페인 ACTIVE  ← 만료/시작전 광고는 송출 X
+            val deviceQueuedAdIds = (queueByDevice[d.deviceId] ?: emptyList())
+                .map { it.id.adId }.toSet()
             val currentAd = if (online) {
                 latestStartedByDevice[d.deviceId]?.let { ev ->
+                    if (ev.adId !in deviceQueuedAdIds) return@let null
                     val ad = adsById[ev.adId] ?: return@let null
+                    if (ad.computeStatus() != me.owldev.adsignage.domain.ad.AdStatus.ACTIVE) {
+                        return@let null
+                    }
                     CurrentAdDto(
                         adId = ad.id,
                         title = ad.title,
