@@ -22,7 +22,7 @@ interface Props {
 
 export default function DeviceDetailPage({ params }: Props) {
   return (
-    <AuthGuard>
+    <AuthGuard requireRole="OPERATOR">
       <section>
         <div className="page-header">
           <div>

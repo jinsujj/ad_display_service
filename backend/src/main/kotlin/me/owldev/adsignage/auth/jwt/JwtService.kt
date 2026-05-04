@@ -2,6 +2,7 @@ package me.owldev.adsignage.auth.jwt
 
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
+import me.owldev.adsignage.domain.advertiser.AdvertiserRole
 import org.springframework.stereotype.Service
 import java.nio.charset.StandardCharsets
 import java.util.Date
@@ -35,13 +36,18 @@ class JwtService(
      *  - `iat`   = 현재
      *  - `exp`   = 현재 + [JwtProperties.expirationMs]
      */
-    fun issueToken(advertiserId: String, email: String): IssuedToken {
+    fun issueToken(
+        advertiserId: String,
+        email: String,
+        role: AdvertiserRole = AdvertiserRole.ADVERTISER,
+    ): IssuedToken {
         val now = System.currentTimeMillis()
         val expiresAt = now + properties.expirationMs
 
         val token = Jwts.builder()
             .subject(advertiserId)
             .claim("email", email)
+            .claim("role", role.name)
             .issuedAt(Date(now))
             .expiration(Date(expiresAt))
             .signWith(signingKey, Jwts.SIG.HS256)
@@ -79,8 +85,16 @@ class JwtService(
             ?: throw io.jsonwebtoken.MalformedJwtException("missing sub claim")
         val email = claims["email"] as? String
             ?: throw io.jsonwebtoken.MalformedJwtException("missing email claim")
+        // role claim 은 V104 이전에 발급된 토큰엔 없을 수 있다. 누락 시
+        // ADVERTISER 로 폴백 — 안전한 default(권한 적은 쪽).
+        val roleStr = claims["role"] as? String
+        val role = when (roleStr) {
+            null -> AdvertiserRole.ADVERTISER
+            else -> runCatching { AdvertiserRole.valueOf(roleStr) }
+                .getOrDefault(AdvertiserRole.ADVERTISER)
+        }
 
-        return AuthenticatedAdvertiser(advertiserId = advertiserId, email = email)
+        return AuthenticatedAdvertiser(advertiserId = advertiserId, email = email, role = role)
     }
 }
 
@@ -97,4 +111,5 @@ data class IssuedToken(
 data class AuthenticatedAdvertiser(
     val advertiserId: String,
     val email: String,
+    val role: AdvertiserRole = AdvertiserRole.ADVERTISER,
 )

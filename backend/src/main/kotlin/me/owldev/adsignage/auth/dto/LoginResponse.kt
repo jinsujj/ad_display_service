@@ -17,4 +17,6 @@ data class LoginResponse(
     val expiresInMs: Long,
     val advertiserId: String,
     val email: String,
+    /** RBAC 역할 — "ADVERTISER" 또는 "OPERATOR". 프론트가 메뉴/페이지 가시성 분기용. */
+    val role: String,
 )

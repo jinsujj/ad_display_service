@@ -65,11 +65,19 @@ class JwtAuthenticationFilter(
             val principal = AdvertiserPrincipal(
                 advertiserId = advertiser.advertiserId,
                 email = advertiser.email,
+                role = advertiser.role,
             )
+            // 모든 인증된 사용자에게 ROLE_ADVERTISER (=일반 인증 게이트용) 부여 +
+            // OPERATOR 면 ROLE_OPERATOR 도 추가. 이렇게 하면 .hasRole("OPERATOR")
+            // 로 엄격 게이트, .authenticated() 로는 둘 다 허용 가능.
+            val authorities = mutableListOf(SimpleGrantedAuthority(ROLE_ADVERTISER))
+            if (advertiser.role == me.owldev.adsignage.domain.advertiser.AdvertiserRole.OPERATOR) {
+                authorities += SimpleGrantedAuthority(ROLE_OPERATOR)
+            }
             val authentication = UsernamePasswordAuthenticationToken(
                 principal,
                 null, // 자격증명을 보관하지 않음 — 토큰은 이미 검증됨
-                listOf(SimpleGrantedAuthority(ROLE_ADVERTISER)),
+                authorities,
             ).apply {
                 details = WebAuthenticationDetailsSource().buildDetails(request)
             }
@@ -113,11 +121,16 @@ class JwtAuthenticationFilter(
         private const val BEARER_PREFIX = "Bearer "
 
         /**
-         * 성공적으로 인증된 광고주에게 부여되는 권한. 엔드포인트는
-         * `.hasRole("ADVERTISER")`(스프링이 `ROLE_` 접두사를 자동으로 제거)나
-         * `.authenticated()`를 통해 이를 요구할 수 있음.
+         * 모든 인증된 사용자에게 부여되는 기본 권한. 엔드포인트는
+         * `.hasRole("ADVERTISER")` 또는 `.authenticated()` 로 요구.
          */
         const val ROLE_ADVERTISER = "ROLE_ADVERTISER"
+
+        /**
+         * 플랫폼 운영자 권한. 디바이스/음식점/큐 mutation 엔드포인트가
+         * `.hasRole("OPERATOR")` 로 요구. ADVERTISER 만 가진 사용자는 거부.
+         */
+        const val ROLE_OPERATOR = "ROLE_OPERATOR"
     }
 }
 
@@ -131,4 +144,6 @@ class JwtAuthenticationFilter(
 data class AdvertiserPrincipal(
     val advertiserId: String,
     val email: String,
+    val role: me.owldev.adsignage.domain.advertiser.AdvertiserRole =
+        me.owldev.adsignage.domain.advertiser.AdvertiserRole.ADVERTISER,
 )

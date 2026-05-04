@@ -136,26 +136,21 @@ class SecurityConfig(
                     // 경로 세그먼트와 매치하므로 컬렉션 URI는 `.authenticated()`로
                     // 떨어짐.
                     .requestMatchers(HttpMethod.GET, "/api/videos/*").permitAll()
-                    // --- 과도기: 아직 인증 게이트가 없는 관리자 엔드포인트.
-                    // auth-and-isolation 패스가 도착하면 ROLE_ADVERTISER가
-                    // 필요. 체인에 JWT 필터를 연결하는 동안 그린 테스트
-                    // 스위트를 그린으로 유지하기 위해 여기서는 열어둠.
-                    .requestMatchers("/api/devices/*/assignment").permitAll()
-                    // Sub-AC 50101.1: PATCH /api/devices/{deviceId}/restaurant
-                    // — 데모 시나리오 #3을 위한 관리자 리매핑 진입점.
-                    // 형제 `…/assignment` 라우트와 함께 과도기 예외로 허용;
-                    // `/api/devices/**` 관리자 CRUD를 ROLE_ADVERTISER 뒤로
-                    // 잠그는 auth-and-isolation 패스에서 잠금 처리됨.
-                    .requestMatchers("/api/devices/*/restaurant").permitAll()
-                    // AC 9, Sub-AC 1: PATCH /api/devices/{deviceId} —
-                    // 디바이스 필드를 위한 일반 부분 업데이트(현재 restaurantId;
-                    // V10 devices 테이블에 컬럼이 늘어나면 screen/group).
-                    // 단일 세그먼트 매처라서 디바이스 루트 경로만 허용하고
-                    // 명명된 하위 리소스는 허용하지 않음(위에 명시적으로
-                    // 나열됨) — GET /api/devices/* 등이 향후 인증 규칙 아래로
-                    // 자유롭게 떨어질 수 있게 하여 예기치 않은 허용 목록
-                    // 충돌을 방지.
-                    .requestMatchers(HttpMethod.PATCH, "/api/devices/*").permitAll()
+                    // --- OPERATOR 전용: 디바이스/큐 mutation -----------------
+                    // 광고주(ADVERTISER)가 임의로 특정 디바이스에 자기 광고를
+                    // 끼워 넣으면 비즈니스 무결성이 깨지므로, 모든 mutation 은
+                    // 플랫폼 운영자(OPERATOR) 만 허용. 광고주는 read 만 (자기
+                    // 광고가 어디 송출 중인지 보기 위해).
+                    .requestMatchers("/api/devices/*/assignment").hasRole("OPERATOR")
+                    .requestMatchers("/api/devices/*/restaurant").hasRole("OPERATOR")
+                    .requestMatchers(HttpMethod.PATCH, "/api/devices/*").hasRole("OPERATOR")
+                    .requestMatchers(HttpMethod.DELETE, "/api/devices/*").hasRole("OPERATOR")
+                    // 광고 큐 mutation — 운영자가 어떤 광고를 어떤 디바이스에
+                    // 송출할지 직접 매칭. 광고주는 read 만.
+                    .requestMatchers(HttpMethod.POST, "/api/devices/*/ads").hasRole("OPERATOR")
+                    .requestMatchers(HttpMethod.DELETE, "/api/devices/*/ads/*").hasRole("OPERATOR")
+                    // 음식점 관리(향후 등록/삭제 엔드포인트가 추가되면) 도
+                    // OPERATOR. 현재는 GET 만 있어 .authenticated() 로 충분.
                     // --- 인증 게이트: 광고 CRUD + 스케줄 변경 (AC 3) ------
                     // PUT/PATCH /api/ads/{id}/schedule은 관리자 UI가 호출하는
                     // 스케줄 mutator; JWT principal이 검증된 광고주 id를

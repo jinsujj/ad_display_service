@@ -57,6 +57,15 @@ export function AuthHeader() {
       <span className="auth-user" title={user.advertiserId}>
         {user.email}
       </span>
+      {user.role === "OPERATOR" && (
+        <span
+          className="pill pill-ok"
+          style={{ marginLeft: 6, fontSize: 10 }}
+          title="플랫폼 운영자 — 디바이스/큐 관리 권한"
+        >
+          OPERATOR
+        </span>
+      )}
       <button
         type="button"
         className="auth-logout"

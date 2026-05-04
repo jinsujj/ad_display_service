@@ -79,14 +79,19 @@ class AuthService(
         val issued = jwtService.issueToken(
             advertiserId = advertiser.id,
             email = advertiser.email,
+            role = advertiser.role,
         )
-        log.info("login success advertiserId={} email={}", advertiser.id, advertiser.email)
+        log.info(
+            "login success advertiserId={} email={} role={}",
+            advertiser.id, advertiser.email, advertiser.role,
+        )
 
         return LoginResponse(
             accessToken = issued.token,
             expiresInMs = issued.expiresInMs,
             advertiserId = advertiser.id,
             email = advertiser.email,
+            role = advertiser.role.name,
         )
     }
 }

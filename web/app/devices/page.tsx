@@ -21,7 +21,7 @@ export const metadata = {
 
 export default function DevicesPage() {
   return (
-    <AuthGuard>
+    <AuthGuard requireRole="OPERATOR">
       <section>
         <div className="page-header">
           <div>

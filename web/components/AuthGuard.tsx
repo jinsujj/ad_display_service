@@ -38,15 +38,26 @@
 
 import { useEffect, useState } from "react";
 import { AUTH_TOKEN_STORAGE_KEY } from "@/lib/api";
+import { readStoredAuthUser, type AuthRole } from "@/lib/auth";
 
 interface AuthGuardProps {
   children: React.ReactNode;
   /** 미인증 시 보낼 곳. 기본: `/login` (현재 경로가 자동으로 next 쿼리로 첨부) */
   redirectTo?: string;
+  /**
+   * 특정 role 만 접근. 부족하면 "권한 없음" 안내 + 홈으로 가는 링크. 백엔드도
+   * 같은 게이트를 갖고 있으니 클라 우회는 무의미하지만 UX 측면에서 즉시 차단.
+   */
+  requireRole?: AuthRole;
 }
 
-export function AuthGuard({ children, redirectTo = "/login" }: AuthGuardProps) {
-  const [ok, setOk] = useState<boolean>(false);
+export function AuthGuard({
+  children,
+  redirectTo = "/login",
+  requireRole,
+}: AuthGuardProps) {
+  type State = "checking" | "ok" | "forbidden";
+  const [state, setState] = useState<State>("checking");
 
   useEffect(() => {
     let token: string | null = null;
@@ -58,19 +69,34 @@ export function AuthGuard({ children, redirectTo = "/login" }: AuthGuardProps) {
     if (!token) {
       const here = window.location.pathname + window.location.search;
       const next = encodeURIComponent(here);
-      // replace를 써서 뒤로가기 누르면 보호 페이지가 다시 등장하지 않도록.
       window.location.replace(`${redirectTo}?next=${next}`);
       return;
     }
-    setOk(true);
-  }, [redirectTo]);
+    if (requireRole) {
+      const user = readStoredAuthUser();
+      if (!user || user.role !== requireRole) {
+        setState("forbidden");
+        return;
+      }
+    }
+    setState("ok");
+  }, [redirectTo, requireRole]);
 
-  if (!ok) {
-    // redirect 전 잠깐 보일 placeholder. SSR/hydration mismatch 회피용으로
-    // 항상 같은 마크업.
+  if (state === "checking") {
     return (
       <div className="muted" role="status" aria-live="polite">
         인증 확인 중…
+      </div>
+    );
+  }
+  if (state === "forbidden") {
+    return (
+      <div className="notice notice-error" role="alert">
+        <strong>이 페이지는 플랫폼 운영자(OPERATOR) 만 접근할 수 있습니다.</strong>
+        <div style={{ marginTop: 8, fontSize: 13 }}>
+          광고주 계정은 광고/영상 메뉴를 사용해주세요.
+          <a href="/" style={{ marginLeft: 8 }}>홈으로</a>
+        </div>
       </div>
     );
   }

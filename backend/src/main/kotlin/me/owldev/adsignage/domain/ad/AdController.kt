@@ -5,6 +5,12 @@ import me.owldev.adsignage.auth.jwt.AdvertiserPrincipal
 import me.owldev.adsignage.domain.ad.dto.AdResponse
 import me.owldev.adsignage.domain.ad.dto.CreateAdRequest
 import me.owldev.adsignage.domain.ad.dto.UpdateAdScheduleRequest
+import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
+import me.owldev.adsignage.domain.device.DeviceRepository
+import me.owldev.adsignage.domain.playevent.PlayEventRepository
+import me.owldev.adsignage.domain.playevent.PlayEventType
+import me.owldev.adsignage.domain.queue.DeviceAdQueueRepository
+import me.owldev.adsignage.domain.restaurant.RestaurantRepository
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -19,6 +25,7 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -52,6 +59,16 @@ import java.time.LocalTime
 @RequestMapping("/api/ads")
 class AdController(
     private val adService: AdService,
+    /**
+     * 광고주가 read-only 로 "이 광고가 어디 송출 중인지" 보기 위한 조회용
+     * repository 들. mutation 은 없으므로 service 를 거치지 않고 controller 가
+     * 직접 join 한다 — 현재 데모 단계의 단순 read 모음.
+     */
+    private val queueRepository: DeviceAdQueueRepository,
+    private val deviceRepository: DeviceRepository,
+    private val assignmentRepository: DeviceAssignmentRepository,
+    private val restaurantRepository: RestaurantRepository,
+    private val playEventRepository: PlayEventRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(AdController::class.java)
@@ -127,6 +144,63 @@ class AdController(
     ): ResponseEntity<AdResponse> {
         val ad = adService.findOwned(adId, principal.advertiserId)
         return ResponseEntity.ok(AdResponse.from(ad))
+    }
+
+    /**
+     * "이 광고가 송출 중인 디바이스 현황" — 광고주가 자기 광고가 어디에
+     * 깔려 있는지 read-only 로 조회. mutation 권한이 OPERATOR 로 분리된
+     * RBAC 전환 후 광고주의 가시성을 보전하는 통로.
+     *
+     * 응답에는 큐에 담긴 디바이스마다:
+     *   - deviceId / deviceName / restaurantName
+     *   - currentlyPlaying : 그 디바이스가 *지금 이 광고를 송출 중*인지
+     *     (최근 5분 내 STARTED 이벤트가 이 광고에 대해 있는지로 판단)
+     */
+    @GetMapping(
+        "/{id}/deployments",
+        produces = [MediaType.APPLICATION_JSON_VALUE],
+    )
+    fun getAdDeployments(
+        @PathVariable("id") adId: String,
+        @AuthenticationPrincipal principal: AdvertiserPrincipal,
+    ): ResponseEntity<List<AdDeploymentItem>> {
+        // 소유 확인 — 다른 광고주 id 추측 시 404 로 통일.
+        adService.findOwned(adId, principal.advertiserId)
+
+        val queueRows = queueRepository.findAllByIdAdId(adId)
+        if (queueRows.isEmpty()) return ResponseEntity.ok(emptyList())
+
+        val deviceIds = queueRows.map { it.id.deviceId }
+        val devicesById = deviceRepository.findAllById(deviceIds).associateBy { it.deviceId }
+        val activeAssignments = assignmentRepository.findAllByActiveTrue()
+            .filter { it.deviceId in deviceIds }
+            .associateBy { it.deviceId }
+        val restaurantsById = restaurantRepository.findAll().associateBy { it.restaurantId }
+
+        // "지금 이 광고 재생 중" 판단 — 최근 5분 안의 STARTED 이벤트 중
+        // adId 일치하는 게 있는 디바이스만.
+        val recentStartedAds = playEventRepository
+            .findLatestPerDeviceByEventTypeSince(
+                PlayEventType.STARTED,
+                Instant.now().minusSeconds(300),
+            )
+            .filter { it.adId == adId }
+            .map { it.deviceId }
+            .toSet()
+
+        val items = queueRows.mapNotNull { q ->
+            val device = devicesById[q.id.deviceId] ?: return@mapNotNull null
+            val assignment = activeAssignments[device.deviceId]
+            val restaurant = assignment?.let { restaurantsById[it.restaurantId] }
+            AdDeploymentItem(
+                deviceId = device.deviceId,
+                deviceName = device.deviceName,
+                restaurantName = restaurant?.name,
+                addedAt = q.addedAt,
+                currentlyPlaying = device.deviceId in recentStartedAds,
+            )
+        }
+        return ResponseEntity.ok(items)
     }
 
     /**
@@ -210,3 +284,17 @@ class AdController(
         return ResponseEntity.ok(AdResponse.from(saved))
     }
 }
+
+/**
+ * 광고주가 자기 광고가 어떤 디바이스에 깔렸는지 read-only 로 보는 응답 항목.
+ * `currentlyPlaying` 은 최근 5분 내 STARTED 이벤트가 그 광고에 대해 있는지로
+ * 판단 — 디바이스가 그 순간 *그 광고* 를 화면에 띄우고 있다는 신호.
+ */
+data class AdDeploymentItem(
+    val deviceId: String,
+    val deviceName: String,
+    val restaurantName: String?,
+    @com.fasterxml.jackson.annotation.JsonFormat(shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING)
+    val addedAt: Instant,
+    val currentlyPlaying: Boolean,
+)

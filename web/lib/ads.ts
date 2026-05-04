@@ -235,6 +235,25 @@ export async function getAd(adId: string): Promise<AdResponse> {
   });
 }
 
+/** `GET /api/ads/{id}/deployments` 응답 항목 — 그 광고가 깔린 디바이스. */
+export interface AdDeploymentItem {
+  deviceId: string;
+  deviceName: string;
+  restaurantName: string | null;
+  addedAt: string;
+  /** 최근 5분 내 STARTED 이벤트로 추정한 "지금 이 광고를 송출 중" 여부. */
+  currentlyPlaying: boolean;
+}
+
+/** `GET /api/ads/{id}/deployments` — 광고주 read-only 송출 현황. */
+export async function getAdDeployments(adId: string): Promise<AdDeploymentItem[]> {
+  if (!adId) throw new Error("adId is required");
+  return apiFetch<AdDeploymentItem[]>(
+    `/api/ads/${encodeURIComponent(adId)}/deployments`,
+    { method: "GET" },
+  );
+}
+
 /**
  * `DELETE /api/ads/{id}` — 광고 삭제. 소유자만 가능.
  * 백엔드가 PLAYLIST_UPDATE SSE 이벤트를 발행해, 그 광고를 송출 중이던

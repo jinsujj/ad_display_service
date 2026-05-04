@@ -39,18 +39,23 @@ export interface LoginRequest {
   password: string;
 }
 
+/** RBAC 역할. ADVERTISER = 광고주(광고/영상만), OPERATOR = 플랫폼 운영자(디바이스/큐). */
+export type AuthRole = "ADVERTISER" | "OPERATOR";
+
 export interface LoginResponse {
   accessToken: string;
   tokenType: string; // "Bearer"
   expiresInMs: number;
   advertiserId: string;
   email: string;
+  role: AuthRole;
 }
 
 /** localStorage 에 저장하는 광고주 신원. */
 export interface StoredAuthUser {
   advertiserId: string;
   email: string;
+  role: AuthRole;
 }
 
 /* ------------------------------------------------------ API calls */
@@ -106,6 +111,7 @@ function storeSession(res: LoginResponse): void {
     const user: StoredAuthUser = {
       advertiserId: res.advertiserId,
       email: res.email,
+      role: res.role,
     };
     window.localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user));
   } catch {
@@ -124,7 +130,12 @@ export function readStoredAuthUser(): StoredAuthUser | null {
     if (typeof obj?.advertiserId !== "string" || typeof obj?.email !== "string") {
       return null;
     }
-    return { advertiserId: obj.advertiserId, email: obj.email };
+    // role 누락 또는 잘못된 값 → 안전 default(ADVERTISER, 권한 적은 쪽).
+    const role: AuthRole =
+      obj.role === "OPERATOR" || obj.role === "ADVERTISER"
+        ? obj.role
+        : "ADVERTISER";
+    return { advertiserId: obj.advertiserId, email: obj.email, role };
   } catch {
     return null;
   }

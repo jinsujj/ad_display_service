@@ -11,11 +11,18 @@
  * - 404 (소유 광고 아님 / 존재하지 않음) 와 그 외 오류를 분리해 노출.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 import { ApiError } from "@/lib/api";
-import { AD_STATUS_LABEL, getAd, type AdResponse } from "@/lib/ads";
+import {
+  AD_STATUS_LABEL,
+  getAd,
+  getAdDeployments,
+  type AdDeploymentItem,
+  type AdResponse,
+} from "@/lib/ads";
+import { useDataChanged } from "@/lib/dataEvents";
 import { shortId } from "@/lib/format";
 import { AdScheduleForm } from "./AdScheduleForm";
 
@@ -117,6 +124,101 @@ export function AdEditClient({ adId }: Props) {
           campaignEndDate: ad.campaignEndDate,
         }}
       />
+
+      <AdDeploymentsSection adId={ad.id} />
+    </>
+  );
+}
+
+/* --------------------------- 송출 현황 (read-only, 광고주용) ----------------- */
+
+function AdDeploymentsSection({ adId }: { adId: string }) {
+  const [deployments, setDeployments] = useState<AdDeploymentItem[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const refetch = useCallback(() => {
+    getAdDeployments(adId)
+      .then((rows) => {
+        setDeployments(rows);
+        setError(null);
+      })
+      .catch((err) => {
+        const msg =
+          err instanceof ApiError
+            ? `HTTP ${err.status}`
+            : err instanceof Error
+              ? err.message
+              : "알 수 없는 오류";
+        setError(msg);
+      });
+  }, [adId]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  // 큐 변경 / 광고 변경 시 자동 갱신.
+  useDataChanged(["device-queue", "ad"], refetch);
+
+  return (
+    <>
+      <h2 className="section-heading" style={{ marginTop: 28 }}>
+        송출 현황
+      </h2>
+      <p className="muted" style={{ fontSize: 12, marginTop: 0, marginBottom: 12 }}>
+        이 광고가 깔린 디바이스 — 운영자(OPERATOR) 가 큐에 담았을 때 여기 표시됩니다.
+        디바이스 매칭은 플랫폼 운영자가 통제합니다.
+      </p>
+
+      {error ? (
+        <div className="notice notice-error" role="alert">
+          송출 현황을 불러오지 못했습니다: {error}
+        </div>
+      ) : deployments === null ? (
+        <div className="muted">송출 현황 불러오는 중…</div>
+      ) : deployments.length === 0 ? (
+        <div className="empty-state">
+          이 광고는 아직 어떤 디바이스에도 깔려 있지 않습니다. 운영자에게
+          매칭을 요청하세요.
+        </div>
+      ) : (
+        <table className="data-table" aria-label="송출 디바이스">
+          <colgroup>
+            <col style={{ width: 92 }} />
+            <col />
+            <col />
+            <col style={{ width: 200 }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>상태</th>
+              <th>디바이스</th>
+              <th>음식점</th>
+              <th>큐 등록일</th>
+            </tr>
+          </thead>
+          <tbody>
+            {deployments.map((d) => (
+              <tr key={d.deviceId}>
+                <td>
+                  {d.currentlyPlaying ? (
+                    <span className="pill pill-ok">🔴 LIVE</span>
+                  ) : (
+                    <span className="pill pill-muted">대기</span>
+                  )}
+                </td>
+                <td>
+                  <strong>{d.deviceName}</strong>
+                </td>
+                <td className="muted">{d.restaurantName ?? "(미할당)"}</td>
+                <td className="muted" style={{ fontSize: 12, whiteSpace: "nowrap" }}>
+                  {new Date(d.addedAt).toLocaleString("ko-KR")}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </>
   );
 }
