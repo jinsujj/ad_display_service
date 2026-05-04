@@ -261,9 +261,10 @@ class SseEmitterRegistry {
     }
 
     companion object {
-        /** SSE keepalive 주기. 너무 짧으면 nginx idle timeout 보다 자주 깨우는
-         *  비효율, 너무 길면 dead 감지가 느려진다. 30초가 둘 사이 균형점. */
-        const val KEEPALIVE_INTERVAL_MS: Long = 30_000L
+        /** SSE keepalive 주기. 짧을수록 dead TCP 감지가 빠르다. 5초면 디바이스
+         *  앱 종료 후 어드민 모니터에 거의 즉시(다음 폴링 1.5s + keepalive 5s)
+         *  반영. 트래픽 비용은 미미 — comment 한 줄(~10 bytes). */
+        const val KEEPALIVE_INTERVAL_MS: Long = 5_000L
     }
 }
 

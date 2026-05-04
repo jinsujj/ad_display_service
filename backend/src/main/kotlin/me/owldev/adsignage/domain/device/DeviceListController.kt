@@ -97,6 +97,22 @@ class DeviceListController(
     }
 
     /**
+     * 디바이스 heartbeat — PlayerClient 가 5초마다 호출. lastSeenAt 만 갱신
+     * 하므로 가벼움(write 1회). Android 앱이 sendBeacon 도 못 보내고 SSE TCP
+     * 도 nginx idle 안에 갇혀 죽는 케이스에서, 마지막 heartbeat 가 윈도우
+     * 밖으로 나가면 즉시 오프라인 판정. 인증 없음 — 디바이스에 JWT 없음.
+     */
+    @PostMapping("/api/devices/{deviceId}/heartbeat")
+    @Transactional
+    fun heartbeat(@PathVariable deviceId: String): ResponseEntity<Void> {
+        deviceRepository.findById(deviceId).orElse(null)?.also {
+            it.touch()
+            deviceRepository.save(it)
+        }
+        return ResponseEntity.noContent().build()
+    }
+
+    /**
      * 디바이스가 종료/슬립으로 들어가면서 자기 자신을 즉시 오프라인으로
      * 알리는 신호. 인증 없음 — 디바이스가 토큰을 갖지 않으므로. 호출 효과:
      *   1) SSE 연결 강제 close → online 즉시 false
@@ -285,8 +301,10 @@ class DeviceListController(
     }
 
     companion object {
-        /** 최근 활동(play-event 또는 lastSeenAt) 기준 online 판정 윈도우. */
-        const val LIVENESS_WINDOW_SECONDS: Long = 90L
+        /** 최근 활동(play-event / heartbeat / lastSeenAt) 기준 online 판정 윈도우.
+         *  heartbeat 가 5초 주기로 오므로 15초면 한 번 놓쳐도 다음 ping 으로
+         *  복구 가능 + 앱 종료 시 ~15초 안에 오프라인 전환. */
+        const val LIVENESS_WINDOW_SECONDS: Long = 15L
         /** "지금 재생 중인 광고" 추론 윈도우. PlayerClient 가 loop=false +
          *  cycleCount 로 매 광고 종료마다 STARTED 를 다시 발사하므로 광고
          *  길이(~30s) 의 4배인 120s 면 정상 송출 중인 디바이스는 항상 윈도우
