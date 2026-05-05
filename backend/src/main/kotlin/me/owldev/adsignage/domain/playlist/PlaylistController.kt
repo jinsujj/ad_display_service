@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat
 import me.owldev.adsignage.domain.ad.AdRepository
 import me.owldev.adsignage.domain.ad.AdStatus
 import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
-import me.owldev.adsignage.domain.queue.DeviceAdQueueRepository
+import me.owldev.adsignage.bounded.context.queue.application.port.out.database.DeviceAdQueueRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -37,7 +37,7 @@ import java.time.LocalTime
 class PlaylistController(
     private val adRepository: AdRepository,
     private val assignmentRepository: DeviceAssignmentRepository,
-    private val queueRepository: DeviceAdQueueRepository,
+    private val queueRepository: DeviceAdQueueRepositoryPort,
 ) {
     private val log = LoggerFactory.getLogger(PlaylistController::class.java)
 

@@ -15,7 +15,7 @@ import me.owldev.adsignage.domain.ad.AdStatus
 import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
 import me.owldev.adsignage.bounded.context.playevent.application.port.out.database.PlayEventRepositoryPort
 import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEventType
-import me.owldev.adsignage.domain.queue.DeviceAdQueueRepository
+import me.owldev.adsignage.bounded.context.queue.application.port.out.database.DeviceAdQueueRepositoryPort
 import me.owldev.adsignage.sse.SseEmitterRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -38,7 +38,7 @@ class DeviceService(
     private val deviceRepositoryPort: DeviceRepositoryPort,
     private val assignmentRepository: DeviceAssignmentRepository,
     private val restaurantRepositoryPort: RestaurantRepositoryPort,
-    private val queueRepository: DeviceAdQueueRepository,
+    private val queueRepository: DeviceAdQueueRepositoryPort,
     private val adRepository: AdRepository,
     private val playEventRepository: PlayEventRepositoryPort,
     private val sseRegistry: SseEmitterRegistry,

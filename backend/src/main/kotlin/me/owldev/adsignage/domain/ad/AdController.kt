@@ -9,7 +9,7 @@ import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
 import me.owldev.adsignage.bounded.context.device.application.port.out.database.DeviceRepositoryPort
 import me.owldev.adsignage.bounded.context.playevent.application.port.out.database.PlayEventRepositoryPort
 import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEventType
-import me.owldev.adsignage.domain.queue.DeviceAdQueueRepository
+import me.owldev.adsignage.bounded.context.queue.application.port.out.database.DeviceAdQueueRepositoryPort
 import me.owldev.adsignage.bounded.context.restaurant.application.port.out.database.RestaurantRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -64,7 +64,7 @@ class AdController(
      * repository 들. mutation 은 없으므로 service 를 거치지 않고 controller 가
      * 직접 join 한다 — 현재 데모 단계의 단순 read 모음.
      */
-    private val queueRepository: DeviceAdQueueRepository,
+    private val queueRepository: DeviceAdQueueRepositoryPort,
     private val deviceRepository: DeviceRepositoryPort,
     private val assignmentRepository: DeviceAssignmentRepository,
     private val restaurantRepository: RestaurantRepositoryPort,

@@ -1,5 +1,7 @@
-package me.owldev.adsignage.domain.queue
+package me.owldev.adsignage.bounded.context.queue.adapter.out.database
 
+import me.owldev.adsignage.bounded.context.queue.domain.model.DeviceAdQueue
+import me.owldev.adsignage.bounded.context.queue.domain.model.DeviceAdQueueId
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query

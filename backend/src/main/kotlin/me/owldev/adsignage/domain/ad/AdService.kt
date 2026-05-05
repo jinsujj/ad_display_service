@@ -1,6 +1,6 @@
 package me.owldev.adsignage.domain.ad
 
-import me.owldev.adsignage.domain.queue.DeviceAdQueueRepository
+import me.owldev.adsignage.bounded.context.queue.application.port.out.database.DeviceAdQueueRepositoryPort
 import me.owldev.adsignage.sse.PlaylistUpdatedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
@@ -60,7 +60,7 @@ class AdService(
      * 하지만, 어드민 큐 화면에서 "삭제된 광고" 가 보이는 것을 막기 위해
      * 명시적으로 지운다.
      */
-    private val queueRepository: DeviceAdQueueRepository,
+    private val queueRepository: DeviceAdQueueRepositoryPort,
 ) {
 
     private val log = LoggerFactory.getLogger(AdService::class.java)
