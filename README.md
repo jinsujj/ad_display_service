@@ -10,33 +10,149 @@
 
 ## 아키텍처
 
+### 전체 시스템 구조
+
+```mermaid
+flowchart TB
+    subgraph clients["클라이언트"]
+        Browser["광고주 브라우저<br/>(Chrome/Safari/모바일)"]
+        Android["Android WebView APK<br/>(광고판 디바이스 N대)"]
+    end
+
+    subgraph proxy["nginx · owl-SER8 (Ubuntu, HTTPS · Let's Encrypt)"]
+        WebHost["stream.owl-dev.me<br/>→ 127.0.0.1:3002"]
+        ApiHost["stream-backend.owl-dev.me<br/>→ 127.0.0.1:8080<br/><i>SSE: read_timeout 24h</i>"]
+    end
+
+    subgraph runtime["애플리케이션 (docker compose)"]
+        Web["Next.js 14 어드민 + 플레이어<br/>:3000<br/><i>/login, /signup, /videos, /ads, /devices, /profile<br/>/player/&#123;deviceId&#125;</i>"]
+        Backend["Spring Boot 3 (Kotlin) :8080<br/><b>JWT auth · REST · SSE · video range</b><br/><i>9 bounded contexts</i>"]
+    end
+
+    subgraph storage["저장소"]
+        Postgres[("PostgreSQL<br/>schema=adsignage<br/><i>Flyway migration</i>")]
+        Videos[/"호스트 볼륨<br/>/var/lib/adsignage/videos/*.mp4"/]
+    end
+
+    Browser -->|HTTPS| WebHost
+    Android -->|HTTPS<br/>WebView 풀스크린| WebHost
+    Browser -.->|"JWT 첨부<br/>fetch / SSE"| ApiHost
+    Android -.->|"play-event POST<br/>SSE subscribe"| ApiHost
+
+    WebHost --> Web
+    ApiHost --> Backend
+
+    Web -.->|"SSR fetch (있을 때)"| Backend
+    Backend --> Postgres
+    Backend -->|"MP4 read · range"| Videos
+    Backend -.->|"MP4 write<br/>(video upload)"| Videos
 ```
-[Android WebView APK]            [어드민 웹]
-    https://stream.owl-dev.me          /devices  /ads  /videos
-    /player/{deviceId}                       │
-              │                              │
-              ▼                              ▼
-        ┌────────────────────────────────────────┐
-        │  nginx (stream.owl-dev.me, HTTPS)      │
-        │   /          → Next.js  :3000          │
-        │   /api, /videos → Spring Boot :8080    │
-        └────────────────────────────────────────┘
-                       │
-                       ▼
-        ┌────────────────────────────────────────┐
-        │  Spring Boot 3 (Kotlin) — :8080         │
-        │   • Auth (JWT)                          │
-        │   • Ad / Schedule / Video CRUD          │
-        │   • DeviceAssignment + 원격 매핑       │
-        │   • SSE 푸시 (PLAYLIST_UPDATE,         │
-        │              MAPPING_CHANGED)          │
-        │   • Video Range 스트리밍              │
-        └────────────────────────────────────────┘
-                       │
-                       ▼
-            /var/lib/adsignage/videos/*.mp4
-            H2 / PostgreSQL
+
+### 광고 송출 + 매핑 변경 흐름 (SSE)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Operator as 운영자
+    participant Web as 어드민 웹
+    participant Backend as Spring Boot
+    participant DB as PostgreSQL
+    participant Player as Android 플레이어
+    participant Video as MP4 storage
+
+    Note over Player,Backend: 부팅 직후 SSE 구독 + 플레이리스트 fetch
+    Player->>Backend: POST /api/devices/register
+    Player->>Backend: GET /api/devices/{id}/stream (SSE)
+    Backend-->>Player: event: CONNECTED
+    Player->>Backend: GET /api/playlist?deviceId=...
+    Backend->>DB: SELECT 큐 + 광고 + 매핑
+    Backend-->>Player: 플레이리스트 JSON
+
+    loop 광고 라운드 로빈
+        Player->>Backend: GET /api/videos/{file} (Range)
+        Backend->>Video: read range
+        Video-->>Backend: bytes
+        Backend-->>Player: 206 Partial Content
+        Player->>Backend: POST /play-events (STARTED)
+        Player->>Backend: POST /play-events (FINISHED)
+    end
+
+    Note over Operator,Backend: 운영자가 디바이스를 다른 음식점에 재할당
+    Operator->>Web: PATCH /devices/{id} {restaurantId}
+    Web->>Backend: PATCH /api/devices/{id}
+    Backend->>DB: UPDATE assignment (active=false → 새 active)
+    Backend-->>Player: SSE event: MAPPING_CHANGED
+    Player->>Backend: GET /api/playlist?deviceId=... (재fetch)
+    Backend-->>Player: 새 플레이리스트
+    Note over Player: 새 광고로 즉시 전환 (수 초 내)
 ```
+
+### 백엔드 — 9 bounded contexts (헥사고날)
+
+```mermaid
+flowchart LR
+    subgraph adapters["adapter/in (REST + SSE)"]
+        AuthC["AuthController<br/>/api/auth/*"]
+        VideoC["VideoController · VideoStreamingController<br/>/api/videos · /api/videos/&#123;file&#125;"]
+        AdC["AdController · AdPlayCountController<br/>/api/ads"]
+        DeviceC["DeviceController · DeviceUpdateController<br/>/api/devices"]
+        QueueC["DeviceAdQueueController<br/>/api/devices/&#123;id&#125;/queue"]
+        AssignC["DeviceAssignmentController<br/>/api/devices/&#123;id&#125;/assignment"]
+        RestC["RestaurantController<br/>/api/restaurants"]
+        PlaylistC["PlaylistController<br/>/api/playlist"]
+        StreamC["DeviceStreamController<br/>/api/devices/&#123;id&#125;/stream (SSE)"]
+        PlayEventC["PlayEventController<br/>/api/devices/&#123;id&#125;/play-events"]
+    end
+
+    subgraph contexts["application/service · 9 contexts"]
+        Advertiser["advertiser<br/>(JWT principal)"]
+        Video["video"]
+        Ad["ad"]
+        Device["device"]
+        Queue["queue<br/>(DeviceAdQueue)"]
+        Assignment["assignment<br/>(Device ↔ Restaurant)"]
+        Playlist["playlist<br/>(round-robin)"]
+        Restaurant["restaurant"]
+        PlayEvent["playevent"]
+    end
+
+    subgraph ports["application/port/out"]
+        Repos["JPA Repository ports<br/>(Spring Data Adapter)"]
+        Sse["SseEmitterRegistry<br/>(in-memory)"]
+    end
+
+    AuthC --> Advertiser
+    VideoC --> Video
+    AdC --> Ad
+    DeviceC --> Device
+    QueueC --> Queue
+    AssignC --> Assignment
+    RestC --> Restaurant
+    PlaylistC --> Playlist
+    StreamC --> Device
+    PlayEventC --> PlayEvent
+
+    Advertiser --> Repos
+    Video --> Repos
+    Ad --> Repos
+    Device --> Repos & Sse
+    Queue --> Repos
+    Assignment --> Repos
+    Playlist --> Repos
+    Restaurant --> Repos
+    PlayEvent --> Repos & Device
+
+    Device -.->|"광고 큐 변경 시<br/>PLAYLIST_UPDATE"| Sse
+    Assignment -.->|"재할당 시<br/>MAPPING_CHANGED"| Sse
+
+    Repos --> PG[("PostgreSQL<br/>schema=adsignage")]
+```
+
+> **Legacy ASCII 다이어그램** (참고용 fallback)
+>
+> ```
+> [Android]/[브라우저] → nginx → Next.js :3000  + Spring Boot :8080 → PostgreSQL + /var/lib/adsignage/videos
+> ```
 
 ## 컴포넌트
 
