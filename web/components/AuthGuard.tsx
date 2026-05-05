@@ -84,18 +84,32 @@ export function AuthGuard({
 
   if (state === "checking") {
     return (
-      <div className="muted" role="status" aria-live="polite">
+      <div
+        className="text-sm text-muted-foreground"
+        role="status"
+        aria-live="polite"
+      >
         인증 확인 중…
       </div>
     );
   }
   if (state === "forbidden") {
     return (
-      <div className="notice notice-error" role="alert">
-        <strong>이 페이지는 플랫폼 운영자(OPERATOR) 만 접근할 수 있습니다.</strong>
-        <div style={{ marginTop: 8, fontSize: 13 }}>
+      <div
+        className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm"
+        role="alert"
+      >
+        <strong>
+          이 페이지는 플랫폼 운영자(OPERATOR) 만 접근할 수 있습니다.
+        </strong>
+        <div className="mt-2 text-xs text-muted-foreground">
           광고주 계정은 광고/영상 메뉴를 사용해주세요.
-          <a href="/" style={{ marginLeft: 8 }}>홈으로</a>
+          <a
+            href="/"
+            className="ml-2 text-accent underline-offset-4 hover:underline"
+          >
+            홈으로
+          </a>
         </div>
       </div>
     );

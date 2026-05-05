@@ -21,28 +21,39 @@ export const metadata = {
 export default function AdsIndexPage() {
   return (
     <AuthGuard>
-      <section>
-        <div className="page-header">
+      <section className="space-y-6">
+        <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1>광고</h1>
-            <div className="subtitle">
+            <h1 className="text-2xl font-semibold tracking-tight">광고</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
               영상으로 광고를 만들고 일일 송출 스케줄을 관리합니다.
-            </div>
+            </p>
           </div>
-          <Link href="/ads/new" className="btn">+ 새 광고 만들기</Link>
-        </div>
+          <Link
+            href="/ads/new"
+            className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            + 새 광고 만들기
+          </Link>
+        </header>
 
-        <h2 className="section-heading">내 광고</h2>
-        <MyAdsList />
+        <section>
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            내 광고
+          </h2>
+          <MyAdsList />
+        </section>
 
-        <h2 className="section-heading" style={{ marginTop: 32 }}>
-          광고 ID로 직접 열기
-        </h2>
-        <p className="muted" style={{ marginTop: 0 }}>
-          이미 알고 있는 광고 UUID가 있으면 아래에 붙여 넣어 스케줄 편집
-          페이지로 바로 이동할 수 있습니다.
-        </p>
-        <AdLookupForm />
+        <section>
+          <h2 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            광고 ID로 직접 열기
+          </h2>
+          <p className="mb-3 text-sm text-muted-foreground">
+            이미 알고 있는 광고 UUID가 있으면 아래에 붙여 넣어 스케줄 편집
+            페이지로 바로 이동할 수 있습니다.
+          </p>
+          <AdLookupForm />
+        </section>
       </section>
     </AuthGuard>
   );

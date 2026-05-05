@@ -23,18 +23,23 @@ interface Props {
 export default function DeviceDetailPage({ params }: Props) {
   return (
     <AuthGuard requireRole="OPERATOR">
-      <section>
-        <div className="page-header">
+      <section className="space-y-6">
+        <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1>디바이스 상세</h1>
-            <div className="subtitle">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              디바이스 상세
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
               디바이스 정보와 거쳐 온 음식점 매핑 이력을 한눈에 확인합니다.
-            </div>
+            </p>
           </div>
-          <Link href="/devices" className="btn">
+          <Link
+            href="/devices"
+            className="inline-flex h-11 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium transition-colors hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
             ← 디바이스 목록으로
           </Link>
-        </div>
+        </header>
 
         <DeviceDetailClient deviceId={params.deviceId} />
       </section>

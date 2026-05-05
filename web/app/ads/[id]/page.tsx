@@ -26,20 +26,25 @@ export default function AdEditPage({ params }: AdEditPageProps) {
 
   return (
     <AuthGuard>
-      <section>
-        <div className="page-header">
+      <section className="space-y-6">
+        <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1>광고 스케줄 편집</h1>
-            <div className="subtitle">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              광고 스케줄 편집
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
               이 광고의 일일 송출 윈도우(시작/종료 시간)와 목표 송출 횟수를
               수정합니다. 저장 즉시 적용되며 다음 플레이리스트 새로고침에
               반영됩니다.
-            </div>
+            </p>
           </div>
-          <Link href="/ads" className="btn">
+          <Link
+            href="/ads"
+            className="inline-flex h-11 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium transition-colors hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
             ← 광고 목록으로
           </Link>
-        </div>
+        </header>
 
         <AdEditClient adId={adId} />
       </section>

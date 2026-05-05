@@ -3,12 +3,10 @@
 /**
  * /ads/[id] 페이지의 클라이언트 호스트.
  *
- * - 마운트 시 GET /api/ads/{id} 로 단일 광고를 받아오고
- *   AdScheduleForm 의 initialValues 로 주입한다 (시작 시간 / 종료 시간 /
- *   일일 송출 횟수 미리 채움).
- * - 광고 메타(제목, 영상 파일명, 생성 시각)도 보여줘 운영자가 어떤 광고를
- *   편집 중인지 즉시 알 수 있다.
- * - 404 (소유 광고 아님 / 존재하지 않음) 와 그 외 오류를 분리해 노출.
+ * GET /api/ads/{id} 로 단일 광고를 받아 AdScheduleForm 의 initialValues 로
+ * 주입. 광고 메타(제목/영상/생성)+상태 배지+스케줄 요약을 좌측 액센트
+ * 보더 카드로 표시. 송출 디바이스는 미니 테이블(데스크탑) + 카드 리스트
+ * (모바일) 듀얼 렌더.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -25,6 +23,17 @@ import {
 import { useDataChanged } from "@/lib/dataEvents";
 import { shortId } from "@/lib/format";
 import { AdScheduleForm } from "./AdScheduleForm";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type State =
   | { kind: "loading" }
@@ -66,74 +75,108 @@ export function AdEditClient({ adId }: Props) {
   }, [adId]);
 
   if (state.kind === "loading") {
-    return <div className="muted">광고 정보를 불러오는 중…</div>;
+    return (
+      <div className="text-sm text-muted-foreground">
+        광고 정보를 불러오는 중…
+      </div>
+    );
   }
 
   if (state.kind === "not-found") {
     return (
-      <div className="notice notice-error" role="alert">
-        해당 광고를 찾을 수 없습니다 (또는 본인 광고가 아닙니다).{" "}
-        <Link href="/ads">광고 목록으로 돌아가기</Link>
-      </div>
+      <Alert variant="destructive">
+        <AlertDescription>
+          해당 광고를 찾을 수 없습니다 (또는 본인 광고가 아닙니다).{" "}
+          <Link
+            href="/ads"
+            className="underline-offset-4 hover:underline"
+          >
+            광고 목록으로 돌아가기
+          </Link>
+        </AlertDescription>
+      </Alert>
     );
   }
 
   if (state.kind === "error") {
     return (
-      <div className="notice notice-error" role="alert">
-        광고 정보를 불러오지 못했습니다: {state.message}
-      </div>
+      <Alert variant="destructive">
+        <AlertDescription>
+          광고 정보를 불러오지 못했습니다: {state.message}
+        </AlertDescription>
+      </Alert>
     );
   }
 
   const ad = state.ad;
-  return (
-    <>
-      <div className="ad-id-banner" style={{ marginBottom: 12 }}>
-        <div>
-          <strong>{ad.title}</strong>{" "}
-          <span
-            className={`pill pill-${ad.status === "ACTIVE" ? "ok" : ad.status === "EXPIRED" ? "warn" : ""}`}
-            style={{ marginLeft: 6 }}
-          >
-            {AD_STATUS_LABEL[ad.status]}
-          </span>
-          <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-            광고 ID <code className="ad-id-banner__id" title={ad.id}>{shortId(ad.id)}</code>
-          </div>
-          <div className="muted" style={{ fontSize: 12 }}>
-            영상 파일명 <code title={ad.videoFilename}>{shortId(ad.videoFilename)}</code>
-          </div>
-          <div className="muted" style={{ fontSize: 12 }}>
-            현재 스케줄: {ad.startTime} ~ {ad.endTime} · 일일 {ad.dailyPlayCount}회
-          </div>
-          <div className="muted" style={{ fontSize: 12 }}>
-            캠페인 기간: {ad.campaignStartDate} ~ {ad.campaignEndDate}
-          </div>
-        </div>
-      </div>
+  const statusVariant =
+    ad.status === "ACTIVE"
+      ? ("ok" as const)
+      : ad.status === "EXPIRED"
+        ? ("warn" as const)
+        : ("muted" as const);
 
-      <h2 className="section-heading">스케줄</h2>
-      <AdScheduleForm
-        adId={ad.id}
-        initialValues={{
-          startTime: ad.startTime,
-          endTime: ad.endTime,
-          dailyPlayCount: ad.dailyPlayCount,
-          campaignStartDate: ad.campaignStartDate,
-          campaignEndDate: ad.campaignEndDate,
-        }}
-      />
+  return (
+    <div className="space-y-6">
+      <Card className="border-l-4 border-l-accent">
+        <CardContent className="pt-4">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <strong className="text-base">{ad.title}</strong>
+            <Badge variant={statusVariant}>
+              {AD_STATUS_LABEL[ad.status]}
+            </Badge>
+          </div>
+          <dl className="mt-2 space-y-1 text-xs text-muted-foreground">
+            <div>
+              광고 ID{" "}
+              <code className="font-mono" title={ad.id}>
+                {shortId(ad.id)}
+              </code>
+            </div>
+            <div>
+              영상 파일명{" "}
+              <code className="font-mono" title={ad.videoFilename}>
+                {shortId(ad.videoFilename)}
+              </code>
+            </div>
+            <div>
+              현재 스케줄: {ad.startTime} ~ {ad.endTime} · 일일{" "}
+              {ad.dailyPlayCount}회
+            </div>
+            <div>
+              캠페인 기간: {ad.campaignStartDate} ~ {ad.campaignEndDate}
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
+
+      <section>
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          스케줄
+        </h2>
+        <AdScheduleForm
+          adId={ad.id}
+          initialValues={{
+            startTime: ad.startTime,
+            endTime: ad.endTime,
+            dailyPlayCount: ad.dailyPlayCount,
+            campaignStartDate: ad.campaignStartDate,
+            campaignEndDate: ad.campaignEndDate,
+          }}
+        />
+      </section>
 
       <AdDeploymentsSection adId={ad.id} />
-    </>
+    </div>
   );
 }
 
-/* --------------------------- 송출 현황 (read-only, 광고주용) ----------------- */
+/* --------------------------- 송출 현황 ----------------- */
 
 function AdDeploymentsSection({ adId }: { adId: string }) {
-  const [deployments, setDeployments] = useState<AdDeploymentItem[] | null>(null);
+  const [deployments, setDeployments] = useState<AdDeploymentItem[] | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
 
   const refetch = useCallback(() => {
@@ -157,69 +200,98 @@ function AdDeploymentsSection({ adId }: { adId: string }) {
     refetch();
   }, [refetch]);
 
-  // 큐 변경 / 광고 변경 시 자동 갱신.
   useDataChanged(["device-queue", "ad"], refetch);
 
   return (
-    <>
-      <h2 className="section-heading" style={{ marginTop: 28 }}>
+    <section>
+      <h2 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         송출 현황
       </h2>
-      <p className="muted" style={{ fontSize: 12, marginTop: 0, marginBottom: 12 }}>
-        이 광고가 깔린 디바이스 — 운영자(OPERATOR) 가 큐에 담았을 때 여기 표시됩니다.
-        디바이스 매칭은 플랫폼 운영자가 통제합니다.
+      <p className="mb-3 text-xs text-muted-foreground">
+        이 광고가 깔린 디바이스 — 운영자(OPERATOR) 가 큐에 담았을 때 여기
+        표시됩니다. 디바이스 매칭은 플랫폼 운영자가 통제합니다.
       </p>
 
       {error ? (
-        <div className="notice notice-error" role="alert">
-          송출 현황을 불러오지 못했습니다: {error}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>
+            송출 현황을 불러오지 못했습니다: {error}
+          </AlertDescription>
+        </Alert>
       ) : deployments === null ? (
-        <div className="muted">송출 현황 불러오는 중…</div>
+        <div className="text-sm text-muted-foreground">
+          송출 현황 불러오는 중…
+        </div>
       ) : deployments.length === 0 ? (
-        <div className="empty-state">
+        <div className="rounded-lg border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
           이 광고는 아직 어떤 디바이스에도 깔려 있지 않습니다. 운영자에게
           매칭을 요청하세요.
         </div>
       ) : (
-        <table className="data-table" aria-label="송출 디바이스">
-          <colgroup>
-            <col style={{ width: 92 }} />
-            <col />
-            <col />
-            <col style={{ width: 200 }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th>상태</th>
-              <th>디바이스</th>
-              <th>음식점</th>
-              <th>큐 등록일</th>
-            </tr>
-          </thead>
-          <tbody>
+        <>
+          <div className="hidden md:block w-full overflow-x-auto rounded-lg border border-border bg-card">
+            <Table aria-label="송출 디바이스">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[92px]">상태</TableHead>
+                  <TableHead className="min-w-[180px]">디바이스</TableHead>
+                  <TableHead className="min-w-[160px]">음식점</TableHead>
+                  <TableHead className="w-[180px]">큐 등록일</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {deployments.map((d) => (
+                  <TableRow key={d.deviceId}>
+                    <TableCell>
+                      {d.currentlyPlaying ? (
+                        <Badge variant="ok">🔴 LIVE</Badge>
+                      ) : (
+                        <Badge variant="muted">대기</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <strong>{d.deviceName}</strong>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {d.restaurantName ?? "(미할당)"}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                      {new Date(d.addedAt).toLocaleString("ko-KR")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <ul
+            className="md:hidden flex flex-col gap-2.5"
+            aria-label="송출 디바이스 (모바일 보기)"
+          >
             {deployments.map((d) => (
-              <tr key={d.deviceId}>
-                <td>
-                  {d.currentlyPlaying ? (
-                    <span className="pill pill-ok">🔴 LIVE</span>
-                  ) : (
-                    <span className="pill pill-muted">대기</span>
-                  )}
-                </td>
-                <td>
+              <li
+                key={d.deviceId}
+                className="rounded-lg border border-border bg-card p-3"
+              >
+                <div className="flex items-baseline justify-between gap-2">
                   <strong>{d.deviceName}</strong>
-                </td>
-                <td className="muted">{d.restaurantName ?? "(미할당)"}</td>
-                <td className="muted" style={{ fontSize: 12, whiteSpace: "nowrap" }}>
-                  {new Date(d.addedAt).toLocaleString("ko-KR")}
-                </td>
-              </tr>
+                  {d.currentlyPlaying ? (
+                    <Badge variant="ok">🔴 LIVE</Badge>
+                  ) : (
+                    <Badge variant="muted">대기</Badge>
+                  )}
+                </div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  {d.restaurantName ?? "(미할당)"}
+                </div>
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                  큐 등록 {new Date(d.addedAt).toLocaleString("ko-KR")}
+                </div>
+              </li>
             ))}
-          </tbody>
-        </table>
+          </ul>
+        </>
       )}
-    </>
+    </section>
   );
 }
 

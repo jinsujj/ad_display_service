@@ -3,51 +3,31 @@
 /**
  * 디바이스 재할당 모달 (AC 9, Sub-AC 2).
  *
- * 목표:
- *   "Add/extend admin device list page in Next.js (web/) with remap UI controls
- *    (edit action, form/modal) on the device list view."
+ * 데스크탑은 중앙 정렬 Dialog, 모바일(<md)은 하단 Sheet 로 자동 전환되는
+ * ResponsiveDialog 위에 폼을 올린다 — 운영자가 바 뒤에서 손가락으로
+ * 연속 재할당할 때 가장 자연스러운 표면.
  *
- * 이 컴포넌트가 하는 일:
- *   - 운영자가 행별 "Edit" / "Reassign" 컨트롤을 클릭하면 디바이스 목록
- *     페이지 위에 중앙 정렬된 모달 다이얼로그를 렌더링한다.
- *   - 재할당 폼(대상 음식점 <select> + Save / Cancel)을 호스팅해 편집
- *     액션이 인라인 테이블 에디터 대신 집중되고 닫을 수 있는 표면에
- *     머무른다 — 운영자가 바 뒤에서 터치 디바이스로 여러 디바이스를 연속
- *     재할당할 때 훨씬 친화적.
- *   - 완전히 prop 주도: 부모(디바이스 목록 페이지의 테이블 클라이언트)가
- *     디바이스+음식점 데이터와 실제 mutation 핸들러를 소유한다. 이 모달은
- *     기존 인라인 에디터가 사용하는 동일한 폼 필드 위의 순수한 표현 셸
- *     이므로, 데모 흐름(운영자가 음식점 선택 → 백엔드 PUT → SSE
- *     MAPPING_CHANGED → 플레이어가 플레이리스트 교체)은 동일하게 유지된다.
- *
- * 접근성:
- *   - role="dialog" + aria-modal="true" + aria-labelledby가 헤딩과 묶임.
- *   - 백드롭 클릭, Escape, Cancel로 닫힘; 선택된 음식점이 현재 매핑된
- *     것과 같으면 Save 비활성(no-op 가드).
- *   - 첫 번째 포커스 가능 요소(<select>)가 열림 시 포커스되어 키보드
- *     사용자가 탭 댄스 없이 즉시 대상을 고를 수 있다.
- *
- * 왜 모달인가(기존 인라인 행 에디터 대비):
- *   인라인 에디터는 파워 유저 + 접근성 폴백을 위해 [DevicesTableClient]에
- *   남지만, 모달은 더 명확한 "이것이 편집 액션이다" 컨트롤을 준다 — Edit
- *   클릭 시 폼이 테이블에서 나와 중앙 정렬되어 AC의 "edit action,
- *   form/modal" 명시 요구사항과 일치한다. 두 경로 모두 동일한
- *   `onSave(restaurantId)` 핸들러로 수렴하므로 underlying 재할당 흐름은
- *   변하지 않는다.
+ * 컴포넌트는 prop 주도이며 mutation 은 부모(DevicesTableClient) 가 소유
+ * 한다 — 인라인 에디터와 같은 PATCH 경로를 공유.
  */
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 
 import type { DeviceListItem } from "@/lib/devices";
 import { shortId } from "@/lib/format";
 import type { RestaurantListItem } from "@/lib/restaurants";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 
 export interface DeviceRemapModalProps {
   /** 재할당 중인 디바이스. null이면 모달은 아무것도 렌더링하지 않음. */
   device: DeviceListItem | null;
   /** 대상 드롭다운용 음식점 옵션. */
   restaurants: RestaurantListItem[];
-  /** 부모가 백엔드 PUT을 기다리는 동안 true — 폼 비활성. */
+  /** 부모가 백엔드 PATCH 를 기다리는 동안 true — 폼 비활성. */
   submitting?: boolean;
   /** 부모의 마지막 제출 시도에서의 인라인 오류(있으면). */
   errorMessage?: string | null;
@@ -57,16 +37,10 @@ export interface DeviceRemapModalProps {
    * 과 성공 시 목록 새로고침을 소유한다.
    */
   onSave: (deviceId: string, restaurantId: string) => void;
-  /** 모달이 닫혀야 할 때 호출(Cancel, 백드롭, Escape, X). */
+  /** 모달이 닫혀야 할 때 호출(취소, 백드롭, Escape, 닫기 버튼). */
   onClose: () => void;
 }
 
-/**
- * 디바이스를 음식점에 재할당하기 위한 모달 다이얼로그.
- *
- * 컴포넌트는 `device != null`일 때 조건부 렌더링; null이면 호출자가 단일
- * 상태(`editingDevice`)로 열기/닫기를 구동할 수 있도록 null을 반환한다.
- */
 export function DeviceRemapModal(props: DeviceRemapModalProps) {
   const {
     device,
@@ -77,12 +51,8 @@ export function DeviceRemapModal(props: DeviceRemapModalProps) {
     onClose,
   } = props;
 
-  const titleId = useId();
   const selectId = useId();
-  const selectRef = useRef<HTMLSelectElement | null>(null);
 
-  // 로컬 선택 상태 — 디바이스의 현재 음식점으로 초기화되어 드롭다운이
-  // 합리적 기본값에서 열린다. 다른 디바이스가 열릴 때마다 리셋.
   const currentId = device?.currentRestaurant?.restaurantId ?? "";
   const [selectedId, setSelectedId] = useState<string>(currentId);
 
@@ -90,30 +60,6 @@ export function DeviceRemapModal(props: DeviceRemapModalProps) {
     if (!device) return;
     setSelectedId(device.currentRestaurant?.restaurantId ?? "");
   }, [device]);
-
-  // 모달이 열릴 때 select에 포커스하여 키보드 사용자가 추가 Tab 없이 즉시
-  // 음식점을 고를 수 있게 한다.
-  useEffect(() => {
-    if (!device) return;
-    // 요소가 마운트+가시화되도록 다음 프레임으로 미룬다.
-    const id = window.requestAnimationFrame(() => {
-      selectRef.current?.focus();
-    });
-    return () => window.cancelAnimationFrame(id);
-  }, [device]);
-
-  // Escape로 닫기 — 매 페이지 방문마다 핸들러를 누수시키지 않도록 모달이
-  // 열려있는 동안에만 리스너를 부착.
-  useEffect(() => {
-    if (!device) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !submitting) {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [device, onClose, submitting]);
 
   const isDirty = useMemo(() => {
     if (!selectedId) return false;
@@ -128,74 +74,80 @@ export function DeviceRemapModal(props: DeviceRemapModalProps) {
   const current = device.currentRestaurant;
 
   return (
-    <div
-      className="modal-backdrop"
-      role="presentation"
-      onMouseDown={(e) => {
-        // 운영자가 다이얼로그 내용에서 드래그해 나가는 게 아니라, 클릭이
-        // 백드롭 자체에서 시작될 때만 닫는다.
-        if (e.target === e.currentTarget && !submitting) {
-          onClose();
-        }
+    <ResponsiveDialog
+      open={Boolean(device)}
+      onOpenChange={(open) => {
+        if (!open && !submitting) onClose();
       }}
-    >
-      <div
-        className="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-      >
-        <header className="modal__header">
-          <h2 id={titleId} className="modal__title">
-            디바이스 재할당
-          </h2>
-          <button
+      title="디바이스 재할당"
+      description="저장 즉시 디바이스가 재할당되며 SSE 로 수 초 내에 플레이어에 반영됩니다."
+      footer={
+        <>
+          <Button
             type="button"
-            className="modal__close"
+            variant="outline"
             onClick={onClose}
             disabled={submitting}
-            aria-label="재할당 다이얼로그 닫기"
+            className="w-full sm:w-auto"
           >
-            ×
-          </button>
-        </header>
-
-        <form
-          className="modal__body"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!saveDisabled) onSave(device.deviceId, selectedId);
-          }}
-        >
-          <div className="modal__row">
-            <span className="muted">디바이스:</span>{" "}
-            <strong>{device.deviceName || "(이름 없음)"}</strong>
-            <div className="muted" style={{ fontSize: 12 }} title={device.deviceId}>
+            취소
+          </Button>
+          <Button
+            type="submit"
+            form={`remap-form-${device.deviceId}`}
+            disabled={saveDisabled}
+            className="w-full sm:w-auto"
+          >
+            {submitting ? "저장 중…" : "저장"}
+          </Button>
+        </>
+      }
+    >
+      <form
+        id={`remap-form-${device.deviceId}`}
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!saveDisabled) onSave(device.deviceId, selectedId);
+        }}
+      >
+        <dl className="space-y-2 text-sm">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <dt className="text-muted-foreground">디바이스</dt>
+            <dd className="font-semibold">
+              {device.deviceName || "(이름 없음)"}
+            </dd>
+            <dd
+              className="font-mono text-xs text-muted-foreground"
+              title={device.deviceId}
+            >
               {shortId(device.deviceId)}
-            </div>
+            </dd>
           </div>
-
-          <div className="modal__row">
-            <span className="muted">현재 할당:</span>{" "}
-            {current ? (
-              <strong title={current.restaurantId}>
-                {current.restaurantName || shortId(current.restaurantId)}
-              </strong>
-            ) : (
-              <span className="pill pill-warn">미할당</span>
-            )}
+          <div className="flex flex-wrap items-baseline gap-2">
+            <dt className="text-muted-foreground">현재 할당</dt>
+            <dd>
+              {current ? (
+                <strong title={current.restaurantId}>
+                  {current.restaurantName || shortId(current.restaurantId)}
+                </strong>
+              ) : (
+                <Badge variant="warn">미할당</Badge>
+              )}
+            </dd>
           </div>
+        </dl>
 
-          <label className="assignment-selector__label" htmlFor={selectId}>
-            대상 음식점
-          </label>
+        <div className="space-y-1.5">
+          <Label htmlFor={selectId}>대상 음식점</Label>
+          {/* shadcn Select 는 controlled value 가 빈 문자열일 때 placeholder 가
+              잘 표현돼 native <select> 를 래핑하지 않고 직접 사용. */}
           <select
             id={selectId}
-            ref={selectRef}
-            className="assignment-selector__select"
             value={selectedId}
             disabled={submitting || restaurants.length === 0}
             onChange={(e) => setSelectedId(e.target.value)}
+            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value="">
               {restaurants.length === 0
@@ -208,37 +160,17 @@ export function DeviceRemapModal(props: DeviceRemapModalProps) {
               </option>
             ))}
           </select>
+        </div>
 
-          <p className="muted" style={{ fontSize: 12, margin: "4px 0 0" }}>
-            저장하는 즉시 디바이스가 재할당됩니다. SSE를 통해 수 초 내에 플레이어에 반영됩니다.
-          </p>
-
-          {errorMessage && (
-            <div className="notice notice-error" role="alert">
-              재할당 실패: {errorMessage}
-            </div>
-          )}
-
-          <div className="modal__footer">
-            <button
-              type="button"
-              className="btn"
-              onClick={onClose}
-              disabled={submitting}
-            >
-              취소
-            </button>
-            <button type="submit" className="btn" disabled={saveDisabled}>
-              {submitting ? "저장 중…" : "저장"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        {errorMessage && (
+          <Alert variant="destructive">
+            <AlertDescription>재할당 실패: {errorMessage}</AlertDescription>
+          </Alert>
+        )}
+      </form>
+    </ResponsiveDialog>
   );
 }
-
-/* ------------------------------------------------------------------ helpers */
 
 function labelFor(r: RestaurantListItem): string {
   if (r.address && r.restaurantName) {

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 
@@ -42,9 +42,18 @@ export const metadata: Metadata = {
   },
 };
 
+// Next 14 App Router viewport — 어드민은 줌 허용. 광고판(/player/*)은 자체
+// route segment 에서 userScalable: false 로 별도 지정하므로 여기 영향 없음.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#0b0d10",
+};
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="ko">
+    <html lang="ko" className="dark">
       <head>
         {/* Pretendard 가변 폰트 — 한국어 친화 시스템 폰트가 없는 환경에 폴백 */}
         <link

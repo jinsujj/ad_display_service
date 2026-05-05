@@ -18,6 +18,16 @@ import { useCallback, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { describeAuthError, login, signup } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type State =
   | { kind: "idle" }
@@ -83,90 +93,104 @@ export function SignupForm() {
   );
 
   const submitting = state.kind === "submitting";
-  const fieldErrors =
-    state.kind === "error" ? state.fieldErrors ?? {} : {};
+  const fieldErrors = state.kind === "error" ? state.fieldErrors ?? {} : {};
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit} noValidate>
-      <fieldset className="auth-form__fieldset" disabled={submitting}>
-        <legend className="auth-form__legend">광고주 회원가입</legend>
-
-        <label htmlFor="signup-email" className="auth-form__label">
-          이메일
-        </label>
-        <input
-          id="signup-email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="auth-form__input"
-          aria-invalid={Boolean(fieldErrors.email) || undefined}
-        />
-        {fieldErrors.email && (
-          <div className="schedule-form__field-error" role="alert">
-            {fieldErrors.email}
+    <Card className="mx-auto w-full max-w-narrow">
+      <CardHeader>
+        <CardTitle>광고주 회원가입</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+          <div className="space-y-1.5">
+            <Label htmlFor="signup-email">이메일</Label>
+            <Input
+              id="signup-email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              disabled={submitting}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              aria-invalid={Boolean(fieldErrors.email) || undefined}
+            />
+            {fieldErrors.email && (
+              <p className="text-xs text-destructive" role="alert">
+                {fieldErrors.email}
+              </p>
+            )}
           </div>
-        )}
 
-        <label htmlFor="signup-password" className="auth-form__label">
-          비밀번호
-          <span className="muted"> · 8~100자</span>
-        </label>
-        <input
-          id="signup-password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          minLength={8}
-          maxLength={100}
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="auth-form__input"
-          aria-invalid={Boolean(fieldErrors.password) || undefined}
-        />
-        {fieldErrors.password && (
-          <div className="schedule-form__field-error" role="alert">
-            {fieldErrors.password}
+          <div className="space-y-1.5">
+            <Label
+              htmlFor="signup-password"
+              className="flex items-baseline gap-2"
+            >
+              비밀번호
+              <span className="text-xs font-normal text-muted-foreground">
+                · 8~100자
+              </span>
+            </Label>
+            <Input
+              id="signup-password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={100}
+              required
+              disabled={submitting}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              aria-invalid={Boolean(fieldErrors.password) || undefined}
+            />
+            {fieldErrors.password && (
+              <p className="text-xs text-destructive" role="alert">
+                {fieldErrors.password}
+              </p>
+            )}
           </div>
-        )}
 
-        <label htmlFor="signup-password-confirm" className="auth-form__label">
-          비밀번호 확인
-        </label>
-        <input
-          id="signup-password-confirm"
-          name="passwordConfirm"
-          type="password"
-          autoComplete="new-password"
-          required
-          value={passwordConfirm}
-          onChange={(e) => setPasswordConfirm(e.target.value)}
-          className="auth-form__input"
-          aria-invalid={Boolean(fieldErrors.passwordConfirm) || undefined}
-        />
-        {fieldErrors.passwordConfirm && (
-          <div className="schedule-form__field-error" role="alert">
-            {fieldErrors.passwordConfirm}
+          <div className="space-y-1.5">
+            <Label htmlFor="signup-password-confirm">비밀번호 확인</Label>
+            <Input
+              id="signup-password-confirm"
+              name="passwordConfirm"
+              type="password"
+              autoComplete="new-password"
+              required
+              disabled={submitting}
+              value={passwordConfirm}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+              aria-invalid={Boolean(fieldErrors.passwordConfirm) || undefined}
+            />
+            {fieldErrors.passwordConfirm && (
+              <p className="text-xs text-destructive" role="alert">
+                {fieldErrors.passwordConfirm}
+              </p>
+            )}
           </div>
-        )}
 
-        {state.kind === "error" && (
-          <div className="notice notice-error" role="alert">
-            {state.message}
+          {state.kind === "error" && (
+            <Alert variant="destructive">
+              <AlertDescription>{state.message}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="submit"
+              className="w-full sm:w-auto"
+              disabled={submitting}
+              aria-busy={submitting}
+            >
+              {submitting ? "가입 중…" : "가입하고 로그인"}
+            </Button>
           </div>
-        )}
-
-        <div className="toolbar auth-form__actions">
-          <button type="submit" className="btn" aria-busy={submitting}>
-            {submitting ? "가입 중…" : "가입하고 로그인"}
-          </button>
-        </div>
-      </fieldset>
-    </form>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 

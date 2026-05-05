@@ -16,6 +16,7 @@ import { listDevices, type DeviceListItem } from "@/lib/devices";
 import { listRestaurants, type RestaurantListItem } from "@/lib/restaurants";
 import { DeviceMonitorWall } from "./DeviceMonitorWall";
 import { DevicesTableClient } from "./DevicesTableClient";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 /** 모니터링 자동 새로고침 주기(밀리초). 1.5초면 디바이스가 다음 광고로 넘어가
  *  자마자 어드민 카드도 따라 잡힌다. /api/devices 는 read-only batch 쿼리라
@@ -93,25 +94,33 @@ export function MyDevicesList() {
   useDataChanged(["device", "device-queue", "ad"], onManualRefresh);
 
   if (state.kind === "loading") {
-    return <div className="muted">디바이스 목록을 불러오는 중…</div>;
+    return (
+      <div className="text-sm text-muted-foreground">
+        디바이스 목록을 불러오는 중…
+      </div>
+    );
   }
   if (state.kind === "error") {
     return (
-      <div className="notice notice-error" role="alert">
-        백엔드에서 디바이스 목록을 불러오지 못했습니다: {state.message}
-      </div>
+      <Alert variant="destructive">
+        <AlertDescription>
+          백엔드에서 디바이스 목록을 불러오지 못했습니다: {state.message}
+        </AlertDescription>
+      </Alert>
     );
   }
   return (
     <>
       {state.restaurantsError && (
-        <div className="notice notice-error" role="alert">
-          디바이스는 불러왔지만 음식점 목록이 사용 불가능합니다:{" "}
-          {state.restaurantsError}. 재할당 드롭다운이 비활성화됩니다.
-        </div>
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>
+            디바이스는 불러왔지만 음식점 목록이 사용 불가능합니다:{" "}
+            {state.restaurantsError}. 재할당 드롭다운이 비활성화됩니다.
+          </AlertDescription>
+        </Alert>
       )}
       {state.devices.length === 0 ? (
-        <div className="empty-state">
+        <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
           아직 등록된 디바이스가 없습니다. 광고판 디바이스를 이 백엔드를 향해
           부팅한 뒤 페이지를 새로고침하세요.
         </div>

@@ -15,6 +15,16 @@ import { useCallback, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { describeAuthError, login } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type State =
   | { kind: "idle" }
@@ -36,13 +46,15 @@ export function LoginForm() {
       if (state.kind === "submitting") return;
       const trimmedEmail = email.trim();
       if (!trimmedEmail || !password) {
-        setState({ kind: "error", message: "이메일과 비밀번호를 모두 입력해 주세요." });
+        setState({
+          kind: "error",
+          message: "이메일과 비밀번호를 모두 입력해 주세요.",
+        });
         return;
       }
       setState({ kind: "submitting" });
       try {
         await login({ email: trimmedEmail, password });
-        // 인증 후 보호 페이지로 이동.
         router.replace(next);
       } catch (err) {
         const desc = describeAuthError(err);
@@ -61,51 +73,58 @@ export function LoginForm() {
   const submitting = state.kind === "submitting";
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit} noValidate>
-      <fieldset className="auth-form__fieldset" disabled={submitting}>
-        <legend className="auth-form__legend">광고주 로그인</legend>
-
-        <label htmlFor="login-email" className="auth-form__label">
-          이메일
-        </label>
-        <input
-          id="login-email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="auth-form__input"
-        />
-
-        <label htmlFor="login-password" className="auth-form__label">
-          비밀번호
-        </label>
-        <input
-          id="login-password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="auth-form__input"
-        />
-
-        {state.kind === "error" && (
-          <div className="notice notice-error" role="alert">
-            {state.message}
+    <Card className="mx-auto w-full max-w-narrow">
+      <CardHeader>
+        <CardTitle>광고주 로그인</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+          <div className="space-y-1.5">
+            <Label htmlFor="login-email">이메일</Label>
+            <Input
+              id="login-email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              disabled={submitting}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
-        )}
+          <div className="space-y-1.5">
+            <Label htmlFor="login-password">비밀번호</Label>
+            <Input
+              id="login-password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              disabled={submitting}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
 
-        <div className="toolbar auth-form__actions">
-          <button type="submit" className="btn" aria-busy={submitting}>
-            {submitting ? "로그인 중…" : "로그인"}
-          </button>
-        </div>
-      </fieldset>
-    </form>
+          {state.kind === "error" && (
+            <Alert variant="destructive">
+              <AlertDescription>{state.message}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="submit"
+              className="w-full sm:w-auto"
+              disabled={submitting}
+              aria-busy={submitting}
+            >
+              {submitting ? "로그인 중…" : "로그인"}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 

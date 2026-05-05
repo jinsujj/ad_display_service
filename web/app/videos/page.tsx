@@ -23,36 +23,40 @@ export const metadata = {
 export default function VideosPage() {
   return (
     <AuthGuard>
-      <section>
-        <div className="page-header">
-          <div>
-            <h1>영상</h1>
-            <div className="subtitle">
-              MP4 광고 영상을 업로드하고 업로드된 모든 자산을 확인합니다.
-              아래 목록은 실시간 백엔드 상태이며 최신 업로드가 위에 표시됩니다.
-            </div>
-          </div>
-        </div>
+      <section className="space-y-6">
+        <header>
+          <h1 className="text-2xl font-semibold tracking-tight">영상</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            MP4 광고 영상을 업로드하고 업로드된 모든 자산을 확인합니다. 아래
+            목록은 실시간 백엔드 상태이며 최신 업로드가 위에 표시됩니다.
+          </p>
+        </header>
 
-        <h2 className="section-heading">업로드된 영상</h2>
-        <MyVideosList />
+        <section>
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            업로드된 영상
+          </h2>
+          <MyVideosList />
+        </section>
 
-        <h2 className="section-heading" style={{ marginTop: 32 }}>
-          영상 업로드
-        </h2>
-        <p className="muted" style={{ marginTop: 0, marginBottom: 12 }}>
-          MP4 전용 · 최대 500 MiB · 업로드 전 클라이언트에서 사전 검증.
-          성공 시 알림에 스트리밍 URL이 표시되며, 새 행은 다음 새로고침 시
-          위 목록에 반영됩니다.
-        </p>
-
-        <VideoUploadForm />
-
-        <p className="muted" style={{ marginTop: 24 }}>
-          업로드는 <code>POST /api/videos</code>, 목록은 <code>GET /api/videos</code>
-          (둘 다 stream-backend.owl-dev.me)로 호출됩니다. 파일은 호스트의{" "}
-          <code>/var/lib/adsignage/videos</code> 에 저장됩니다.
-        </p>
+        <section>
+          <h2 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            영상 업로드
+          </h2>
+          <p className="mb-3 text-sm text-muted-foreground">
+            MP4 전용 · 최대 500 MiB · 업로드 전 클라이언트에서 사전 검증.
+            성공 시 알림에 스트리밍 URL이 표시되며, 새 행은 다음 새로고침
+            시 위 목록에 반영됩니다.
+          </p>
+          <VideoUploadForm />
+          <p className="mt-6 text-xs text-muted-foreground">
+            업로드는 <code className="font-mono">POST /api/videos</code>,
+            목록은 <code className="font-mono">GET /api/videos</code> (둘 다
+            stream-backend.owl-dev.me)로 호출됩니다. 파일은 호스트의{" "}
+            <code className="font-mono">/var/lib/adsignage/videos</code> 에
+            저장됩니다.
+          </p>
+        </section>
       </section>
     </AuthGuard>
   );

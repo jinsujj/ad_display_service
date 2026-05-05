@@ -23,15 +23,13 @@ export default function DevicesPage() {
   return (
     <AuthGuard requireRole="OPERATOR">
       <section>
-        <div className="page-header">
-          <div>
-            <h1>디바이스</h1>
-            <div className="subtitle">
-              등록된 모든 광고판 디바이스와 현재 매핑된 음식점입니다.
-              행의 재할당 버튼을 누르면 SSE로 즉시 디바이스에 변경이 전달됩니다.
-            </div>
-          </div>
-        </div>
+        <header className="mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight">디바이스</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            등록된 모든 광고판 디바이스와 현재 매핑된 음식점입니다. 행의
+            재할당 버튼을 누르면 SSE로 즉시 디바이스에 변경이 전달됩니다.
+          </p>
+        </header>
 
         <MyDevicesList />
       </section>

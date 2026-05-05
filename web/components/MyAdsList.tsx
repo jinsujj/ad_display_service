@@ -1,14 +1,11 @@
 "use client";
 
 /**
- * 내 광고 목록 — GET /api/ads 호출이 인증을 요구하므로 클라이언트 컴포넌트
- * 에서 토큰이 자동 첨부되는 apiFetch 를 통해 호출한다.
+ * 내 광고 목록.
  *
- * 행마다:
- *   · 상태 pill (예정/송출 중/종료)
- *   · 제목 + 영상 파일명
- *   · 광고 ID, 일일 시간, 일일 횟수, 캠페인 기간
- *   · 편집 / ✕ 제거 액션
+ * 데스크탑(>=md)은 7컬럼 테이블, 모바일(<md)은 카드 리스트로 자동 전환.
+ * 모바일 카드는 광고 ID 컬럼을 드롭하고 상태 배지 + 제목/영상 + 시간/횟수
+ * + 캠페인 기간 + 액션을 세로로 배치.
  *
  * 제거는 즉시 로컬 미러에서 빠지고 백엔드가 PLAYLIST_UPDATE 를 발행하므로
  * 송출 중이던 디바이스도 SSE 로 새 플레이리스트를 받는다.
@@ -27,6 +24,17 @@ import {
 } from "@/lib/ads";
 import { useDataChanged } from "@/lib/dataEvents";
 import { shortId, SHORT_ID_TITLE_HINT } from "@/lib/format";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type State =
   | { kind: "loading" }
@@ -90,107 +98,185 @@ export function MyAdsList() {
   }, []);
 
   if (state.kind === "loading") {
-    return <div className="muted">광고 목록을 불러오는 중…</div>;
+    return (
+      <div className="text-sm text-muted-foreground">
+        광고 목록을 불러오는 중…
+      </div>
+    );
   }
   if (state.kind === "error") {
     return (
-      <div className="notice notice-error" role="alert">
-        광고 목록을 불러오지 못했습니다: {state.message}
-      </div>
+      <Alert variant="destructive">
+        <AlertDescription>
+          광고 목록을 불러오지 못했습니다: {state.message}
+        </AlertDescription>
+      </Alert>
     );
   }
   if (state.ads.length === 0) {
     return (
-      <div className="empty-state">
-        아직 만든 광고가 없습니다. 위의 &quot;새 광고 만들기&quot; 버튼으로 시작하세요.
+      <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
+        아직 만든 광고가 없습니다. 위의 &quot;새 광고 만들기&quot; 버튼으로
+        시작하세요.
       </div>
     );
   }
+
   return (
-    <table className="data-table" aria-label="내 광고 목록">
-      <colgroup>
-        <col style={{ width: 92 }} />
-        <col />
-        <col style={{ width: 200 }} />
-        <col style={{ width: 130 }} />
-        <col style={{ width: 92 }} />
-        <col style={{ width: 150 }} />
-        <col style={{ width: 168 }} />
-      </colgroup>
-      <thead>
-        <tr>
-          <th>상태</th>
-          <th>제목</th>
-          <th>광고 ID</th>
-          <th>일일 시간</th>
-          <th>일일 횟수</th>
-          <th>캠페인 기간</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
+    <>
+      {/* 데스크탑 — 7컬럼 테이블 */}
+      <div className="hidden md:block w-full overflow-x-auto rounded-lg border border-border bg-card">
+        <Table aria-label="내 광고 목록">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[92px]">상태</TableHead>
+              <TableHead className="min-w-[200px]">제목</TableHead>
+              <TableHead className="w-[180px]">광고 ID</TableHead>
+              <TableHead className="w-[150px]">일일 시간</TableHead>
+              <TableHead className="w-[92px]">일일 횟수</TableHead>
+              <TableHead className="w-[160px]">캠페인 기간</TableHead>
+              <TableHead className="w-[180px] text-right">액션</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {state.ads.map((ad) => {
+              const removing = removingId === ad.id;
+              return (
+                <TableRow key={ad.id}>
+                  <TableCell>
+                    <Badge variant={statusBadgeVariant(ad.status)}>
+                      {AD_STATUS_LABEL[ad.status]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-semibold">{ad.title}</div>
+                    <div
+                      className="mt-1 truncate font-mono text-xs text-muted-foreground"
+                      title={ad.videoFilename}
+                    >
+                      {ad.videoFilename}
+                    </div>
+                  </TableCell>
+                  <TableCell
+                    className="font-mono text-xs"
+                    title={`${ad.id} — ${SHORT_ID_TITLE_HINT}`}
+                  >
+                    <code>{shortId(ad.id)}</code>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {ad.startTime} ~ {ad.endTime}
+                  </TableCell>
+                  <TableCell>{ad.dailyPlayCount}회</TableCell>
+                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                    {ad.campaignStartDate}
+                    <br />~ {ad.campaignEndDate}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        aria-label={`Edit ${ad.title}`}
+                      >
+                        <Link href={`/ads/${ad.id}`}>편집</Link>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(ad)}
+                        disabled={removing}
+                        aria-label={`Delete ${ad.title}`}
+                        title="이 광고 삭제"
+                        className="border-destructive/35 text-destructive hover:bg-destructive/10"
+                      >
+                        {removing ? "삭제 중…" : "✕ 제거"}
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* 모바일 — 카드 리스트. 광고 ID 컬럼은 드롭. */}
+      <ul
+        className="md:hidden flex flex-col gap-2.5"
+        aria-label="내 광고 (모바일 보기)"
+      >
         {state.ads.map((ad) => {
           const removing = removingId === ad.id;
           return (
-            <tr key={ad.id}>
-              <td>
-                <span className={statusPillClass(ad.status)}>
+            <li
+              key={ad.id}
+              className="rounded-lg border border-border bg-card p-3"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <Badge variant={statusBadgeVariant(ad.status)}>
                   {AD_STATUS_LABEL[ad.status]}
-                </span>
-              </td>
-              <td>
-                <div style={{ fontWeight: 600 }}>{ad.title}</div>
-                <div
-                  className="id-truncate"
-                  title={ad.videoFilename}
-                  style={{ marginTop: 4 }}
+                </Badge>
+                <code
+                  className="font-mono text-[11px] text-muted-foreground"
+                  title={`${ad.id} — ${SHORT_ID_TITLE_HINT}`}
                 >
-                  {ad.videoFilename}
-                </div>
-              </td>
-              <td className="id" title={`${ad.id} — ${SHORT_ID_TITLE_HINT}`}>
-                <code>{shortId(ad.id)}</code>
-              </td>
-              <td style={{ whiteSpace: "nowrap" }}>
-                {ad.startTime} ~ {ad.endTime}
-              </td>
-              <td>{ad.dailyPlayCount}회</td>
-              <td className="muted" style={{ fontSize: 12, whiteSpace: "nowrap" }}>
-                {ad.campaignStartDate}
-                <br />~ {ad.campaignEndDate}
-              </td>
-              <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                <Link className="btn" href={`/ads/${ad.id}`} aria-label={`Edit ${ad.title}`}>
-                  편집
-                </Link>{" "}
-                <button
+                  {shortId(ad.id)}
+                </code>
+              </div>
+              <div className="mt-2 font-semibold">{ad.title}</div>
+              <div
+                className="mt-0.5 truncate font-mono text-xs text-muted-foreground"
+                title={ad.videoFilename}
+              >
+                {ad.videoFilename}
+              </div>
+              <div className="mt-2 text-sm">
+                일일 {ad.startTime}~{ad.endTime} · {ad.dailyPlayCount}회
+              </div>
+              <div className="text-xs text-muted-foreground">
+                캠페인 {ad.campaignStartDate} ~ {ad.campaignEndDate}
+              </div>
+              <div className="mt-3 flex gap-2">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="flex-1"
+                  aria-label={`Edit ${ad.title}`}
+                >
+                  <Link href={`/ads/${ad.id}`}>편집</Link>
+                </Button>
+                <Button
                   type="button"
-                  className="btn"
+                  variant="outline"
                   onClick={() => handleDelete(ad)}
                   disabled={removing}
                   aria-label={`Delete ${ad.title}`}
                   title="이 광고 삭제"
-                  style={{ color: "var(--err)", borderColor: "rgba(239,68,68,0.35)" }}
+                  className="border-destructive/35 text-destructive hover:bg-destructive/10"
                 >
                   {removing ? "삭제 중…" : "✕ 제거"}
-                </button>
-              </td>
-            </tr>
+                </Button>
+              </div>
+            </li>
           );
         })}
-      </tbody>
-    </table>
+      </ul>
+    </>
   );
 }
 
-function statusPillClass(status: AdStatus): string {
+function statusBadgeVariant(
+  status: AdStatus,
+): "ok" | "warn" | "muted" {
   switch (status) {
     case "ACTIVE":
-      return "pill pill-ok";
+      return "ok";
     case "EXPIRED":
-      return "pill pill-warn";
+      return "warn";
     case "SCHEDULED":
-      return "pill";
+      return "muted";
   }
 }
 

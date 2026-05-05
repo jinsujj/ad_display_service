@@ -14,6 +14,7 @@ import { ApiError } from "@/lib/api";
 import { useDataChanged } from "@/lib/dataEvents";
 import { listVideos, type VideoListItem } from "@/lib/videos";
 import { VideosListTable } from "./VideosListTable";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type State =
   | { kind: "loading" }
@@ -47,18 +48,24 @@ export function MyVideosList() {
   useDataChanged(["video", "ad"], refetch);
 
   if (state.kind === "loading") {
-    return <div className="muted">영상 목록을 불러오는 중…</div>;
+    return (
+      <div className="text-sm text-muted-foreground">
+        영상 목록을 불러오는 중…
+      </div>
+    );
   }
   if (state.kind === "error") {
     return (
-      <div className="notice notice-error" role="alert">
-        영상 목록을 불러오지 못했습니다: {state.message}
-      </div>
+      <Alert variant="destructive">
+        <AlertDescription>
+          영상 목록을 불러오지 못했습니다: {state.message}
+        </AlertDescription>
+      </Alert>
     );
   }
   if (state.videos.length === 0) {
     return (
-      <div className="empty-state">
+      <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
         아직 업로드된 영상이 없습니다. 아래 폼에서 첫 MP4를 업로드하세요.
       </div>
     );

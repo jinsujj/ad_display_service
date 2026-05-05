@@ -12,12 +12,23 @@
  *  - 다른 탭에서 로그인/로그아웃이 일어나면 native `storage` 이벤트로 갱신.
  *  - 같은 탭 안에서 [login] / [logout] 호출 시에는 커스텀
  *    `adsignage:auth-changed` 이벤트로 갱신.
+ *
+ * variant="compact" 는 모바일 Sheet 메뉴 안에서 쓰는 큼지막한 세로 배치;
+ * 기본값은 데스크탑 헤더 우측의 한 줄 인라인.
  */
 
 import { useCallback, useEffect, useState } from "react";
 import { logout, readStoredAuthUser, type StoredAuthUser } from "@/lib/auth";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function AuthHeader() {
+interface AuthHeaderProps {
+  variant?: "inline" | "compact";
+  className?: string;
+}
+
+export function AuthHeader({ variant = "inline", className }: AuthHeaderProps) {
   const [user, setUser] = useState<StoredAuthUser | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
@@ -37,46 +48,92 @@ export function AuthHeader() {
     };
   }, [refresh]);
 
+  const onLogout = () => {
+    logout();
+    window.location.href = "/";
+  };
+
   // SSR/hydration 중에는 사용자 영역을 비워 두어 hydration mismatch 회피.
   if (!hydrated) {
-    return <div className="auth-header" aria-hidden="true" />;
+    return <div className={cn("min-h-9", className)} aria-hidden="true" />;
+  }
+
+  if (variant === "compact") {
+    if (!user) {
+      return (
+        <div className={cn("flex flex-col gap-2", className)}>
+          <Button asChild variant="outline" className="justify-center">
+            <a href="/login">로그인</a>
+          </Button>
+          <Button asChild className="justify-center">
+            <a href="/signup">회원가입</a>
+          </Button>
+        </div>
+      );
+    }
+    return (
+      <div className={cn("flex flex-col gap-2", className)}>
+        <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm">
+          <span
+            className="truncate font-medium text-foreground"
+            title={user.advertiserId}
+          >
+            {user.email}
+          </span>
+          {user.role === "OPERATOR" && (
+            <Badge variant="ok" title="플랫폼 운영자 — 디바이스/큐 관리 권한">
+              OPERATOR
+            </Badge>
+          )}
+        </div>
+        <Button variant="outline" onClick={onLogout} className="justify-center">
+          로그아웃
+        </Button>
+      </div>
+    );
   }
 
   if (!user) {
     return (
-      <div className="auth-header">
-        <a href="/login" className="auth-link">로그인</a>
-        <span className="auth-sep">·</span>
-        <a href="/signup" className="auth-link">회원가입</a>
+      <div className={cn("flex items-center gap-2 text-sm", className)}>
+        <a
+          href="/login"
+          className="rounded-md px-2 py-1 text-foreground/85 hover:text-foreground hover:bg-accent/15"
+        >
+          로그인
+        </a>
+        <span className="text-muted-foreground">·</span>
+        <a
+          href="/signup"
+          className="rounded-md px-2 py-1 text-foreground/85 hover:text-foreground hover:bg-accent/15"
+        >
+          회원가입
+        </a>
       </div>
     );
   }
 
   return (
-    <div className="auth-header">
-      <span className="auth-user" title={user.advertiserId}>
+    <div className={cn("flex items-center gap-2 text-sm", className)}>
+      <span
+        className="max-w-[180px] truncate text-foreground/85"
+        title={user.advertiserId}
+      >
         {user.email}
       </span>
       {user.role === "OPERATOR" && (
-        <span
-          className="pill pill-ok"
-          style={{ marginLeft: 6, fontSize: 10 }}
-          title="플랫폼 운영자 — 디바이스/큐 관리 권한"
-        >
+        <Badge variant="ok" title="플랫폼 운영자 — 디바이스/큐 관리 권한">
           OPERATOR
-        </span>
+        </Badge>
       )}
-      <button
+      <Button
         type="button"
-        className="auth-logout"
-        onClick={() => {
-          logout();
-          // 보호 페이지에 머물러 있는 경우를 대비해 랜딩으로 보낸다.
-          window.location.href = "/";
-        }}
+        variant="outline"
+        size="sm"
+        onClick={onLogout}
       >
         로그아웃
-      </button>
+      </Button>
     </div>
   );
 }

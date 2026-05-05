@@ -22,7 +22,7 @@
  * 위에 작성된다 — 그것들은 SSE의 존재를 알 필요가 없다.
  */
 
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { PlayerClient } from "./PlayerClient";
 
 // 플레이어는 항상 라이브 디바이스 → 음식점 매핑을 반영해야 한다;
@@ -35,14 +35,16 @@ export const metadata: Metadata = {
   title: "AdSignage Player",
   description:
     "Restaurant fridge digital signage player — subscribes to SSE for live remap and playlist updates.",
-  // 플레이어는 WebView에서 풀스크린으로 실행됨(MainActivity immersive 모드
-  // 참조) — 사용자 줌을 막아 터치스크린 데모가 깨지지 않게 한다.
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
+};
+
+// 플레이어는 WebView에서 풀스크린으로 실행됨(MainActivity immersive 모드 참조)
+// — 사용자 줌을 막아 터치스크린 데모가 깨지지 않게 한다. 별도 export 로
+// 두어야 root viewport(maximumScale: 5) 를 확실히 덮어쓴다.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 interface PlayerRouteProps {

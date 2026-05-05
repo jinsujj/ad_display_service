@@ -3,46 +3,8 @@
 /**
  * 광고 스케줄 폼 (AC 3, Sub-AC 3).
  *
- * 목표:
- *   "Build Next.js admin schedule form UI with datetime pickers and play
- *    count input on ad detail/edit page."
- *
- * 이 컴포넌트가 하는 일:
- *
- *   1. `me.owldev.adsignage.domain.ad.dto.UpdateAdScheduleRequest` 형태에
- *      바인딩된 3개 컨트롤 렌더링:
- *        - `startTime`("HH:mm")용 `<input type="time">`
- *        - `endTime`("HH:mm")용 `<input type="time">`
- *        - `dailyPlayCount`(정수, 1..10000)용 `<input type="number">`
- *
- *      `<input type="time">`은 이 도메인에 적합한 "datetime picker"
- *      프리미티브다. 스케줄 필드는 *일일 벽시계 윈도우* — 서버 측의
- *      [LocalTime]이며 날짜 컴포넌트 없음. 네이티브 위젯이 추가 의존성
- *      없이 플랫폼별 정확한 피커(iOS의 스피너, Chrome 데스크톱의 드롭다운,
- *      Android WebView의 시간 휠)를 무료로 제공한다.
- *
- *   2. 제출 시:
- *        - 동기 필드 레벨 + 크로스 필드 오류 보고를 위해
- *          [validateScheduleForm] 실행(백엔드의 Bean Validation +
- *          서비스 레이어 크로스 필드 규칙과 일치);
- *        - 검증 실패: 문제 필드를 인라인으로 플래그하고 요청은 *발행하지
- *          않음*;
- *        - 검증 통과: PUT /api/ads/{id}/schedule 후 영속화된 AdResponse로
- *          성공 알림 렌더링;
- *        - API 실패: 백엔드의 `message`와 (있으면) 필드별 `fieldErrors`
- *          맵을 노출해 운영자가 devtools를 열지 않고도 권위 있는 서버 측
- *          거절 사유를 본다.
- *
- *   3. `initialValues` prop을 받아 페이지가 첫 렌더에서 광고의 현재 스케줄로
- *      폼을 미리 채울 수 있게 한다. 성공한 제출 후 폼은 응답으로 재기준선화
- *      되어 다음 편집이 이전에 렌더된 서버 값이 아닌 방금 영속화된 상태에서
- *      시작한다.
- *
- * 왜 클라이언트 컴포넌트인가:
- *   폼은 컨트롤드 입력을 위한 `useState`, 브라우저 전용 검증, PUT을 발행할
- *   `fetch`가 필요하며 — 모두 클라이언트 런타임을 요구한다. 래퍼 페이지
- *   (`app/ads/[id]/page.tsx`)는 서버 컴포넌트로 유지되어 페이지 셸이 JS
- *   없이 렌더링된다.
+ * 일일 시계 윈도우(startTime, endTime) + 일일 송출 횟수 + 캠페인 기간을
+ * PUT /api/ads/{id}/schedule 로 저장. validateScheduleForm 동기 검증 그대로.
  */
 
 import { useCallback, useMemo, useState } from "react";
@@ -57,37 +19,26 @@ import {
   updateAdSchedule,
   validateScheduleForm,
 } from "@/lib/ads";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-/* ------------------------------------------------------ props / state */
-
-/**
- * 미리 채워진 폼 값. 페이지가 광고에 대해 아는 것을 무엇이든 전달한다
- * (보통 아무것도 — 아직 GET /api/ads 엔드포인트가 없으므로). 운영자는 빈
- * 필드에서 시작하거나 음식점이 운영하는 정식 09:00–23:00 같은 합리적
- * 기본값으로 시작할 수 있다.
- */
 export interface AdScheduleFormInitialValues {
-  startTime?: string; // "HH:mm"
-  endTime?: string;   // "HH:mm"
+  startTime?: string;
+  endTime?: string;
   dailyPlayCount?: number;
-  campaignStartDate?: string; // "YYYY-MM-DD"
-  campaignEndDate?: string;   // "YYYY-MM-DD"
+  campaignStartDate?: string;
+  campaignEndDate?: string;
 }
 
-/** [AdScheduleForm]의 props. */
 export interface AdScheduleFormProps {
-  /** 스케줄을 편집 중인 광고의 UUID. 필수. */
   adId: string;
-  /** 컨트롤드 입력에 시드할 미리 채워진 값(선택). */
   initialValues?: AdScheduleFormInitialValues;
-  /**
-   * 모든 성공한 PUT 후 호출되어 부모(예: 상세 페이지)가 주변 상태를
-   * 새로고침할 수 있게 한다. 영속화된 AdResponse를 받는다.
-   */
   onSaved?: (saved: AdResponse) => void;
 }
 
-/** 제출 라이프사이클. */
 type SubmitState =
   | { kind: "idle" }
   | { kind: "submitting" }
@@ -96,19 +47,13 @@ type SubmitState =
       kind: "error";
       message: string;
       status: number | null;
-      /** 요청 필드 이름으로 키된 서버 측 필드 오류. */
       fieldErrors?: Partial<Record<keyof UpdateAdScheduleRequest, string>>;
     };
-
-/* ------------------------------------------------------ component */
 
 export function AdScheduleForm(props: AdScheduleFormProps) {
   const { adId, initialValues, onSaved } = props;
   const router = useRouter();
 
-  // 컨트롤드 입력 상태. 사용자가 타이핑 도중 잠시 빈 입력을 유지할 수
-  // 있도록 `dailyPlayCount`를 의도적으로 문자열로 둔다 — `Number("")`는
-  // `0`이며 검증기의 "required" 분기를 망가뜨린다.
   const [startTime, setStartTime] = useState<string>(
     initialValues?.startTime ?? "",
   );
@@ -125,31 +70,26 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
     initialValues?.campaignEndDate ?? "",
   );
 
-  // 필드별 검증 오류(요청 전 동기).
   const [clientErrors, setClientErrors] = useState<
     Partial<Record<keyof UpdateAdScheduleRequest, string>>
   >({});
 
   const [submitState, setSubmitState] = useState<SubmitState>({ kind: "idle" });
 
-  /**
-   * 사용자가 다시 편집을 시작하는 순간 제출 후 알림(성공 OR 오류)이
-   * 지워지도록 setter를 감싼다 — 그렇지 않으면 운영자가 새 값을 타이핑한
-   * 후에도 stale "스케줄이 저장되었습니다." 배너가 남아 현재 영속화된 상태를 잘못
-   * 표현한다. 사용자가 수정을 시도하는 즉시 인라인 메시지가 사라지도록
-   * 매칭되는 필드별 클라이언트 오류도 지운다.
-   */
   const wrapEdit = useCallback(
     <V,>(
-      setter: (v: V) => void,
-      field: keyof UpdateAdScheduleRequest,
-    ) => (value: V) => {
-      setter(value);
-      setSubmitState((prev) => (prev.kind === "idle" ? prev : { kind: "idle" }));
-      setClientErrors((prev) =>
-        prev[field] === undefined ? prev : { ...prev, [field]: undefined },
-      );
-    },
+        setter: (v: V) => void,
+        field: keyof UpdateAdScheduleRequest,
+      ) =>
+      (value: V) => {
+        setter(value);
+        setSubmitState((prev) =>
+          prev.kind === "idle" ? prev : { kind: "idle" },
+        );
+        setClientErrors((prev) =>
+          prev[field] === undefined ? prev : { ...prev, [field]: undefined },
+        );
+      },
     [],
   );
 
@@ -160,24 +100,19 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
     "dailyPlayCount",
   );
 
-  /**
-   * 컨트롤드 상태를 검증기와 네트워크 호출에 적합한 타입화된 요청 본문으로
-   * 변환. 입력이 비어있거나 형식이 잘못된 경우 `dailyPlayCount`는 `NaN`이
-   * 되며 검증기는 이를 "missing"으로 다룬다.
-   */
   const parsedBody = useMemo<Partial<UpdateAdScheduleRequest>>(
     () => ({
       startTime: startTime || undefined,
       endTime: endTime || undefined,
       dailyPlayCount:
-        dailyPlayCountStr.trim() === "" ? undefined : Number(dailyPlayCountStr),
+        dailyPlayCountStr.trim() === ""
+          ? undefined
+          : Number(dailyPlayCountStr),
     }),
     [startTime, endTime, dailyPlayCountStr],
   );
 
   const submitting = submitState.kind === "submitting";
-
-  /* -------- submit */
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -192,20 +127,10 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
       }
       setClientErrors({});
 
-      // 검증 후에는 세 필드가 모두 존재하고 형식이 올바름을 안다.
-      // 캠페인 기간: 두 값이 모두 채워졌을 때만 보냄. 둘 다 비었으면
-      // 백엔드가 기존 값을 유지한다.
       const campaignDatesValid =
         !!campaignStartDate &&
         !!campaignEndDate &&
         campaignEndDate >= campaignStartDate;
-      if (campaignStartDate && campaignEndDate && !campaignDatesValid) {
-        setClientErrors({
-          ...clientErrors,
-          // 같은 메시지를 endTime 컬럼이 아니라 폼 레벨에 띄우기 위해
-          // 임시로 'endTime' 키를 재활용 — 더 깔끔히 하려면 별도 키 추가 필요
-        } as never);
-      }
 
       const body: UpdateAdScheduleRequest = {
         startTime: parsedBody.startTime!,
@@ -220,8 +145,7 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
       try {
         const result = await updateAdSchedule(adId, body);
         setSubmitState({ kind: "success", result });
-        // 후속 편집이 "실제로 저장된 것"에서 시작하도록 서버 확인 상태로
-        // 폼을 재기준선화 — 이전 initialValues prop이 아니라.
+        // 후속 편집이 "실제 저장된 것"에서 시작하도록 폼 재기준선화.
         setStartTime(result.startTime);
         setEndTime(result.endTime);
         setDailyPlayCountStr(String(result.dailyPlayCount));
@@ -230,214 +154,208 @@ export function AdScheduleForm(props: AdScheduleFormProps) {
         setSubmitState(buildErrorState(err));
       }
     },
-    [adId, parsedBody, campaignStartDate, campaignEndDate, clientErrors, submitting, onSaved],
+    [
+      adId,
+      parsedBody,
+      campaignStartDate,
+      campaignEndDate,
+      submitting,
+      onSaved,
+    ],
   );
-
-  /* -------- 파생 UI 비트 */
 
   const startError =
     clientErrors.startTime ??
-    (submitState.kind === "error" ? submitState.fieldErrors?.startTime : undefined);
+    (submitState.kind === "error"
+      ? submitState.fieldErrors?.startTime
+      : undefined);
   const endError =
     clientErrors.endTime ??
-    (submitState.kind === "error" ? submitState.fieldErrors?.endTime : undefined);
+    (submitState.kind === "error"
+      ? submitState.fieldErrors?.endTime
+      : undefined);
   const countError =
     clientErrors.dailyPlayCount ??
     (submitState.kind === "error"
       ? submitState.fieldErrors?.dailyPlayCount
       : undefined);
 
-  /* -------- 렌더 */
-
   return (
-    <form className="schedule-form" onSubmit={handleSubmit} noValidate>
-      <fieldset className="schedule-form__fieldset" disabled={submitting}>
-        <legend className="schedule-form__legend">일일 송출 스케줄</legend>
-        <p className="muted schedule-form__hint">
-          광고가 송출될 일일 시계 윈도우와 그 안에서의 목표 송출 횟수를 정합니다.
-          스케줄은 광고의 현재 설정을 전체 교체합니다(PUT 시맨틱).
+    <Card>
+      <CardHeader>
+        <CardTitle>일일 송출 스케줄</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          광고가 송출될 일일 시계 윈도우와 그 안에서의 목표 송출 횟수를
+          정합니다. 스케줄은 광고의 현재 설정을 전체 교체합니다(PUT 시맨틱).
         </p>
-
-        <div className="schedule-form__grid">
-          {/* startTime */}
-          <div className="schedule-form__field">
-            <label htmlFor="ad-schedule-start" className="schedule-form__label">
-              시작 시간
-            </label>
-            <input
-              id="ad-schedule-start"
-              name="startTime"
-              type="time"
-              required
-              step={60}
-              value={startTime}
-              onChange={(e) => onStartTimeChange(e.target.value)}
-              className="schedule-form__input"
-              aria-invalid={Boolean(startError) || undefined}
-              aria-describedby={startError ? "ad-schedule-start-err" : undefined}
-            />
-            {startError && (
-              <div
-                id="ad-schedule-start-err"
-                className="schedule-form__field-error"
-                role="alert"
+      </CardHeader>
+      <CardContent>
+        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+          <fieldset className="space-y-4" disabled={submitting}>
+            <div className="grid gap-4 md:grid-cols-3">
+              <ScheduleField
+                id="ad-schedule-start"
+                label="시작 시간"
+                error={startError}
               >
-                {startError}
-              </div>
-            )}
-          </div>
-
-          {/* endTime */}
-          <div className="schedule-form__field">
-            <label htmlFor="ad-schedule-end" className="schedule-form__label">
-              종료 시간
-            </label>
-            <input
-              id="ad-schedule-end"
-              name="endTime"
-              type="time"
-              required
-              step={60}
-              value={endTime}
-              onChange={(e) => onEndTimeChange(e.target.value)}
-              className="schedule-form__input"
-              aria-invalid={Boolean(endError) || undefined}
-              aria-describedby={endError ? "ad-schedule-end-err" : undefined}
-            />
-            {endError && (
-              <div
-                id="ad-schedule-end-err"
-                className="schedule-form__field-error"
-                role="alert"
+                <Input
+                  id="ad-schedule-start"
+                  name="startTime"
+                  type="time"
+                  required
+                  step={60}
+                  value={startTime}
+                  onChange={(e) => onStartTimeChange(e.target.value)}
+                  aria-invalid={Boolean(startError) || undefined}
+                />
+              </ScheduleField>
+              <ScheduleField
+                id="ad-schedule-end"
+                label="종료 시간"
+                error={endError}
               >
-                {endError}
-              </div>
-            )}
-          </div>
-
-          {/* dailyPlayCount */}
-          <div className="schedule-form__field">
-            <label htmlFor="ad-schedule-count" className="schedule-form__label">
-              일일 송출 횟수
-              <span className="muted schedule-form__hint">
-                {" "}
-                · {DAILY_PLAY_COUNT_MIN}–{DAILY_PLAY_COUNT_MAX}
-              </span>
-            </label>
-            <input
-              id="ad-schedule-count"
-              name="dailyPlayCount"
-              type="number"
-              required
-              inputMode="numeric"
-              min={DAILY_PLAY_COUNT_MIN}
-              max={DAILY_PLAY_COUNT_MAX}
-              step={1}
-              value={dailyPlayCountStr}
-              onChange={(e) => onDailyPlayCountChange(e.target.value)}
-              className="schedule-form__input"
-              aria-invalid={Boolean(countError) || undefined}
-              aria-describedby={countError ? "ad-schedule-count-err" : undefined}
-            />
-            {countError && (
-              <div
-                id="ad-schedule-count-err"
-                className="schedule-form__field-error"
-                role="alert"
+                <Input
+                  id="ad-schedule-end"
+                  name="endTime"
+                  type="time"
+                  required
+                  step={60}
+                  value={endTime}
+                  onChange={(e) => onEndTimeChange(e.target.value)}
+                  aria-invalid={Boolean(endError) || undefined}
+                />
+              </ScheduleField>
+              <ScheduleField
+                id="ad-schedule-count"
+                label={
+                  <>
+                    일일 송출 횟수{" "}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      · {DAILY_PLAY_COUNT_MIN}–{DAILY_PLAY_COUNT_MAX}
+                    </span>
+                  </>
+                }
+                error={countError}
               >
-                {countError}
+                <Input
+                  id="ad-schedule-count"
+                  name="dailyPlayCount"
+                  type="number"
+                  required
+                  inputMode="numeric"
+                  min={DAILY_PLAY_COUNT_MIN}
+                  max={DAILY_PLAY_COUNT_MAX}
+                  step={1}
+                  value={dailyPlayCountStr}
+                  onChange={(e) => onDailyPlayCountChange(e.target.value)}
+                  aria-invalid={Boolean(countError) || undefined}
+                />
+              </ScheduleField>
+            </div>
+
+            <div>
+              <h3 className="mt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                캠페인 기간{" "}
+                <span className="font-normal normal-case tracking-normal">
+                  · 이 기간이 지나면 자동으로 송출이 중단됩니다
+                </span>
+              </h3>
+              <div className="mt-2 grid gap-4 md:grid-cols-2">
+                <ScheduleField id="ad-schedule-camp-start" label="시작일">
+                  <Input
+                    id="ad-schedule-camp-start"
+                    type="date"
+                    value={campaignStartDate}
+                    onChange={(e) => setCampaignStartDate(e.target.value)}
+                  />
+                </ScheduleField>
+                <ScheduleField id="ad-schedule-camp-end" label="종료일">
+                  <Input
+                    id="ad-schedule-camp-end"
+                    type="date"
+                    value={campaignEndDate}
+                    onChange={(e) => setCampaignEndDate(e.target.value)}
+                  />
+                </ScheduleField>
               </div>
+            </div>
+
+            {submitState.kind === "error" && (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  <strong>스케줄 저장에 실패했습니다.</strong>{" "}
+                  {submitState.status ? `[HTTP ${submitState.status}] ` : ""}
+                  {submitState.message}
+                  {submitState.status === 401 && (
+                    <div className="mt-1.5 text-xs opacity-90">
+                      스케줄 엔드포인트는 인증이 필요합니다. 로그인 후 다시
+                      시도해 주세요.
+                    </div>
+                  )}
+                </AlertDescription>
+              </Alert>
             )}
-          </div>
-        </div>
 
-        <h3 className="section-heading" style={{ marginTop: 16, fontSize: 14 }}>
-          캠페인 기간
-          <span className="muted" style={{ fontSize: 12 }}>
-            {" "}
-            · 이 기간이 지나면 자동으로 송출이 중단됩니다
-          </span>
-        </h3>
-        <div className="schedule-form__grid">
-          <div className="schedule-form__field">
-            <label htmlFor="ad-schedule-camp-start" className="schedule-form__label">시작일</label>
-            <input
-              id="ad-schedule-camp-start"
-              type="date"
-              value={campaignStartDate}
-              onChange={(e) => setCampaignStartDate(e.target.value)}
-              className="schedule-form__input"
-            />
-          </div>
-          <div className="schedule-form__field">
-            <label htmlFor="ad-schedule-camp-end" className="schedule-form__label">종료일</label>
-            <input
-              id="ad-schedule-camp-end"
-              type="date"
-              value={campaignEndDate}
-              onChange={(e) => setCampaignEndDate(e.target.value)}
-              className="schedule-form__input"
-            />
-          </div>
-        </div>
-
-        {/* 폼 레벨 오류 */}
-        {submitState.kind === "error" && (
-          <div className="notice notice-error" role="alert">
-            <strong>스케줄 저장에 실패했습니다.</strong>{" "}
-            {submitState.status ? `[HTTP ${submitState.status}] ` : ""}
-            {submitState.message}
-            {submitState.status === 401 && (
-              <div className="muted" style={{ marginTop: 6 }}>
-                스케줄 엔드포인트는 인증이 필요합니다. 로그인 후 다시 시도해 주세요.
-              </div>
+            {submitState.kind === "success" && (
+              <Alert variant="ok">
+                <AlertDescription>
+                  <strong>스케줄이 저장되었습니다.</strong>{" "}
+                  {submitState.result.startTime}–{submitState.result.endTime} ·{" "}
+                  {submitState.result.dailyPlayCount} 회/일 — 다음 플레이리스트
+                  새로고침에 반영됩니다.
+                </AlertDescription>
+              </Alert>
             )}
-          </div>
-        )}
 
-        {/* 성공 */}
-        {submitState.kind === "success" && (
-          <div
-            className="notice"
-            role="status"
-            style={{
-              borderColor: "rgba(74, 222, 128, 0.5)",
-              background: "rgba(74, 222, 128, 0.08)",
-              color: "var(--ok)",
-            }}
-          >
-            <strong>스케줄이 저장되었습니다.</strong> {submitState.result.startTime}–
-            {submitState.result.endTime} · {submitState.result.dailyPlayCount}{" "}
-            회/일 — 다음 플레이리스트 새로고침에 반영됩니다.
-          </div>
-        )}
-
-        <div className="toolbar schedule-form__actions">
-          <button type="submit" className="btn" disabled={submitting} aria-busy={submitting}>
-            {submitting ? "저장 중…" : "스케줄 저장"}
-          </button>
-          <button
-            type="button"
-            className="btn"
-            disabled={submitting}
-            onClick={() => router.push("/ads")}
-          >
-            취소
-          </button>
-        </div>
-      </fieldset>
-    </form>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={submitting}
+                onClick={() => router.push("/ads")}
+                className="w-full sm:w-auto"
+              >
+                취소
+              </Button>
+              <Button
+                type="submit"
+                disabled={submitting}
+                aria-busy={submitting}
+                className="w-full sm:w-auto"
+              >
+                {submitting ? "저장 중…" : "스케줄 저장"}
+              </Button>
+            </div>
+          </fieldset>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
-/* ------------------------------------------------------ helpers */
+interface ScheduleFieldProps {
+  id: string;
+  label: React.ReactNode;
+  error?: string;
+  children: React.ReactNode;
+}
 
-/**
- * `updateAdSchedule`에서 throw된 오류를 `kind: "error"`의 [SubmitState]로
- * 변환. 폼이 서버 측 거절을 문제 컨트롤(들)에 재귀속할 수 있도록(예:
- * 크로스 필드 "endTime > startTime"이 종료 시간 입력에 떨어짐) 백엔드의
- * 구조화된 `fieldErrors` 맵을 최선을 다해 추출한다.
- */
+function ScheduleField({ id, label, error, children }: ScheduleFieldProps) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="flex flex-wrap items-baseline gap-2">
+        {label}
+      </Label>
+      {children}
+      {error && (
+        <p className="text-xs text-destructive" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function buildErrorState(err: unknown): SubmitState {
   if (err instanceof ApiError) {
     const body = err.body as
@@ -449,13 +367,14 @@ function buildErrorState(err: unknown): SubmitState {
       | null;
 
     const message =
-      body?.message?.trim() ||
-      `Request failed with HTTP ${err.status}.`;
+      body?.message?.trim() || `Request failed with HTTP ${err.status}.`;
 
-    const fieldErrors: Partial<Record<keyof UpdateAdScheduleRequest, string>> = {};
+    const fieldErrors: Partial<Record<keyof UpdateAdScheduleRequest, string>> =
+      {};
     if (body?.fieldErrors && typeof body.fieldErrors === "object") {
       const fe = body.fieldErrors;
-      if (typeof fe.startTime === "string") fieldErrors.startTime = fe.startTime;
+      if (typeof fe.startTime === "string")
+        fieldErrors.startTime = fe.startTime;
       if (typeof fe.endTime === "string") fieldErrors.endTime = fe.endTime;
       if (typeof fe.dailyPlayCount === "string")
         fieldErrors.dailyPlayCount = fe.dailyPlayCount;
