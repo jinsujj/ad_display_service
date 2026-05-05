@@ -1,5 +1,7 @@
 package me.owldev.adsignage.web
 
+import me.owldev.adsignage.common.web.CommonExceptionHandler
+
 import jakarta.validation.ConstraintViolation
 import jakarta.validation.ConstraintViolationException
 import jakarta.validation.Path
@@ -34,7 +36,7 @@ import kotlin.test.assertTrue
  */
 class GlobalExceptionHandlerTest {
 
-    private val handler = GlobalExceptionHandler()
+    private val handler = CommonExceptionHandler()
 
     @Test
     fun `MaxUploadSizeExceededException maps to 413 with byte cap in message`() {
