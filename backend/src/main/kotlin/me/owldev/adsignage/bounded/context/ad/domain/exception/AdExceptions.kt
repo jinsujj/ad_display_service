@@ -1,9 +1,9 @@
-package me.owldev.adsignage.domain.ad
+package me.owldev.adsignage.bounded.context.ad.domain.exception
 
 /**
- * [AdService] 작업이 존재하지 *않거나* 존재하지만 호출 광고주가 소유하지
- * 않은 ad_id를 참조할 때 던져짐. [me.owldev.adsignage.web.GlobalExceptionHandler]에
- * 의해 HTTP 404로 매핑됨.
+ * [me.owldev.adsignage.bounded.context.ad.application.service.AdService] 작업이
+ * 존재하지 *않거나* 존재하지만 호출 광고주가 소유하지 않은 ad_id를 참조할 때
+ * 던져짐. [me.owldev.adsignage.web.GlobalExceptionHandler]에 의해 HTTP 404로 매핑됨.
  *
  * "당신 것이 아님" 케이스는 의도적으로 "찾을 수 없음" 케이스로 축약됨 —
  * 서비스는 한 광고주에게 다른 광고주의 광고 id가 존재하는지를 절대

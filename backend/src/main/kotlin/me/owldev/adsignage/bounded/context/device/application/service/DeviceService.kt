@@ -10,8 +10,8 @@ import me.owldev.adsignage.bounded.context.device.domain.dto.QueuedAdSummary
 import me.owldev.adsignage.bounded.context.device.domain.dto.RegisterDeviceResponse
 import me.owldev.adsignage.bounded.context.device.domain.model.Device
 import me.owldev.adsignage.bounded.context.restaurant.application.port.out.database.RestaurantRepositoryPort
-import me.owldev.adsignage.domain.ad.AdRepository
-import me.owldev.adsignage.domain.ad.AdStatus
+import me.owldev.adsignage.bounded.context.ad.application.port.out.database.AdRepositoryPort
+import me.owldev.adsignage.bounded.context.ad.domain.model.AdStatus
 import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
 import me.owldev.adsignage.bounded.context.playevent.application.port.out.database.PlayEventRepositoryPort
 import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEventType
@@ -39,7 +39,7 @@ class DeviceService(
     private val assignmentRepository: DeviceAssignmentRepository,
     private val restaurantRepositoryPort: RestaurantRepositoryPort,
     private val queueRepository: DeviceAdQueueRepositoryPort,
-    private val adRepository: AdRepository,
+    private val adRepositoryPort: AdRepositoryPort,
     private val playEventRepository: PlayEventRepositoryPort,
     private val sseRegistry: SseEmitterRegistry,
 ) {
@@ -204,7 +204,7 @@ class DeviceService(
         val adsById = if (allAdIds.isEmpty()) {
             emptyMap()
         } else {
-            adRepository.findAllById(allAdIds).associateBy { it.id }
+            adRepositoryPort.findAllById(allAdIds).associateBy { it.id }
         }
 
         return devices.map { d ->

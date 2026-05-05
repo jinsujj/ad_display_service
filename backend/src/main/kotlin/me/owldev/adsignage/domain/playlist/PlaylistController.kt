@@ -1,8 +1,8 @@
 package me.owldev.adsignage.domain.playlist
 
 import com.fasterxml.jackson.annotation.JsonFormat
-import me.owldev.adsignage.domain.ad.AdRepository
-import me.owldev.adsignage.domain.ad.AdStatus
+import me.owldev.adsignage.bounded.context.ad.application.port.out.database.AdRepositoryPort
+import me.owldev.adsignage.bounded.context.ad.domain.model.AdStatus
 import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
 import me.owldev.adsignage.bounded.context.queue.application.port.out.database.DeviceAdQueueRepositoryPort
 import org.slf4j.LoggerFactory
@@ -35,7 +35,7 @@ import java.time.LocalTime
  */
 @RestController
 class PlaylistController(
-    private val adRepository: AdRepository,
+    private val adRepository: AdRepositoryPort,
     private val assignmentRepository: DeviceAssignmentRepository,
     private val queueRepository: DeviceAdQueueRepositoryPort,
 ) {

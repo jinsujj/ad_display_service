@@ -6,7 +6,7 @@ import me.owldev.adsignage.bounded.context.queue.domain.dto.AddAdToQueueResponse
 import me.owldev.adsignage.bounded.context.queue.domain.dto.QueuedAdItem
 import me.owldev.adsignage.bounded.context.queue.domain.model.DeviceAdQueue
 import me.owldev.adsignage.bounded.context.queue.domain.model.DeviceAdQueueId
-import me.owldev.adsignage.domain.ad.AdRepository
+import me.owldev.adsignage.bounded.context.ad.application.port.out.database.AdRepositoryPort
 import me.owldev.adsignage.sse.PlaylistUpdatedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
@@ -32,7 +32,7 @@ import org.springframework.transaction.annotation.Transactional
 class DeviceAdQueueService(
     private val queueRepositoryPort: DeviceAdQueueRepositoryPort,
     private val deviceRepositoryPort: DeviceRepositoryPort,
-    private val adRepository: AdRepository,
+    private val adRepositoryPort: AdRepositoryPort,
     private val eventPublisher: ApplicationEventPublisher,
 ) {
     private val log = LoggerFactory.getLogger(DeviceAdQueueService::class.java)
@@ -48,7 +48,7 @@ class DeviceAdQueueService(
         if (rows.isEmpty()) return emptyList()
 
         val adIds = rows.map { it.id.adId }
-        val adsById = adRepository.findAllById(adIds).associateBy { it.id }
+        val adsById = adRepositoryPort.findAllById(adIds).associateBy { it.id }
         return rows.mapNotNull { q ->
             val ad = adsById[q.id.adId] ?: return@mapNotNull null
             QueuedAdItem(
@@ -77,7 +77,7 @@ class DeviceAdQueueService(
         val trimmedAdId = adId.trim()
 
         if (!deviceRepositoryPort.existsById(deviceId)) return null
-        val ad = adRepository.findById(trimmedAdId).orElse(null) ?: return null
+        val ad = adRepositoryPort.findById(trimmedAdId) ?: return null
 
         val pk = DeviceAdQueueId(deviceId = deviceId, adId = trimmedAdId)
         val existing = queueRepositoryPort.findById(pk)
@@ -120,7 +120,7 @@ class DeviceAdQueueService(
         log.info("queue.remove deviceId={} adId={} removed={}", deviceId, adId, removed)
         if (removed > 0) {
             // 광고 메타가 필요하지만 이미 삭제됐을 수도 있어 best-effort.
-            val advertiserId = adRepository.findById(adId).orElse(null)?.advertiserId.orEmpty()
+            val advertiserId = adRepositoryPort.findById(adId)?.advertiserId.orEmpty()
             try {
                 eventPublisher.publishEvent(
                     PlaylistUpdatedEvent(

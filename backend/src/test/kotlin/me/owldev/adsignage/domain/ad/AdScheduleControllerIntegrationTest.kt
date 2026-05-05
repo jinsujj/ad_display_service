@@ -1,5 +1,7 @@
 package me.owldev.adsignage.domain.ad
 
+import me.owldev.adsignage.bounded.context.ad.domain.model.Ad
+import me.owldev.adsignage.bounded.context.ad.adapter.out.database.AdRepository
 import com.fasterxml.jackson.databind.ObjectMapper
 import me.owldev.adsignage.auth.jwt.JwtService
 import me.owldev.adsignage.bounded.context.advertiser.domain.model.Advertiser

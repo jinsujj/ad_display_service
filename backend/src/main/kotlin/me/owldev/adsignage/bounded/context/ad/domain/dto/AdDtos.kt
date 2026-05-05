@@ -1,4 +1,4 @@
-package me.owldev.adsignage.domain.ad.dto
+package me.owldev.adsignage.bounded.context.ad.domain.dto
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import jakarta.validation.constraints.Max
@@ -6,8 +6,8 @@ import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
-import me.owldev.adsignage.domain.ad.Ad
-import me.owldev.adsignage.domain.ad.AdStatus
+import me.owldev.adsignage.bounded.context.ad.domain.model.Ad
+import me.owldev.adsignage.bounded.context.ad.domain.model.AdStatus
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -73,8 +73,8 @@ data class CreateAdRequest(
  * Note: the cross-field rule "endTime > startTime" is **not** enforced here
  * — Bean Validation has no native multi-field constraint that maps cleanly
  * to a JSON field-error response. The service layer asserts it and raises
- * [me.owldev.adsignage.domain.ad.InvalidScheduleException] which the global
- * handler renders identically to a single-field validation failure.
+ * [me.owldev.adsignage.bounded.context.ad.domain.exception.InvalidScheduleException]
+ * which the global handler renders identically to a single-field validation failure.
  */
 data class UpdateAdScheduleRequest(
     @field:NotNull(message = "startTime must not be null")
@@ -146,3 +146,17 @@ data class AdResponse(
         )
     }
 }
+
+/**
+ * 광고주가 자기 광고가 어떤 디바이스에 깔렸는지 read-only 로 보는 응답 항목.
+ * `currentlyPlaying` 은 최근 5분 내 STARTED 이벤트가 그 광고에 대해 있는지로
+ * 판단 — 디바이스가 그 순간 *그 광고* 를 화면에 띄우고 있다는 신호.
+ */
+data class AdDeploymentItem(
+    val deviceId: String,
+    val deviceName: String,
+    val restaurantName: String?,
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    val addedAt: Instant,
+    val currentlyPlaying: Boolean,
+)

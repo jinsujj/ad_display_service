@@ -3,8 +3,8 @@ package me.owldev.adsignage.web
 import jakarta.validation.ConstraintViolationException
 import me.owldev.adsignage.auth.DuplicateEmailException
 import me.owldev.adsignage.auth.InvalidCredentialsException
-import me.owldev.adsignage.domain.ad.AdNotFoundException
-import me.owldev.adsignage.domain.ad.InvalidScheduleException
+import me.owldev.adsignage.bounded.context.ad.domain.exception.AdNotFoundException
+import me.owldev.adsignage.bounded.context.ad.domain.exception.InvalidScheduleException
 import me.owldev.adsignage.domain.assignment.AssignmentNotFoundException
 import me.owldev.adsignage.domain.assignment.DeviceFieldUnsupportedException
 import me.owldev.adsignage.domain.assignment.DeviceNotFoundException
