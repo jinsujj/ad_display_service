@@ -9,10 +9,10 @@
  * (모바일) 듀얼 렌더.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
-import { ApiError } from "@/lib/api";
+import { ApiError, apiUrl } from "@/lib/api";
 import {
   AD_STATUS_LABEL,
   getAd,
@@ -25,14 +25,7 @@ import { AdScheduleForm } from "./AdScheduleForm";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 type State =
   | { kind: "loading" }
@@ -160,6 +153,10 @@ export function AdEditClient({ adId }: Props) {
 
 /* --------------------------- 송출 현황 ----------------- */
 
+/** 광고가 송출 중인지 폴링 주기. DeviceMonitorWall 1.5s 와 비슷한 체감
+ *  속도를 위해 2초 — 광고 1편 당 STARTED 가 ~30s 마다 발사되므로 충분히 빠름. */
+const AD_DEPLOYMENT_POLL_MS = 2_000;
+
 function AdDeploymentsSection({ adId }: { adId: string }) {
   const [deployments, setDeployments] = useState<AdDeploymentItem[] | null>(
     null,
@@ -185,6 +182,11 @@ function AdDeploymentsSection({ adId }: { adId: string }) {
 
   useEffect(() => {
     refetch();
+    // 라이브 LIVE/대기 표시가 디바이스 페이지와 어긋나지 않도록 주기 폴링.
+    // 처음엔 mutation 이벤트(useDataChanged) 만으로 충분할 줄 알았는데,
+    // STARTED 이벤트는 데이터 events 채널을 안 타서 별도 폴링이 필요.
+    const t = setInterval(refetch, AD_DEPLOYMENT_POLL_MS);
+    return () => clearInterval(t);
   }, [refetch]);
 
   useDataChanged(["device-queue", "ad"], refetch);
@@ -195,8 +197,8 @@ function AdDeploymentsSection({ adId }: { adId: string }) {
         송출 현황
       </h2>
       <p className="mb-3 text-xs text-muted-foreground">
-        이 광고가 깔린 디바이스 — 운영자(OPERATOR) 가 큐에 담았을 때 여기
-        표시됩니다. 디바이스 매칭은 플랫폼 운영자가 통제합니다.
+        이 광고가 송출 중인 디바이스 — 운영자가 큐에 담은 디바이스만 표시됩니다.
+        LIVE 카드의 영상은 디바이스가 실제로 지금 송출 중인 광고를 미러링합니다.
       </p>
 
       {error ? (
@@ -215,70 +217,121 @@ function AdDeploymentsSection({ adId }: { adId: string }) {
           매칭을 요청하세요.
         </div>
       ) : (
-        <>
-          <div className="hidden md:block w-full overflow-x-auto rounded-lg border border-border bg-card">
-            <Table aria-label="송출 디바이스">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[92px]">상태</TableHead>
-                  <TableHead className="min-w-[180px]">디바이스</TableHead>
-                  <TableHead className="min-w-[160px]">음식점</TableHead>
-                  <TableHead className="w-[180px]">큐 등록일</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {deployments.map((d) => (
-                  <TableRow key={d.deviceId}>
-                    <TableCell>
-                      {d.currentlyPlaying ? (
-                        <Badge variant="ok">🔴 LIVE</Badge>
-                      ) : (
-                        <Badge variant="muted">대기</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <strong>{d.deviceName}</strong>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {d.restaurantName ?? "(미할당)"}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                      {new Date(d.addedAt).toLocaleString("ko-KR")}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <ul
-            className="md:hidden flex flex-col gap-2.5"
-            aria-label="송출 디바이스 (모바일 보기)"
-          >
-            {deployments.map((d) => (
-              <li
-                key={d.deviceId}
-                className="rounded-lg border border-border bg-card p-3"
-              >
-                <div className="flex items-baseline justify-between gap-2">
-                  <strong>{d.deviceName}</strong>
-                  {d.currentlyPlaying ? (
-                    <Badge variant="ok">🔴 LIVE</Badge>
-                  ) : (
-                    <Badge variant="muted">대기</Badge>
-                  )}
-                </div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  {d.restaurantName ?? "(미할당)"}
-                </div>
-                <div className="mt-0.5 text-xs text-muted-foreground">
-                  큐 등록 {new Date(d.addedAt).toLocaleString("ko-KR")}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(220px,100%),1fr))] gap-3">
+          {deployments.map((d) => (
+            <DeploymentCard key={d.deviceId} deployment={d} />
+          ))}
+        </div>
       )}
     </section>
+  );
+}
+
+function DeploymentCard({ deployment }: { deployment: AdDeploymentItem }) {
+  const live = deployment.currentlyPlaying;
+  return (
+    <div
+      className={cn(
+        "flex flex-col rounded-lg border bg-card p-2.5 transition-colors",
+        live ? "border-emerald-500/40" : "border-border",
+      )}
+    >
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-semibold" title={deployment.deviceName}>
+            {deployment.deviceName}
+          </div>
+          <div
+            className="truncate text-[11px] text-muted-foreground"
+            title={deployment.restaurantName ?? "미할당"}
+          >
+            📍 {deployment.restaurantName ?? "미할당"}
+          </div>
+        </div>
+        {live ? (
+          <Badge variant="ok" className="shrink-0">
+            🔴 LIVE
+          </Badge>
+        ) : (
+          <Badge variant="muted" className="shrink-0">
+            대기
+          </Badge>
+        )}
+      </div>
+
+      {live && deployment.startedAt ? (
+        <LiveAdPane
+          videoFilename={deployment.videoFilename}
+          startedAt={deployment.startedAt}
+        />
+      ) : (
+        <IdleAdPane addedAt={deployment.addedAt} />
+      )}
+    </div>
+  );
+}
+
+function LiveAdPane({
+  videoFilename,
+  startedAt,
+}: {
+  videoFilename: string;
+  startedAt: string;
+}) {
+  // adId+startedAt 조합으로 video remount 트리거 — 디바이스가 다음 광고로
+  // 넘어갔다 같은 광고로 다시 돌아왔을 때 깨끗하게 재시작.
+  const videoKey = `${videoFilename}|${startedAt}`;
+  const src = useMemo(
+    () => apiUrl(`/api/videos/${encodeURIComponent(videoFilename)}`),
+    [videoFilename],
+  );
+
+  // 디바이스 progress 와 시각 동기 — DeviceMonitorWall 의 LivePane 과 같은
+  // 패턴. duration 알려진 후 startedAt 기준으로 elapsed % duration 위치로 seek.
+  const onLoadedMetadata = useCallback(
+    (e: React.SyntheticEvent<HTMLVideoElement>) => {
+      const video = e.currentTarget;
+      const duration = video.duration;
+      if (!Number.isFinite(duration) || duration <= 0) return;
+      try {
+        const startedMs = new Date(startedAt).getTime();
+        if (Number.isNaN(startedMs)) return;
+        const elapsedSec = (Date.now() - startedMs) / 1000;
+        if (elapsedSec < 0) return;
+        const seekTo = elapsedSec % duration;
+        video.currentTime = Math.min(seekTo, Math.max(0, duration - 0.1));
+      } catch {
+        // seek 실패는 시각적 딜레이로 보일 뿐, 재생 자체는 계속됨.
+      }
+    },
+    [startedAt],
+  );
+
+  return (
+    <div className="relative aspect-video overflow-hidden rounded-md bg-black">
+      <video
+        key={videoKey}
+        src={src}
+        muted
+        autoPlay
+        playsInline
+        loop
+        preload="auto"
+        onLoadedMetadata={onLoadedMetadata}
+        className="block h-full w-full object-cover"
+      />
+    </div>
+  );
+}
+
+function IdleAdPane({ addedAt }: { addedAt: string }) {
+  return (
+    <div className="flex aspect-video flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border bg-gradient-to-br from-accent/10 to-accent/[0.02] p-2 text-center text-xs text-muted-foreground">
+      <div>송출 대기</div>
+      <div className="text-[11px] opacity-80">
+        큐 등록 {new Date(addedAt).toLocaleDateString("ko-KR")}
+      </div>
+    </div>
   );
 }
 

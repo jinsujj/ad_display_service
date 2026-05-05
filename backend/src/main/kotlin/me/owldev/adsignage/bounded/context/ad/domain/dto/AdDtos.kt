@@ -151,6 +151,13 @@ data class AdResponse(
  * 광고주가 자기 광고가 어떤 디바이스에 깔렸는지 read-only 로 보는 응답 항목.
  * `currentlyPlaying` 은 최근 5분 내 STARTED 이벤트가 그 광고에 대해 있는지로
  * 판단 — 디바이스가 그 순간 *그 광고* 를 화면에 띄우고 있다는 신호.
+ *
+ * 라이브 영상 미러용 필드:
+ *  - [videoFilename] 은 부모 광고와 동일 — 프런트가 이미 알지만, 응답에
+ *    자족(self-contained) 으로 담아 별도 lookup 없이 `<video src>` 만들도록.
+ *  - [startedAt] 은 디바이스의 가장 최근 STARTED 발생 시각 (currentlyPlaying
+ *    일 때만 채움). 모니터 영상이 디바이스 progress 와 시각 동기를 맞추는
+ *    seek 계산에 사용.
  */
 data class AdDeploymentItem(
     val deviceId: String,
@@ -159,4 +166,7 @@ data class AdDeploymentItem(
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     val addedAt: Instant,
     val currentlyPlaying: Boolean,
+    val videoFilename: String,
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    val startedAt: Instant?,
 )

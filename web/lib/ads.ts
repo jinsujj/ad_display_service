@@ -241,8 +241,15 @@ export interface AdDeploymentItem {
   deviceName: string;
   restaurantName: string | null;
   addedAt: string;
-  /** 최근 5분 내 STARTED 이벤트로 추정한 "지금 이 광고를 송출 중" 여부. */
+  /** 최근 STARTED 이벤트(120s 윈도우) 로 추정한 "지금 이 광고를 송출 중" 여부. */
   currentlyPlaying: boolean;
+  /** 광고 영상 파일명 — 라이브 모니터 `<video src>` 만들 때 사용. */
+  videoFilename: string;
+  /**
+   * 디바이스의 가장 최근 STARTED 발생 시각 (currentlyPlaying 일 때만).
+   * 모니터 영상이 디바이스 progress 와 시각 동기를 맞추는 seek 계산에 사용.
+   */
+  startedAt: string | null;
 }
 
 /** `GET /api/ads/{id}/deployments` — 광고주 read-only 송출 현황. */

@@ -161,7 +161,7 @@ class AdController(
         @AuthenticationPrincipal principal: AdvertiserPrincipal,
     ): ResponseEntity<List<AdDeploymentItem>> {
         // 소유 확인 — 다른 광고주 id 추측 시 404 로 통일.
-        adService.findOwned(adId, principal.advertiserId)
+        val ad = adService.findOwned(adId, principal.advertiserId)
 
         val queueRows = queueRepositoryPort.findAllByIdAdId(adId)
         if (queueRows.isEmpty()) return ResponseEntity.ok(emptyList())
@@ -173,27 +173,31 @@ class AdController(
             .associateBy { it.deviceId }
         val restaurantsById = restaurantRepositoryPort.findAll().associateBy { it.restaurantId }
 
-        // "지금 이 광고 재생 중" 판단 — 최근 5분 안의 STARTED 이벤트 중
-        // adId 일치하는 게 있는 디바이스만.
-        val recentStartedAds = playEventRepositoryPort
+        // "지금 이 광고 재생 중" 판단 — 디바이스마다 최근 STARTED 이벤트(window
+        // 안) 중 adId 가 일치하는 디바이스를 startedAt 과 함께 맵으로.
+        // DeviceMonitorWall 과 같은 120s 윈도우(CURRENT_AD_WINDOW_SECONDS)
+        // 사용 — 두 화면이 LIVE/대기 표시에서 서로 어긋나지 않도록 통일.
+        val recentlyPlayingByDevice = playEventRepositoryPort
             .findLatestPerDeviceByEventTypeSince(
                 PlayEventType.STARTED,
-                Instant.now().minusSeconds(300),
+                Instant.now().minusSeconds(120),
             )
             .filter { it.adId == adId }
-            .map { it.deviceId }
-            .toSet()
+            .associateBy { it.deviceId }
 
         val items = queueRows.mapNotNull { q ->
             val device = devicesById[q.id.deviceId] ?: return@mapNotNull null
             val assignment = activeAssignments[device.deviceId]
             val restaurant = assignment?.let { restaurantsById[it.restaurantId] }
+            val recentEvent = recentlyPlayingByDevice[device.deviceId]
             AdDeploymentItem(
                 deviceId = device.deviceId,
                 deviceName = device.deviceName,
                 restaurantName = restaurant?.name,
                 addedAt = q.addedAt,
-                currentlyPlaying = device.deviceId in recentStartedAds,
+                currentlyPlaying = recentEvent != null,
+                videoFilename = ad.videoFilename,
+                startedAt = recentEvent?.occurredAt,
             )
         }
         return ResponseEntity.ok(items)
