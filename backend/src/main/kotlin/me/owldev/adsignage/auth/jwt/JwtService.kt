@@ -2,7 +2,7 @@ package me.owldev.adsignage.auth.jwt
 
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
-import me.owldev.adsignage.domain.advertiser.AdvertiserRole
+import me.owldev.adsignage.bounded.context.advertiser.domain.model.AdvertiserRole
 import org.springframework.stereotype.Service
 import java.nio.charset.StandardCharsets
 import java.util.Date

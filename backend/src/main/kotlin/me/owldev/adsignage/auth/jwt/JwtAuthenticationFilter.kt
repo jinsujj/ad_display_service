@@ -4,6 +4,7 @@ import io.jsonwebtoken.JwtException
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import me.owldev.adsignage.bounded.context.advertiser.domain.model.AdvertiserRole
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -71,7 +72,7 @@ class JwtAuthenticationFilter(
             // OPERATOR 면 ROLE_OPERATOR 도 추가. 이렇게 하면 .hasRole("OPERATOR")
             // 로 엄격 게이트, .authenticated() 로는 둘 다 허용 가능.
             val authorities = mutableListOf(SimpleGrantedAuthority(ROLE_ADVERTISER))
-            if (advertiser.role == me.owldev.adsignage.domain.advertiser.AdvertiserRole.OPERATOR) {
+            if (advertiser.role == AdvertiserRole.OPERATOR) {
                 authorities += SimpleGrantedAuthority(ROLE_OPERATOR)
             }
             val authentication = UsernamePasswordAuthenticationToken(
@@ -144,6 +145,5 @@ class JwtAuthenticationFilter(
 data class AdvertiserPrincipal(
     val advertiserId: String,
     val email: String,
-    val role: me.owldev.adsignage.domain.advertiser.AdvertiserRole =
-        me.owldev.adsignage.domain.advertiser.AdvertiserRole.ADVERTISER,
+    val role: AdvertiserRole = AdvertiserRole.ADVERTISER,
 )

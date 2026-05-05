@@ -2,7 +2,7 @@ package me.owldev.adsignage.auth
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import me.owldev.adsignage.auth.dto.SignupRequest
-import me.owldev.adsignage.domain.advertiser.AdvertiserRepository
+import me.owldev.adsignage.bounded.context.advertiser.adapter.out.database.AdvertiserRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired

@@ -1,5 +1,6 @@
-package me.owldev.adsignage.domain.advertiser
+package me.owldev.adsignage.bounded.context.advertiser.adapter.out.database
 
+import me.owldev.adsignage.bounded.context.advertiser.domain.model.Advertiser
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 import java.util.Optional

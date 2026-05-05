@@ -2,8 +2,8 @@ package me.owldev.adsignage.domain.ad
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import me.owldev.adsignage.auth.jwt.JwtService
-import me.owldev.adsignage.domain.advertiser.Advertiser
-import me.owldev.adsignage.domain.advertiser.AdvertiserRepository
+import me.owldev.adsignage.bounded.context.advertiser.domain.model.Advertiser
+import me.owldev.adsignage.bounded.context.advertiser.adapter.out.database.AdvertiserRepository
 import me.owldev.adsignage.domain.video.Video
 import me.owldev.adsignage.domain.video.VideoRepository
 import org.junit.jupiter.api.BeforeEach

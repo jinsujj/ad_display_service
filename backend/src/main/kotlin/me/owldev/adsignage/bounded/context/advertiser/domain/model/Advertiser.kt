@@ -1,4 +1,4 @@
-package me.owldev.adsignage.domain.advertiser
+package me.owldev.adsignage.bounded.context.advertiser.domain.model
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

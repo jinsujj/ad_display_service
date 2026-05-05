@@ -1,8 +1,8 @@
 package me.owldev.adsignage.domain.playevent
 
 import me.owldev.adsignage.auth.jwt.JwtService
-import me.owldev.adsignage.domain.advertiser.Advertiser
-import me.owldev.adsignage.domain.advertiser.AdvertiserRepository
+import me.owldev.adsignage.bounded.context.advertiser.domain.model.Advertiser
+import me.owldev.adsignage.bounded.context.advertiser.adapter.out.database.AdvertiserRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

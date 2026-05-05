@@ -5,8 +5,8 @@ import me.owldev.adsignage.auth.dto.LoginResponse
 import me.owldev.adsignage.auth.dto.SignupRequest
 import me.owldev.adsignage.auth.dto.SignupResponse
 import me.owldev.adsignage.auth.jwt.JwtService
-import me.owldev.adsignage.domain.advertiser.Advertiser
-import me.owldev.adsignage.domain.advertiser.AdvertiserRepository
+import me.owldev.adsignage.bounded.context.advertiser.application.port.out.database.AdvertiserRepositoryPort
+import me.owldev.adsignage.bounded.context.advertiser.domain.model.Advertiser
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -31,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional
  */
 @Service
 class AuthService(
-    private val advertiserRepository: AdvertiserRepository,
+    private val advertiserRepository: AdvertiserRepositoryPort,
     private val passwordEncoder: PasswordEncoder,
     private val jwtService: JwtService,
 ) {
@@ -66,9 +66,9 @@ class AuthService(
         val normalisedEmail = request.email.trim().lowercase()
 
         val advertiser = advertiserRepository.findByEmail(normalisedEmail)
-            .orElseThrow {
+            ?: run {
                 log.info("login rejected: unknown email ({})", normalisedEmail)
-                InvalidCredentialsException()
+                throw InvalidCredentialsException()
             }
 
         if (!passwordEncoder.matches(request.password, advertiser.passwordHash)) {
