@@ -241,22 +241,30 @@ stateDiagram-v2
     [*] --> Boot
 
     Boot --> Registered: POST /api/devices/register
-    Registered --> SseConnected: GET /api/devices/&#123;id&#125;/stream
-    Note right of SseConnected: SSE keepalive 10초 마다<br/>: comment 수신 →<br/>TCP dead 감지 즉시
+    Registered --> SseConnected: SSE 구독 (/stream)
 
-    SseConnected --> PlaylistFetched: GET /api/playlist?deviceId=...
-    PlaylistFetched --> Playing: 큐에 ACTIVE 광고 1+
+    note right of SseConnected
+        SSE keepalive 10초
+        TCP dead 즉시 감지
+    end note
+
+    SseConnected --> PlaylistFetched: GET /api/playlist
+    PlaylistFetched --> Playing: 큐에 ACTIVE 광고 있음
     PlaylistFetched --> Idle: 큐 비었거나 시간 윈도우 밖
 
-    Playing --> Playing: 다음 광고 (라운드 로빈)<br/>POST play-event STARTED + FINISHED<br/>(자연 heartbeat — lastSeenAt 갱신)
-    Playing --> PlaylistFetched: SSE MAPPING_CHANGED<br/>또는 PLAYLIST_UPDATE
-
-    Idle --> PlaylistFetched: SSE PLAYLIST_UPDATE<br/>(운영자가 큐에 광고 추가)
+    Playing --> Playing: 다음 광고 (라운드 로빈)\nplay-event STARTED + FINISHED
+    Playing --> PlaylistFetched: SSE PLAYLIST_UPDATE\n또는 MAPPING_CHANGED
+    Idle --> PlaylistFetched: SSE PLAYLIST_UPDATE
     Idle --> Playing: 시간 윈도우 진입
 
-    Playing --> Offline: WebView pagehide<br/>POST /api/devices/&#123;id&#125;/offline (sendBeacon)
-    SseConnected --> Offline: 네트워크 단절<br/>SSE keepalive 실패 → emitter unregister
+    Playing --> Offline: pagehide → POST /offline (sendBeacon)
+    SseConnected --> Offline: 네트워크 단절\nSSE keepalive 실패
     Offline --> [*]
+
+    note left of Playing
+        play-event 가 자연 heartbeat
+        (lastSeenAt 갱신)
+    end note
 ```
 
 #### 권한 매트릭스
