@@ -7,7 +7,7 @@ import me.owldev.adsignage.bounded.context.assignment.domain.exception.Assignmen
 import me.owldev.adsignage.bounded.context.assignment.domain.exception.DeviceNotFoundException
 import me.owldev.adsignage.bounded.context.assignment.domain.exception.RestaurantNotFoundException
 import me.owldev.adsignage.bounded.context.assignment.domain.model.DeviceAssignment
-import me.owldev.adsignage.sse.DeviceMappingChangedEvent
+import me.owldev.adsignage.bounded.context.assignment.adapter.out.sse.DeviceMappingChangedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service

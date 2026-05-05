@@ -16,7 +16,7 @@ import me.owldev.adsignage.bounded.context.assignment.application.port.out.datab
 import me.owldev.adsignage.bounded.context.playevent.application.port.out.database.PlayEventRepositoryPort
 import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEventType
 import me.owldev.adsignage.bounded.context.queue.application.port.out.database.DeviceAdQueueRepositoryPort
-import me.owldev.adsignage.sse.SseEmitterRegistry
+import me.owldev.adsignage.bounded.context.device.adapter.`in`.sse.SseEmitterRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

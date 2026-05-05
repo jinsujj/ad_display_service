@@ -7,7 +7,7 @@ import me.owldev.adsignage.bounded.context.queue.domain.dto.QueuedAdItem
 import me.owldev.adsignage.bounded.context.queue.domain.model.DeviceAdQueue
 import me.owldev.adsignage.bounded.context.queue.domain.model.DeviceAdQueueId
 import me.owldev.adsignage.bounded.context.ad.application.port.out.database.AdRepositoryPort
-import me.owldev.adsignage.sse.PlaylistUpdatedEvent
+import me.owldev.adsignage.bounded.context.playlist.adapter.out.sse.PlaylistUpdatedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service

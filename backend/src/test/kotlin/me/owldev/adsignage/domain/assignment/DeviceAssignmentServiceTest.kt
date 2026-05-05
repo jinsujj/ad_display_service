@@ -17,7 +17,7 @@ import me.owldev.adsignage.bounded.context.device.domain.dto.UpdateDeviceRequest
 import me.owldev.adsignage.bounded.context.device.domain.dto.UpdateDeviceResponse
 import me.owldev.adsignage.bounded.context.device.application.service.DeviceUpdateService
 import me.owldev.adsignage.bounded.context.device.adapter.`in`.api.DeviceUpdateController
-import me.owldev.adsignage.sse.DeviceMappingChangedEvent
+import me.owldev.adsignage.bounded.context.assignment.adapter.out.sse.DeviceMappingChangedEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull

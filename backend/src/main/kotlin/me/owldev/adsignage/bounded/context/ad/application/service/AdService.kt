@@ -4,7 +4,7 @@ import me.owldev.adsignage.bounded.context.ad.application.port.out.database.AdRe
 import me.owldev.adsignage.bounded.context.ad.domain.exception.AdNotFoundException
 import me.owldev.adsignage.bounded.context.ad.domain.model.Ad
 import me.owldev.adsignage.bounded.context.queue.application.port.out.database.DeviceAdQueueRepositoryPort
-import me.owldev.adsignage.sse.PlaylistUpdatedEvent
+import me.owldev.adsignage.bounded.context.playlist.adapter.out.sse.PlaylistUpdatedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
