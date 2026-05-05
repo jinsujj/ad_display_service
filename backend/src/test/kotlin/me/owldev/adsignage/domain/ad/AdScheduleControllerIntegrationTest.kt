@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import me.owldev.adsignage.auth.jwt.JwtService
 import me.owldev.adsignage.bounded.context.advertiser.domain.model.Advertiser
 import me.owldev.adsignage.bounded.context.advertiser.adapter.out.database.AdvertiserRepository
-import me.owldev.adsignage.domain.video.Video
-import me.owldev.adsignage.domain.video.VideoRepository
+import me.owldev.adsignage.bounded.context.video.domain.model.Video
+import me.owldev.adsignage.bounded.context.video.adapter.out.database.VideoRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired

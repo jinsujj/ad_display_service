@@ -1,7 +1,7 @@
 package me.owldev.adsignage
 
 import me.owldev.adsignage.auth.jwt.JwtProperties
-import me.owldev.adsignage.domain.video.storage.VideoStorageProperties
+import me.owldev.adsignage.bounded.context.video.config.VideoStorageProperties
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication

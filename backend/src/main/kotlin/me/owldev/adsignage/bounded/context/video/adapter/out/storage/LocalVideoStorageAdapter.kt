@@ -1,7 +1,10 @@
-package me.owldev.adsignage.domain.video.storage
+package me.owldev.adsignage.bounded.context.video.adapter.out.storage
 
+import me.owldev.adsignage.bounded.context.video.application.port.out.storage.VideoStoragePort
+import me.owldev.adsignage.bounded.context.video.config.VideoStorageProperties
+import me.owldev.adsignage.bounded.context.video.domain.dto.StoredVideo
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
+import org.springframework.stereotype.Component
 import org.springframework.web.multipart.MultipartFile
 import java.nio.file.Files
 import java.nio.file.Path
@@ -11,40 +14,29 @@ import java.util.Locale
 import java.util.UUID
 
 /**
- * [VideoStorageService]의 로컬 파일시스템 구현.
+ * [VideoStoragePort]의 로컬 파일시스템 어댑터.
  *
  * [VideoStorageProperties.videoStoragePath](기본 `/var/lib/adsignage/videos`,
  * 환경별 설정 가능)에서 스토리지 루트를 읽고 [Files.copy]로 업로드를 디스크에
  * 직접 스트리밍하므로 수백 MB MP4도 메모리에 버퍼링되지 않는다.
  *
- * 파일명 전략: `{UUID}.{ext}` — `ext`는 광고주의 원본 파일명에서 추출하여
- * 소문자화하고 [ALLOWED_EXTENSIONS]로 검증한다. UUID 접두사가 클라이언트를
- * 신뢰하지 않고도 디스크 상의 유일성을 보장한다.
+ * 파일명 전략: `{UUID}.{ext}` — 광고주의 원본 파일명에서 확장자 추출, 소문자화,
+ * [ALLOWED_EXTENSIONS]로 검증.
  *
  * 경로 트래버설 보강:
- *  - `originalName`은 다른 처리 전에 leaf 세그먼트로 축소된다(`../../etc/foo.mp4`
- *    같은 입력은 `foo.mp4`가 됨).
- *  - 계산된 대상 경로는 정규화 후 재검사되어 여전히 설정된 [rootDir] 아래에
- *    있는지 확인 — 병적인 UUID 확장(현실에서는 도달 불가능하지만 싼 보험)을
- *    거절한다.
- *
- * 이 서비스는 [me.owldev.adsignage.domain.video.Video] 행을 영속화 *하지
- * 않는다* — 그것은 호출자(보통 후속 Sub-AC의 `VideoUploadService`)의
- * 책임이다. 영속화와 스토리지를 분리하면 H2/Postgres 엔터티 레이어가 디스크를
- * 건드리지 않고 테스트 가능하고, 외부 영상 파일을 임포트해야 할 때 이
- * 서비스를 재사용할 수 있다.
+ *  - `originalName`은 leaf 세그먼트로 축소된다(`../../etc/foo.mp4` → `foo.mp4`).
+ *  - 계산된 대상 경로는 정규화 후 재검사되어 여전히 [rootDir] 아래에 있는지 확인.
  */
-@Service
-class LocalVideoStorageService(
+@Component
+class LocalVideoStorageAdapter(
     private val properties: VideoStorageProperties,
-) : VideoStorageService {
+) : VideoStoragePort {
 
-    private val log = LoggerFactory.getLogger(LocalVideoStorageService::class.java)
+    private val log = LoggerFactory.getLogger(LocalVideoStorageAdapter::class.java)
 
     /**
      * 절대 경로로 정규화된 스토리지 루트. 프로퍼티가 애플리케이션 수명 동안
-     * 불변이므로 생성 시점에 한 번 계산한다. 테스트는 `@TempDir`을 주입하고,
-     * 운영은 `/var/lib/adsignage/videos`를 가리킨다.
+     * 불변이므로 생성 시점에 한 번 계산.
      */
     private val rootDir: Path = Paths.get(properties.videoStoragePath)
         .toAbsolutePath()
@@ -107,24 +99,8 @@ class LocalVideoStorageService(
     }
 
     companion object {
-        /**
-         * 허용되는 영상 확장자 화이트리스트. MP4가 데모 타깃이며 나머지는
-         * 설정 플래그 없이 테스트 중에 받아들이고 싶을 만한 일반적인
-         * WebView 친화 컨테이너다.
-         */
         private val ALLOWED_EXTENSIONS = setOf("mp4", "webm", "mov", "m4v")
-
-        /**
-         * multipart 업로드가 Content-Type을 생략했을 때 사용하는 폴백 값.
-         * 이 서비스의 지배적 케이스가 MP4이므로 안전한 기본값.
-         */
         private const val DEFAULT_MIME_TYPE = "video/mp4"
-
-        /**
-         * 스트리밍 엔드포인트가 살게 될 정식 URL 접두사. 컨트롤러를 거치지
-         * 않고 플레이리스트 페이로드를 조립할 수 있도록 여기서 예측한다.
-         * 라우트가 이동하면 양쪽을 업데이트해야 한다.
-         */
         private const val URL_PREFIX = "/api/videos"
     }
 }

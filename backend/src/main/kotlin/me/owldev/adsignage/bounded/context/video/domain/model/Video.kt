@@ -1,4 +1,4 @@
-package me.owldev.adsignage.domain.video
+package me.owldev.adsignage.bounded.context.video.domain.model
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -21,19 +21,6 @@ import java.util.UUID
  * 표현된 온톨로지 개념:
  *  - ad_video_filename → [filename] (디스크 저장, 서버 생성, 유일)
  *  - ad_advertiser_id  → [advertiserId] (FK → advertisers.id, NOT NULL)
- *
- * 핵심 온톨로지 필드를 넘어선 운영 필드:
- *  - [originalName]은 관리자 UI를 위해 광고주가 제공한 파일명을 보존.
- *  - [mimeType], [sizeBytes]는 매 요청마다 파일을 다시 stat하지 않고도
- *    HTTP Range 서빙(Content-Type + Content-Length)을 지원.
- *  - [storagePath]는 디스크 상의 절대 경로; 업로드 시 설정 루트
- *    `adsignage.video-storage-path`에 대해 해석되고 그대로 저장되어
- *    스트리밍 엔드포인트가 다시 해석할 필요가 없게 함.
- *  - [uploadedAt]은 관리자 "최근 업로드" 리스팅을 위해 insert 시점에
- *    캡처됨.
- *
- * 식별자는 서버 생성 UUID — `Advertiser`와 `DeviceAssignment`가 정한
- * 패턴에 맞춰 [id]만으로 equality와 hashCode가 결정됨.
  */
 @Entity
 @Table(name = "videos")
@@ -45,24 +32,15 @@ class Video(
     /**
      * 소유 광고주의 id (FK → `advertisers.id`).
      *
-     * 업로드 시 JWT principal에서 설정 —
-     * [me.owldev.adsignage.domain.video.upload.VideoUploadService.upload] 참조.
-     * 데이터 격리 계약(AC 4)은 로그인한 광고주에게 [Video]를 표면화하는
-     * 모든 읽기 경로가 이 컬럼으로 필터링하도록 요구하여 관리자 UI가 다른
-     * 광고주의 업로드를 절대 보지 못하게 함.
-     *
-     * 엔터티를 평탄하게 유지하고 컨트롤러 내부의 lazy-init 함정을 피하기
-     * 위해 `@ManyToOne Advertiser` 연관 대신 일반 문자열 FK로 저장 —
-     * 컨트롤러는 인가 검사를 위해 id만 필요하지 전체 광고주 행은 결코
-     * 필요하지 않음.
+     * 업로드 시 JWT principal에서 설정. 데이터 격리 계약(AC 4)은 로그인한
+     * 광고주에게 [Video]를 표면화하는 모든 읽기 경로가 이 컬럼으로 필터링
+     * 하도록 요구하여 관리자 UI가 다른 광고주의 업로드를 절대 보지 못하게 함.
      */
     @Column(name = "advertiser_id", nullable = false, updatable = false, length = 36)
     val advertiserId: String,
 
     /**
-     * 디스크에 사용되는 서버 생성 파일명. 테이블 전체에서 유일; 업로드
-     * 파이프라인이 사용자 제공 이름과의 충돌을 피하기 위해 새 UUID +
-     * 확장자에서 이를 유도함.
+     * 디스크에 사용되는 서버 생성 파일명. 테이블 전체에서 유일.
      */
     @Column(name = "filename", nullable = false, unique = true, length = 255)
     val filename: String,
@@ -83,8 +61,7 @@ class Video(
     val mimeType: String,
 
     /**
-     * 파일 크기(바이트). HTTP Range 응답
-     * (`Content-Range: bytes start-end/sizeBytes`)에 필요함.
+     * 파일 크기(바이트). HTTP Range 응답에 필요함.
      */
     @Column(name = "size_bytes", nullable = false)
     val sizeBytes: Long,

@@ -1,5 +1,20 @@
 package me.owldev.adsignage.domain.video
 
+import me.owldev.adsignage.bounded.context.video.adapter.out.database.VideoRepository
+import me.owldev.adsignage.bounded.context.video.adapter.out.storage.LocalVideoStorageAdapter
+import me.owldev.adsignage.bounded.context.video.application.port.out.storage.VideoStoragePort
+import me.owldev.adsignage.bounded.context.video.application.service.VideoUploadService
+import me.owldev.adsignage.bounded.context.video.config.VideoStorageProperties
+import me.owldev.adsignage.bounded.context.video.domain.dto.StoredVideo
+import me.owldev.adsignage.bounded.context.video.domain.dto.VideoResponse
+import me.owldev.adsignage.bounded.context.video.domain.exception.EmptyVideoUploadException
+import me.owldev.adsignage.bounded.context.video.domain.exception.InvalidVideoMimeTypeException
+import me.owldev.adsignage.bounded.context.video.domain.exception.MissingVideoFilenameException
+import me.owldev.adsignage.bounded.context.video.domain.exception.UnsatisfiableRangeException
+import me.owldev.adsignage.bounded.context.video.domain.exception.VideoNotFoundException
+import me.owldev.adsignage.bounded.context.video.domain.exception.VideoTooLargeException
+import me.owldev.adsignage.bounded.context.video.domain.exception.VideoUploadException
+import me.owldev.adsignage.bounded.context.video.domain.model.Video
 import com.fasterxml.jackson.databind.ObjectMapper
 import me.owldev.adsignage.auth.jwt.JwtService
 import me.owldev.adsignage.bounded.context.advertiser.domain.model.Advertiser
@@ -35,7 +50,7 @@ import kotlin.test.assertTrue
  * Boots the full Spring Boot context with MockMvc so we exercise:
  *  - Multipart parsing
  *  - JWT-based security gate (POST is not in the public allow-list)
- *  - VideoController → VideoUploadService → LocalVideoStorageService → JPA
+ *  - VideoController → VideoUploadService → LocalVideoStorageAdapter → JPA
  *  - GlobalExceptionHandler mapping for the 400/413/415 error shapes
  *
  * Storage root is redirected to a JUnit `@TempDir` so tests don't write to
@@ -68,7 +83,7 @@ class VideoControllerIntegrationTest {
         lateinit var storageRoot: Path
 
         /**
-         * Re-points [me.owldev.adsignage.domain.video.storage.VideoStorageProperties.videoStoragePath]
+         * Re-points [me.owldev.adsignage.bounded.context.video.config.VideoStorageProperties.videoStoragePath]
          * at the JUnit-managed temp dir so the test never writes outside its
          * sandbox. `@TempDir` resolves before `@DynamicPropertySource` runs,
          * which is why we use the dynamic-property hook rather than a static
@@ -259,7 +274,7 @@ class VideoControllerIntegrationTest {
             )
         )
         val otherVideo = videoRepository.save(
-            me.owldev.adsignage.domain.video.Video(
+            Video(
                 advertiserId = other.id,
                 filename = "other-${java.util.UUID.randomUUID()}.mp4",
                 originalName = "their-secret.mp4",

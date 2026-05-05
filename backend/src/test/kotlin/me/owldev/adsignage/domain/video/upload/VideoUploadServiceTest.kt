@@ -1,10 +1,20 @@
 package me.owldev.adsignage.domain.video.upload
 
-import me.owldev.adsignage.domain.video.Video
-import me.owldev.adsignage.domain.video.VideoRepository
-import me.owldev.adsignage.domain.video.storage.StoredVideo
-import me.owldev.adsignage.domain.video.storage.VideoStorageProperties
-import me.owldev.adsignage.domain.video.storage.VideoStorageService
+import me.owldev.adsignage.bounded.context.video.adapter.out.storage.LocalVideoStorageAdapter
+import me.owldev.adsignage.bounded.context.video.application.service.VideoUploadService
+import me.owldev.adsignage.bounded.context.video.domain.dto.VideoResponse
+import me.owldev.adsignage.bounded.context.video.domain.exception.EmptyVideoUploadException
+import me.owldev.adsignage.bounded.context.video.domain.exception.InvalidVideoMimeTypeException
+import me.owldev.adsignage.bounded.context.video.domain.exception.MissingVideoFilenameException
+import me.owldev.adsignage.bounded.context.video.domain.exception.UnsatisfiableRangeException
+import me.owldev.adsignage.bounded.context.video.domain.exception.VideoNotFoundException
+import me.owldev.adsignage.bounded.context.video.domain.exception.VideoTooLargeException
+import me.owldev.adsignage.bounded.context.video.domain.exception.VideoUploadException
+import me.owldev.adsignage.bounded.context.video.domain.model.Video
+import me.owldev.adsignage.bounded.context.video.application.port.out.database.VideoRepositoryPort
+import me.owldev.adsignage.bounded.context.video.domain.dto.StoredVideo
+import me.owldev.adsignage.bounded.context.video.config.VideoStorageProperties
+import me.owldev.adsignage.bounded.context.video.application.port.out.storage.VideoStoragePort
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -22,10 +32,10 @@ import java.util.UUID
  * Unit tests for [VideoUploadService].
  *
  * Strategy:
- *  - [VideoStorageService] is a hand-rolled recording fake — small interface,
+ *  - [VideoStoragePort] is a hand-rolled recording fake — small interface,
  *    easy to read, lets us assert *order* (validation must short-circuit
  *    before the disk is touched).
- *  - [VideoRepository] is mocked via Mockito (already on the test classpath
+ *  - [VideoRepositoryPort] is mocked via Mockito (already on the test classpath
  *    via `spring-boot-starter-test`). Implementing every JpaRepository method
  *    by hand would dwarf the actual test logic.
  *
@@ -48,14 +58,14 @@ class VideoUploadServiceTest {
     private val ADVERTISER_ID = "00000000-0000-4000-8000-0000000000aa"
 
     private lateinit var storage: RecordingStorageService
-    private lateinit var repo: VideoRepository
+    private lateinit var repo: VideoRepositoryPort
     private lateinit var properties: VideoStorageProperties
     private lateinit var service: VideoUploadService
 
     @BeforeEach
     fun setup() {
         storage = RecordingStorageService()
-        repo = mock(VideoRepository::class.java)
+        repo = mock(VideoRepositoryPort::class.java)
         // The save mock just echoes its argument back, the way the real
         // JpaRepository.save() does for a transient entity with an
         // already-set id (Video assigns its UUID in the field initializer).
@@ -245,7 +255,7 @@ class VideoUploadServiceTest {
     // Hand-rolled storage fake — small surface, no Mockito overhead.
     // ------------------------------------------------------------------
 
-    private class RecordingStorageService : VideoStorageService {
+    private class RecordingStorageService : VideoStoragePort {
         val calls = mutableListOf<MultipartFile>()
 
         override fun store(file: MultipartFile): StoredVideo {
