@@ -227,6 +227,8 @@ class AdServiceTest {
             saved.firstOrNull { it.id == id && it.advertiserId == advertiserId }
         override fun findAllByAdvertiserIdOrderByCreatedAtDesc(advertiserId: String): List<Ad> =
             saved.filter { it.advertiserId == advertiserId }.sortedByDescending { it.createdAt }
+        override fun findAllOrderByCreatedAtDesc(): List<Ad> =
+            saved.sortedByDescending { it.createdAt }
         override fun delete(ad: Ad) { saved.removeAll { it.id == ad.id } }
     }
 

@@ -23,8 +23,10 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
 /**
- * 디바이스 라이프사이클 — 등록 / heartbeat / 오프라인 신고 / 삭제 — 와
- * 어드민 모니터 화면에 필요한 디바이스 목록·상세 조회를 책임진다.
+ * 디바이스 라이프사이클 — 등록 / 오프라인 신고 / 삭제 — 와 어드민 모니터
+ * 화면에 필요한 디바이스 목록·상세 조회를 책임진다. 디바이스의 liveness
+ * 갱신은 (1) 등록 시점 (2) play-event 수신 시점에만 일어나며 별도 heartbeat
+ * 엔드포인트는 두지 않는다 (광고 재생 자체가 ~15-30s 자연 heartbeat).
  *
  * 외부 컨텍스트(restaurant 외) 의존:
  *  - assignment / queue / ad / playevent: 아직 헥사고날로 옮기기 전이라
@@ -73,20 +75,6 @@ class DeviceService(
             registeredAt = saved.registeredAt,
             lastSeenAt = saved.lastSeenAt,
         )
-    }
-
-    /**
-     * PlayerClient 가 5초마다 호출. lastSeenAt 만 갱신하므로 가벼움(write 1회).
-     * Android 앱이 sendBeacon 도 못 보내고 SSE TCP 도 nginx idle 안에 갇혀
-     * 죽는 케이스에서, 마지막 heartbeat 가 윈도우 밖으로 나가면 즉시 오프라인
-     * 판정.
-     */
-    @Transactional
-    fun heartbeat(deviceId: String) {
-        deviceRepositoryPort.findById(deviceId)?.also {
-            it.touch()
-            deviceRepositoryPort.save(it)
-        }
     }
 
     /**

@@ -131,9 +131,6 @@ class SecurityConfig(
                     // sendBeacon 으로 호출되며 앱 종료 즉시 어드민 모니터가
                     // 오프라인으로 전환되도록 한다. permitAll — 디바이스에는 JWT 없음.
                     .requestMatchers(HttpMethod.POST, "/api/devices/*/offline").permitAll()
-                    // 디바이스 heartbeat — PlayerClient 가 5초마다 호출. 짧은
-                    // liveness 윈도우와 결합해 앱 종료 시 빠른 오프라인 판정.
-                    .requestMatchers(HttpMethod.POST, "/api/devices/*/heartbeat").permitAll()
                     // AC 4 (auth-and-isolation): 스트리밍 엔드포인트
                     // `GET /api/videos/{filename}`은 공개 유지하여 플레이어
                     // 페이지가 JWT 없이 MP4 바이트를 가져올 수 있게 하되,

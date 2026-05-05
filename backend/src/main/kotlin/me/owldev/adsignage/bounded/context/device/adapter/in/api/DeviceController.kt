@@ -24,9 +24,6 @@ import org.springframework.web.bind.annotation.RestController
  *     JWT 를 갖지 않으므로 공개 엔드포인트 (SecurityConfig 에 permitAll 추가됨).
  *     멱등 — 이미 등록된 device_id 면 last_seen_at 만 갱신.
  *
- *   POST /api/devices/{deviceId}/heartbeat
- *     PlayerClient 가 5초마다 lastSeenAt 갱신용으로 호출. 인증 없음.
- *
  *   POST /api/devices/{deviceId}/offline
  *     디바이스가 종료/슬립으로 들어갈 때 sendBeacon 으로 자기 자신을 즉시
  *     오프라인으로 알림. 인증 없음.
@@ -53,12 +50,6 @@ class DeviceController(
     fun register(@Valid @RequestBody body: RegisterDeviceRequest): ResponseEntity<RegisterDeviceResponse> {
         val response = deviceService.register(body.deviceId!!, body.deviceName)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
-    }
-
-    @PostMapping("/api/devices/{deviceId}/heartbeat")
-    fun heartbeat(@PathVariable deviceId: String): ResponseEntity<Void> {
-        deviceService.heartbeat(deviceId)
-        return ResponseEntity.noContent().build()
     }
 
     @PostMapping("/api/devices/{deviceId}/offline")
