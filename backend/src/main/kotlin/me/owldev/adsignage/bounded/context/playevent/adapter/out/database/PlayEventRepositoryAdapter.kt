@@ -24,4 +24,10 @@ class PlayEventRepositoryAdapter(
         eventType: PlayEventType,
         threshold: Instant,
     ): List<PlayEvent> = playEventRepository.findLatestPerDeviceByEventTypeSince(eventType, threshold)
+    override fun findLatestPerDeviceByAdIdAndEventTypeSince(
+        adId: String,
+        eventType: PlayEventType,
+        threshold: Instant,
+    ): List<PlayEvent> = playEventRepository
+        .findLatestPerDeviceByAdIdAndEventTypeSince(adId, eventType, threshold)
 }

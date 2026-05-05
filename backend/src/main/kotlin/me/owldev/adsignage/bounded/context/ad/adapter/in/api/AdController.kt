@@ -173,16 +173,17 @@ class AdController(
             .associateBy { it.deviceId }
         val restaurantsById = restaurantRepositoryPort.findAll().associateBy { it.restaurantId }
 
-        // "지금 이 광고 재생 중" 판단 — 디바이스마다 최근 STARTED 이벤트(window
-        // 안) 중 adId 가 일치하는 디바이스를 startedAt 과 함께 맵으로.
-        // DeviceMonitorWall 과 같은 120s 윈도우(CURRENT_AD_WINDOW_SECONDS)
-        // 사용 — 두 화면이 LIVE/대기 표시에서 서로 어긋나지 않도록 통일.
+        // "지금 이 광고 재생 중" 판단 — *이 광고에 한정* 디바이스당 가장 최근
+        // STARTED 이벤트(120s 윈도우). 라운드 로빈 큐에서 다른 광고가 latest
+        // 자리를 차지해도 이 광고를 최근에 송출한 디바이스를 그대로 잡는다.
+        // (이전 구현은 "디바이스 latest STARTED 가 이 광고와 일치" 만 봤기에
+        // 다른 광고와 회전 중인 디바이스에서 항상 "대기" 로 표시되는 버그.)
         val recentlyPlayingByDevice = playEventRepositoryPort
-            .findLatestPerDeviceByEventTypeSince(
+            .findLatestPerDeviceByAdIdAndEventTypeSince(
+                adId,
                 PlayEventType.STARTED,
                 Instant.now().minusSeconds(120),
             )
-            .filter { it.adId == adId }
             .associateBy { it.deviceId }
 
         val items = queueRows.mapNotNull { q ->

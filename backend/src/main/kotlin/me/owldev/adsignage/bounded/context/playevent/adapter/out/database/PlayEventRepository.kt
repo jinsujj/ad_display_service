@@ -79,4 +79,32 @@ interface PlayEventRepository : JpaRepository<PlayEvent, String> {
         @Param("eventType") eventType: PlayEventType,
         @Param("threshold") threshold: Instant,
     ): List<PlayEvent>
+
+    /**
+     * 특정 [adId] 에 한정해 디바이스당 가장 최근 STARTED/FINISHED 이벤트를
+     * window 안에서 한 건씩 반환. 라운드 로빈 큐에서 다른 광고가 직후에
+     * 시작되어 latest 자리를 차지해도, 이 광고를 "최근에 보여준 디바이스"
+     * 는 그대로 잡힌다 — 광고주의 송출 현황 페이지 정확도용.
+     *
+     * NOT EXISTS 서브쿼리에 ad_id 도 포함해 (deviceId, adId) pair 기준으로
+     * latest 1행만 떨어지게 한다.
+     */
+    @Query(
+        "SELECT pe FROM PlayEvent pe " +
+            "WHERE pe.adId = :adId " +
+            "AND pe.eventType = :eventType " +
+            "AND pe.occurredAt >= :threshold " +
+            "AND NOT EXISTS (" +
+            "  SELECT 1 FROM PlayEvent pe2 " +
+            "  WHERE pe2.deviceId = pe.deviceId " +
+            "  AND pe2.adId = pe.adId " +
+            "  AND pe2.eventType = :eventType " +
+            "  AND pe2.occurredAt > pe.occurredAt" +
+            ")",
+    )
+    fun findLatestPerDeviceByAdIdAndEventTypeSince(
+        @Param("adId") adId: String,
+        @Param("eventType") eventType: PlayEventType,
+        @Param("threshold") threshold: Instant,
+    ): List<PlayEvent>
 }

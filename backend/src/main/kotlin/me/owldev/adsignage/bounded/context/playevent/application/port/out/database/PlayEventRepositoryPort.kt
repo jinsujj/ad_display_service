@@ -24,4 +24,15 @@ interface PlayEventRepositoryPort {
         eventType: PlayEventType,
         threshold: Instant,
     ): List<PlayEvent>
+
+    /**
+     * 한 광고 [adId] 에 대해서만, 디바이스당 가장 최근 [eventType] 이벤트
+     * (window 안) 를 한 건씩 반환. 라운드 로빈 큐에서 다른 광고가 latest 인
+     * 순간에도 "이 광고가 최근에 송출된 디바이스" 를 정확히 식별하는 데 사용.
+     */
+    fun findLatestPerDeviceByAdIdAndEventTypeSince(
+        adId: String,
+        eventType: PlayEventType,
+        threshold: Instant,
+    ): List<PlayEvent>
 }
