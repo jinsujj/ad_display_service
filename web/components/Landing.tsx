@@ -9,13 +9,23 @@
  * 4. Final CTA
  *
  * 디자인은 어드민과 같은 토큰(앰버 + 다크). styled-jsx 에서 Tailwind 로 전환.
+ *
+ * Mock device 영상: `public/landing-mock.mp4` 가 있으면 자동 재생, 없으면
+ * 텍스트 모형으로 graceful fallback. 환경변수 `NEXT_PUBLIC_LANDING_VIDEO`
+ * 로 다른 경로/CDN URL 지정 가능.
  */
 
+import { useState } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 
+const LANDING_VIDEO_SRC =
+  process.env.NEXT_PUBLIC_LANDING_VIDEO || "/landing-mock.mp4";
+
 export function Landing() {
+  // 영상 로드 실패(404 / 디코드 오류 등) 시 텍스트 모형으로 폴백.
+  const [videoFailed, setVideoFailed] = useState(false);
   return (
     <div className="flex flex-col gap-14 pb-6">
       {/* ========== Hero ========== */}
@@ -65,29 +75,59 @@ export function Landing() {
           className="flex flex-col items-center gap-3"
           aria-hidden="true"
         >
-          <div className="relative flex aspect-[9/16] w-[min(280px,100%)] flex-col justify-center rounded-2xl border border-border bg-gradient-to-b from-[#14171c] to-[#0d1014] p-4 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.6)] ring-1 ring-accent/10">
+          <div className="relative aspect-[9/16] w-[min(280px,100%)] overflow-hidden rounded-2xl border border-border bg-gradient-to-b from-[#14171c] to-[#0d1014] shadow-[0_30px_60px_-20px_rgba(0,0,0,0.6)] ring-1 ring-accent/10">
+            {/* 실 광고 영상 — public/landing-mock.mp4 가 있으면 재생, 없으면
+                videoFailed 폴백으로 텍스트 모형. */}
+            {!videoFailed && (
+              <video
+                src={LANDING_VIDEO_SRC}
+                autoPlay
+                muted
+                playsInline
+                loop
+                preload="metadata"
+                onError={() => setVideoFailed(true)}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            )}
+            {/* 가장자리 글로우 오버레이 */}
             <span
               aria-hidden="true"
               className="pointer-events-none absolute inset-2 rounded-xl bg-[radial-gradient(ellipse_at_50%_0%,rgba(245,176,66,0.08),transparent_60%)]"
             />
-            <div className="absolute left-3.5 top-3.5 inline-flex items-center gap-1.5 rounded-full border border-rose-400/35 bg-rose-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-rose-400">
+            {/* ON AIR 배지 — 영상 위에 항상 노출 */}
+            <div className="absolute left-3.5 top-3.5 z-10 inline-flex items-center gap-1.5 rounded-full border border-rose-400/35 bg-rose-400/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-rose-300 backdrop-blur-sm">
               <span className="size-1.5 animate-pill-pulse rounded-full bg-rose-400 shadow-[0_0_0_4px_rgba(255,107,107,0.18)]" />
               ON&nbsp;AIR
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-extrabold tracking-tight text-accent [text-shadow:0_0_20px_rgba(245,176,66,0.35)]">
-                진로하이트
+            {/* 영상 못 띄울 때만 보이는 텍스트 모형 */}
+            {videoFailed && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                <div className="text-3xl font-extrabold tracking-tight text-accent [text-shadow:0_0_20px_rgba(245,176,66,0.35)]">
+                  진로하이트
+                </div>
+                <div className="mt-1.5 text-xs text-muted-foreground">
+                  5월 캠페인 · 11:00 ~ 23:00
+                </div>
+                <div className="mt-3.5 inline-block rounded-full border border-ad-border-soft bg-white/5 px-2.5 py-1 text-[11.5px] font-semibold">
+                  초기 30 / 일 송출
+                </div>
               </div>
-              <div className="mt-1.5 text-xs text-muted-foreground">
-                5월 캠페인 · 11:00 ~ 23:00
+            )}
+            {/* 영상 위 하단 캡션 — 광고가 실제 송출되는 느낌 강조 */}
+            {!videoFailed && (
+              <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 text-center">
+                <div className="text-base font-extrabold tracking-tight text-white">
+                  진로하이트
+                </div>
+                <div className="mt-0.5 text-[11px] text-white/75">
+                  5월 캠페인 · 11:00 ~ 23:00
+                </div>
               </div>
-              <div className="mt-3.5 inline-block rounded-full border border-ad-border-soft bg-white/5 px-2.5 py-1 text-[11.5px] font-semibold">
-                초기 30 / 일 송출
-              </div>
-            </div>
+            )}
             <span
               aria-hidden="true"
-              className="absolute -bottom-2.5 left-1/2 h-1.5 w-3/5 -translate-x-1/2 rounded-b-md border-t border-border bg-gradient-to-b from-[#1f242c] to-[#0b0d10]"
+              className="absolute -bottom-2.5 left-1/2 z-10 h-1.5 w-3/5 -translate-x-1/2 rounded-b-md border-t border-border bg-gradient-to-b from-[#1f242c] to-[#0b0d10]"
             />
           </div>
           <div className="text-xs text-muted-foreground">
