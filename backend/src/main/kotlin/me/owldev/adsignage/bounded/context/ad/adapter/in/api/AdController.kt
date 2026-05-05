@@ -13,6 +13,7 @@ import me.owldev.adsignage.bounded.context.playevent.application.port.out.databa
 import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEventType
 import me.owldev.adsignage.bounded.context.queue.application.port.out.database.DeviceAdQueueRepositoryPort
 import me.owldev.adsignage.bounded.context.restaurant.application.port.out.database.RestaurantRepositoryPort
+import me.owldev.adsignage.bounded.context.advertiser.domain.model.AdvertiserRole
 import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.DeviceAssignmentRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -106,15 +107,25 @@ class AdController(
         return ResponseEntity.status(HttpStatus.CREATED).body(AdResponse.from(saved))
     }
 
-    /** 호출 광고주가 소유한 광고 목록을 최신 순으로 반환. */
+    /**
+     * 광고 목록을 최신 순으로 반환.
+     *
+     * - ADVERTISER: 자기 광고만 (소유권 격리 유지)
+     * - OPERATOR: 모든 광고주의 광고 (디바이스 큐 picker 에서 다른 광고주
+     *   광고도 골라 담을 수 있도록)
+     */
     @GetMapping(produces = [MediaType.APPLICATION_JSON_VALUE])
     fun listMyAds(
         @AuthenticationPrincipal principal: AdvertiserPrincipal,
     ): ResponseEntity<List<AdResponse>> {
-        val ads = adService.listOwned(principal.advertiserId)
+        val ads = if (principal.role == AdvertiserRole.OPERATOR) {
+            adService.listAll()
+        } else {
+            adService.listOwned(principal.advertiserId)
+        }
         log.info(
-            "GET /api/ads advertiserId={} returning {} ad(s)",
-            principal.advertiserId, ads.size,
+            "GET /api/ads advertiserId={} role={} returning {} ad(s)",
+            principal.advertiserId, principal.role, ads.size,
         )
         return ResponseEntity.ok(ads.map(AdResponse::from))
     }

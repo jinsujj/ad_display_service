@@ -19,5 +19,10 @@ interface AdRepositoryPort {
     fun findAllById(ids: Iterable<String>): List<Ad>
     fun findByIdAndAdvertiserId(id: String, advertiserId: String): Ad?
     fun findAllByAdvertiserIdOrderByCreatedAtDesc(advertiserId: String): List<Ad>
+    /**
+     * 모든 광고주의 광고를 최신 순으로. OPERATOR 가 디바이스 큐 picker 에서
+     * 사용 — ADVERTISER 는 컨트롤러가 차단한다.
+     */
+    fun findAllOrderByCreatedAtDesc(): List<Ad>
     fun delete(ad: Ad)
 }

@@ -109,6 +109,15 @@ class AdService(
         adRepositoryPort.findAllByAdvertiserIdOrderByCreatedAtDesc(advertiserId)
 
     /**
+     * 시스템에 등록된 모든 광고주들의 광고를 최신 순으로 반환. OPERATOR 가
+     * 디바이스 큐 picker 에서 다른 광고주들의 광고도 골라 담을 수 있도록
+     * 제공 — 컨트롤러가 OPERATOR 권한 가드를 둔다.
+     */
+    @Transactional(readOnly = true)
+    fun listAll(): List<Ad> =
+        adRepositoryPort.findAllOrderByCreatedAtDesc()
+
+    /**
      * 새 광고 생성. 호출자는 이미 업로드된 영상의 [videoFilename] 을 들고
      * 와서 제목과 스케줄과 함께 묶는다.
      *

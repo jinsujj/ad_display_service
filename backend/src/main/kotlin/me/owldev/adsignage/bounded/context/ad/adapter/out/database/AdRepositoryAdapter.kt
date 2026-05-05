@@ -16,5 +16,7 @@ class AdRepositoryAdapter(
         adRepository.findByIdAndAdvertiserId(id, advertiserId).orElse(null)
     override fun findAllByAdvertiserIdOrderByCreatedAtDesc(advertiserId: String): List<Ad> =
         adRepository.findAllByAdvertiserIdOrderByCreatedAtDesc(advertiserId)
+    override fun findAllOrderByCreatedAtDesc(): List<Ad> =
+        adRepository.findAllByOrderByCreatedAtDesc()
     override fun delete(ad: Ad) { adRepository.delete(ad) }
 }

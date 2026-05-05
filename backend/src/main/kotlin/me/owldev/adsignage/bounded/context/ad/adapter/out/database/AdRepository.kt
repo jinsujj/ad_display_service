@@ -22,4 +22,11 @@ interface AdRepository : JpaRepository<Ad, String> {
      * `idx_ads_created_at`(또는 계획자가 선호하면 정렬 단계)을 사용.
      */
     fun findAllByAdvertiserIdOrderByCreatedAtDesc(advertiserId: String): List<Ad>
+
+    /**
+     * 시스템에 등록된 모든 광고를 최신 순으로 반환. OPERATOR 가 디바이스
+     * 큐를 짤 때 다른 광고주들의 광고 풀에서 골라 담을 수 있도록 사용 —
+     * 광고주(ADVERTISER) 는 절대 호출하지 않으며 컨트롤러가 role 가드를 둔다.
+     */
+    fun findAllByOrderByCreatedAtDesc(): List<Ad>
 }
