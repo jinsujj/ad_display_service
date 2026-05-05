@@ -90,9 +90,10 @@ export function DeviceMonitorWall({ devices, onRefresh, refreshing }: Props) {
       <div
         style={{
           display: "grid",
-          // minmax(min(220px, 100%), 1fr) — 화면이 220px 보다 좁으면 1컬럼,
-          // 그렇지 않으면 220px 단위로 자동 컬럼. 모바일/태블릿/데스크톱 자동 적응.
-          gridTemplateColumns: "repeat(auto-fill, minmax(min(220px, 100%), 1fr))",
+          // minmax(min(180px, 100%), 1fr) — 화면이 180px 보다 좁으면 1컬럼,
+          // 그렇지 않으면 180px 단위로 자동 컬럼. 폰(360~414px)에서 2컬럼이
+          // 자연스럽게 나오도록 220→180 으로 낮춤.
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(180px, 100%), 1fr))",
           gap: 12,
         }}
       >

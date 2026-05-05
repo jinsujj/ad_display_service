@@ -747,6 +747,78 @@ input[type="time"], input[type="date"] {
   background: var(--bg-elev);
 }
 
+/* -------- 14b. 디바이스 카드 (모바일 보기) ------------------------------- */
+
+/* 데스크톱(>720px): 테이블만 보이고 카드 리스트는 숨김. */
+.devices-cards { display: none; }
+
+.devices-table-wrap { display: block; }
+
+.device-card {
+  list-style: none;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.device-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.device-card__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.device-card__title strong {
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.device-card__id {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--fg-dim);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.device-card__id:hover { color: var(--accent); text-decoration: underline; }
+
+.device-card__meta { font-size: 11.5px; }
+
+.device-card__assignment {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--bg-elev-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft);
+}
+
+.device-card__restaurant strong { font-size: 13.5px; }
+.device-card__address { font-size: 12px; word-break: break-word; }
+.device-card__mapped { font-size: 11.5px; }
+
+.device-card__actions { gap: 6px; }
+.device-card__actions .btn { flex: 1; justify-content: center; }
+.device-card__delete {
+  color: var(--err);
+  border-color: rgba(239, 68, 68, 0.35);
+  flex: 0 0 auto !important;
+}
+
 /* -------- 15. 작은 화면 적응 --------------------------------------------- */
 
 @media (max-width: 720px) {
@@ -769,7 +841,19 @@ input[type="time"], input[type="date"] {
   }
   .page-header h1 { font-size: 22px; }
 
-  /* 데이터 테이블: 좁은 화면에서는 가로 스크롤 허용 — 셀 부서지지 않게. */
+  /* 디바이스 페이지: 좁은 화면에선 6컬럼 테이블 대신 세로 카드 리스트.
+     테이블의 가로 스크롤은 폰에서 손가락으로 끌어야 ID/매핑시각/액션이
+     보여 사실상 못 쓰는 수준이라 카드 뷰로 대체. */
+  .devices-table-wrap { display: none; }
+  .devices-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* 다른 페이지(광고/음식점)의 데이터 테이블은 여전히 가로 스크롤로 처리. */
   .data-table {
     font-size: 12.5px;
     display: block;

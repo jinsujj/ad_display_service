@@ -269,60 +269,83 @@ export function DevicesTableClient(props: DevicesTableClientProps) {
         )}
       </div>
 
-      <table className="data-table" aria-label="디바이스">
-        <colgroup>
-          <col style={{ width: 180 }} />
-          <col style={{ width: 200 }} />
-          <col style={{ width: 130 }} />
-          <col />
-          <col style={{ width: 130 }} />
-          <col style={{ width: 220 }} />
-        </colgroup>
-        <thead>
-          <tr>
-            <th scope="col">디바이스</th>
-            <th scope="col">디바이스 ID</th>
-            <th scope="col">등록일</th>
-            <th scope="col">현재 음식점</th>
-            <th scope="col">매핑 시각</th>
-            <th scope="col">재할당</th>
-          </tr>
-        </thead>
-        <tbody>
-          {devices.map((device) => {
-            const edit = editStates[device.deviceId] ?? DEFAULT_EDIT;
-            const submit = submitStates[device.deviceId] ?? { kind: "idle" };
-            return (
-              <DeviceRow
-                key={device.deviceId || device.deviceName}
-                device={device}
-                restaurants={restaurants}
-                edit={edit}
-                submit={submit}
-                onToggleEdit={(open) =>
-                  setEdit(device.deviceId, {
-                    open,
-                    // 열 때, 드롭다운이 합리적 기본 상태에 있도록 현재
-                    // 음식점을 미리 선택.
-                    selectedId: open
-                      ? device.currentRestaurant?.restaurantId ?? ""
-                      : "",
-                  })
-                }
-                onSelectRestaurant={(id) =>
-                  setEdit(device.deviceId, { selectedId: id })
-                }
-                onSave={() =>
-                  handleMappingChange(device.deviceId, edit.selectedId)
-                }
-                onClearStatus={() => setSubmit(device.deviceId, { kind: "idle" })}
-                onOpenModal={() => openRemapModal(device.deviceId)}
-                onDelete={() => handleDelete(device)}
-              />
-            );
-          })}
-        </tbody>
-      </table>
+      {/* 데스크톱 — 6컬럼 테이블. 좁은 화면에선 CSS 가 숨김. */}
+      <div className="devices-table-wrap">
+        <table className="data-table" aria-label="디바이스">
+          <colgroup>
+            <col style={{ width: 180 }} />
+            <col style={{ width: 200 }} />
+            <col style={{ width: 130 }} />
+            <col />
+            <col style={{ width: 130 }} />
+            <col style={{ width: 220 }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col">디바이스</th>
+              <th scope="col">디바이스 ID</th>
+              <th scope="col">등록일</th>
+              <th scope="col">현재 음식점</th>
+              <th scope="col">매핑 시각</th>
+              <th scope="col">재할당</th>
+            </tr>
+          </thead>
+          <tbody>
+            {devices.map((device) => {
+              const edit = editStates[device.deviceId] ?? DEFAULT_EDIT;
+              const submit = submitStates[device.deviceId] ?? { kind: "idle" };
+              return (
+                <DeviceRow
+                  key={device.deviceId || device.deviceName}
+                  device={device}
+                  restaurants={restaurants}
+                  edit={edit}
+                  submit={submit}
+                  onToggleEdit={(open) =>
+                    setEdit(device.deviceId, {
+                      open,
+                      // 열 때, 드롭다운이 합리적 기본 상태에 있도록 현재
+                      // 음식점을 미리 선택.
+                      selectedId: open
+                        ? device.currentRestaurant?.restaurantId ?? ""
+                        : "",
+                    })
+                  }
+                  onSelectRestaurant={(id) =>
+                    setEdit(device.deviceId, { selectedId: id })
+                  }
+                  onSave={() =>
+                    handleMappingChange(device.deviceId, edit.selectedId)
+                  }
+                  onClearStatus={() => setSubmit(device.deviceId, { kind: "idle" })}
+                  onOpenModal={() => openRemapModal(device.deviceId)}
+                  onDelete={() => handleDelete(device)}
+                />
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 모바일 — 같은 데이터를 세로 카드 리스트로. 테이블의 가로 스크롤
+          (≈860px 폭) 을 대체. ≤720px 화면에서만 보인다. 인라인 에디터는
+          좁은 화면에서 어색하므로 카드 액션은 모달(`Edit`) 과 제거만 노출. */}
+      <ul className="devices-cards" aria-label="디바이스 (모바일 보기)">
+        {devices.map((device) => {
+          const submit = submitStates[device.deviceId] ?? { kind: "idle" };
+          return (
+            <DeviceCard
+              key={device.deviceId || device.deviceName}
+              device={device}
+              restaurants={restaurants}
+              submit={submit}
+              onClearStatus={() => setSubmit(device.deviceId, { kind: "idle" })}
+              onOpenModal={() => openRemapModal(device.deviceId)}
+              onDelete={() => handleDelete(device)}
+            />
+          );
+        })}
+      </ul>
 
       {/* 모달 기반 재할당 표면(AC 9, Sub-AC 2). `editingDevice`가 non-null일
           때만 렌더링. 모달은 onSave를 통해 `handleMappingChange`를 호출하므로
@@ -593,6 +616,130 @@ function DeviceRow(props: DeviceRowProps) {
         </tr>
       )}
     </>
+  );
+}
+
+/* ----------------------------------------------------------- mobile card */
+
+interface DeviceCardProps {
+  device: DeviceListItem;
+  restaurants: RestaurantListItem[];
+  submit: RowSubmitState;
+  onClearStatus: () => void;
+  onOpenModal: () => void;
+  onDelete: () => void;
+}
+
+/**
+ * 모바일/좁은 화면용 디바이스 카드. 데스크톱 테이블 행과 동일한 데이터를
+ * 세로 스택으로 표시한다. 인라인 에디터는 모바일에선 답답해서 의도적으로
+ * 생략 — 재할당은 모달(`Edit`) 로 일원화.
+ */
+function DeviceCard({
+  device,
+  restaurants,
+  submit,
+  onClearStatus,
+  onOpenModal,
+  onDelete,
+}: DeviceCardProps) {
+  const current = device.currentRestaurant;
+  const submitting = submit.kind === "submitting";
+  const noRestaurants = restaurants.length === 0;
+
+  return (
+    <li className="device-card">
+      <div className="device-card__head">
+        <div className="device-card__title">
+          <strong>{device.deviceName || "(이름 없음)"}</strong>
+          <Link
+            href={`/devices/${encodeURIComponent(device.deviceId)}`}
+            className="device-card__id"
+            title={device.deviceId}
+          >
+            {shortId(device.deviceId)}
+          </Link>
+        </div>
+        <div className="device-card__meta muted">
+          등록 {formatDate(device.registeredAt)}
+        </div>
+      </div>
+
+      <div className="device-card__assignment">
+        {current ? (
+          <>
+            <div className="device-card__restaurant">
+              <span aria-hidden="true">📍 </span>
+              <strong>{current.restaurantName || "(음식점 이름 없음)"}</strong>
+            </div>
+            {current.address && (
+              <div className="muted device-card__address">{current.address}</div>
+            )}
+            <div className="muted device-card__mapped">
+              매핑 {formatDate(current.assignedAt)}
+            </div>
+          </>
+        ) : (
+          <span className="pill pill-warn">미할당</span>
+        )}
+      </div>
+
+      {submit.kind === "error" && (
+        <div className="notice notice-error" role="alert">
+          {submit.message}
+        </div>
+      )}
+
+      {submit.kind === "success" && (
+        <div
+          className="notice"
+          role="status"
+          style={{
+            borderColor: "rgba(74, 222, 128, 0.5)",
+            background: "rgba(74, 222, 128, 0.08)",
+            color: "var(--ok)",
+            marginBottom: 0,
+          }}
+        >
+          매핑이 업데이트되었습니다.
+          <button
+            type="button"
+            className="btn"
+            style={{ marginLeft: 8 }}
+            onClick={onClearStatus}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      <div className="device-card__actions toolbar">
+        <button
+          type="button"
+          className="btn"
+          onClick={onOpenModal}
+          disabled={submitting || noRestaurants}
+          title={
+            noRestaurants
+              ? "재할당 가능한 음식점이 없습니다"
+              : "이 디바이스에 대한 재할당 다이얼로그 열기"
+          }
+          aria-label={`Edit mapping for ${device.deviceName || device.deviceId}`}
+        >
+          <span aria-hidden="true">✎</span> {current ? "재할당" : "할당"}
+        </button>
+        <button
+          type="button"
+          className="btn device-card__delete"
+          onClick={onDelete}
+          disabled={submitting}
+          title="이 디바이스 제거 (앱 재시작 시 자동 재등록)"
+          aria-label={`Delete device ${device.deviceName || device.deviceId}`}
+        >
+          <span aria-hidden="true">✕</span> 제거
+        </button>
+      </div>
+    </li>
   );
 }
 
