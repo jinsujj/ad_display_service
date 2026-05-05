@@ -2,7 +2,7 @@ package me.owldev.adsignage.domain.assignment
 
 import me.owldev.adsignage.domain.assignment.dto.DeviceResponse
 import me.owldev.adsignage.domain.assignment.dto.UpdateDeviceRequest
-import me.owldev.adsignage.domain.device.DeviceRepository
+import me.owldev.adsignage.bounded.context.device.application.port.out.database.DeviceRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -30,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional
 class DeviceUpdateService(
     private val assignmentService: DeviceAssignmentService,
     private val deviceLookup: DeviceLookup,
-    private val deviceRepository: DeviceRepository,
+    private val deviceRepository: DeviceRepositoryPort,
 ) {
 
     private val log = LoggerFactory.getLogger(DeviceUpdateService::class.java)
@@ -89,9 +89,8 @@ class DeviceUpdateService(
             if (trimmed.isEmpty()) {
                 throw DeviceFieldUnsupportedException("deviceName")
             }
-            val device = deviceRepository.findById(deviceId).orElseThrow {
-                DeviceNotFoundException(deviceId)
-            }
+            val device = deviceRepository.findById(deviceId)
+                ?: throw DeviceNotFoundException(deviceId)
             device.deviceName = trimmed
             deviceRepository.save(device)
             log.info("applyPatch: device={} deviceName=\"{}\"", deviceId, trimmed)

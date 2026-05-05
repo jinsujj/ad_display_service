@@ -6,7 +6,7 @@ import me.owldev.adsignage.domain.ad.dto.AdResponse
 import me.owldev.adsignage.domain.ad.dto.CreateAdRequest
 import me.owldev.adsignage.domain.ad.dto.UpdateAdScheduleRequest
 import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
-import me.owldev.adsignage.domain.device.DeviceRepository
+import me.owldev.adsignage.bounded.context.device.application.port.out.database.DeviceRepositoryPort
 import me.owldev.adsignage.domain.playevent.PlayEventRepository
 import me.owldev.adsignage.domain.playevent.PlayEventType
 import me.owldev.adsignage.domain.queue.DeviceAdQueueRepository
@@ -65,7 +65,7 @@ class AdController(
      * 직접 join 한다 — 현재 데모 단계의 단순 read 모음.
      */
     private val queueRepository: DeviceAdQueueRepository,
-    private val deviceRepository: DeviceRepository,
+    private val deviceRepository: DeviceRepositoryPort,
     private val assignmentRepository: DeviceAssignmentRepository,
     private val restaurantRepository: RestaurantRepositoryPort,
     private val playEventRepository: PlayEventRepository,

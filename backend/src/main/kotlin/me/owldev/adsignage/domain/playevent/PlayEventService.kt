@@ -1,6 +1,6 @@
 package me.owldev.adsignage.domain.playevent
 
-import me.owldev.adsignage.domain.device.DeviceRepository
+import me.owldev.adsignage.bounded.context.device.application.port.out.database.DeviceRepositoryPort
 import me.owldev.adsignage.domain.playevent.dto.CreatePlayEventRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -61,7 +61,7 @@ class PlayEventService(
      * play-event 자체가 가장 자연스러운 heartbeat 라(15-30초마다 발생) 별도
      * heartbeat 엔드포인트를 두지 않고 이 경로에서 함께 갱신.
      */
-    private val deviceRepository: DeviceRepository,
+    private val deviceRepository: DeviceRepositoryPort,
     @Value("\${adsignage.daily-count.zone-id:Asia/Seoul}")
     private val zoneIdProperty: String,
 ) {
@@ -123,7 +123,7 @@ class PlayEventService(
         // 사용한다(SSE 연결이 끊어졌어도 최근 play-event 가 있으면 살아있는 것).
         // device 행이 사라졌어도(아직 register 안 했거나 삭제됨) 텔레메트리
         // 자체는 그대로 기록 — orElse(null) 후 ?.also 로 best-effort.
-        deviceRepository.findById(deviceId).orElse(null)?.also {
+        deviceRepository.findById(deviceId)?.also {
             it.touch()
             deviceRepository.save(it)
         }

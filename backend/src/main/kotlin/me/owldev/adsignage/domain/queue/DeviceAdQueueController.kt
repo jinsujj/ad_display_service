@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import me.owldev.adsignage.domain.ad.AdRepository
 import me.owldev.adsignage.domain.ad.AdStatus
-import me.owldev.adsignage.domain.device.DeviceRepository
+import me.owldev.adsignage.bounded.context.device.application.port.out.database.DeviceRepositoryPort
 import me.owldev.adsignage.sse.PlaylistUpdatedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
@@ -40,7 +40,7 @@ import java.time.LocalTime
 @RestController
 class DeviceAdQueueController(
     private val queueRepository: DeviceAdQueueRepository,
-    private val deviceRepository: DeviceRepository,
+    private val deviceRepository: DeviceRepositoryPort,
     private val adRepository: AdRepository,
     private val eventPublisher: ApplicationEventPublisher,
 ) {

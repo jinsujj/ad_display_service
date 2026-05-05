@@ -1,4 +1,4 @@
-package me.owldev.adsignage.domain.device
+package me.owldev.adsignage.bounded.context.device.domain.model
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -29,6 +29,15 @@ class Device(
      */
     fun touch() {
         this.lastSeenAt = Instant.now()
+    }
+
+    /**
+     * 디바이스를 즉시 오프라인으로 강제 — `lastSeenAt` 을 liveness 윈도우
+     * 밖으로 끌어내려, 어드민 모니터의 다음 폴링에서 곧바로 오프라인 카드로
+     * 표시되게 한다. 호출자는 SSE 연결도 별도로 끊어 줘야 한다 (어댑터 책임).
+     */
+    fun forceOffline(beyondWindowSeconds: Long) {
+        this.lastSeenAt = Instant.now().minusSeconds(beyondWindowSeconds + 1)
     }
 
     override fun equals(other: Any?): Boolean = other is Device && other.deviceId == deviceId

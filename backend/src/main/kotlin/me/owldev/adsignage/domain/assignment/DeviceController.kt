@@ -56,7 +56,11 @@ import org.springframework.web.bind.annotation.RestController
  * 관리자 CRUD 접두사를 `ROLE_ADVERTISER` 뒤로 잠그는 auth-and-isolation
  * 패스가 이 라우트도 가져갈 것 — 컨트롤러 변경은 필요 없음.
  */
-@RestController
+// TODO(hexagonal-cutover): assignment 컨텍스트 마이그레이션 시 이 컨트롤러를
+//   bounded/context/device/adapter/in/api/ 로 옮긴다 (라우트는 device 의 PATCH
+//   라이프사이클이라 device 컨텍스트 소속). 그 전까지는 새 DeviceController 와의
+//   기본 빈 이름 충돌만 회피하기 위해 명시적 빈 이름 부여.
+@RestController("legacyAssignmentDeviceController")
 @RequestMapping("/api/devices/{deviceId}")
 class DeviceController(
     private val deviceUpdateService: DeviceUpdateService,
