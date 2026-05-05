@@ -10,4 +10,5 @@ class RestaurantRepositoryAdapter(
 ) : RestaurantRepositoryPort {
     override fun findAll(): List<Restaurant> = restaurantRepository.findAll()
     override fun findAllByOrderByName(): List<Restaurant> = restaurantRepository.findAllByOrderByName()
+    override fun existsById(restaurantId: String): Boolean = restaurantRepository.existsById(restaurantId)
 }

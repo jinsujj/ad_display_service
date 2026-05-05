@@ -1,7 +1,22 @@
 package me.owldev.adsignage.sse
 
-import me.owldev.adsignage.domain.assignment.DeviceAssignment
-import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
+import me.owldev.adsignage.bounded.context.assignment.application.service.DeviceAssignmentService
+import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.DeviceLookupPort
+import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.RestaurantLookupPort
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.AssignmentNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.DeviceNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.RestaurantNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.DeviceFieldUnsupportedException
+import me.owldev.adsignage.bounded.context.assignment.domain.dto.AssignmentResponse
+import me.owldev.adsignage.bounded.context.assignment.domain.dto.CreateAssignmentRequest
+import me.owldev.adsignage.bounded.context.assignment.domain.dto.UpdateAssignmentRequest
+import me.owldev.adsignage.bounded.context.assignment.domain.dto.UpdateDeviceRestaurantRequest
+import me.owldev.adsignage.bounded.context.device.domain.dto.UpdateDeviceRequest
+import me.owldev.adsignage.bounded.context.device.domain.dto.UpdateDeviceResponse
+import me.owldev.adsignage.bounded.context.device.application.service.DeviceUpdateService
+import me.owldev.adsignage.bounded.context.device.adapter.`in`.api.DeviceUpdateController
+import me.owldev.adsignage.bounded.context.assignment.domain.model.DeviceAssignment
+import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.DeviceAssignmentRepositoryPort
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -25,10 +40,10 @@ import java.util.UUID
  *  - one bad emitter does not poison delivery to siblings (delegated to
  *    the registry — verified end-to-end through the listener)
  *
- * The repository is `Mockito.mock`ed because [DeviceAssignmentRepository]
+ * The repository is `Mockito.mock`ed because [DeviceAssignmentRepositoryPort]
  * extends [org.springframework.data.jpa.repository.JpaRepository], which
  * is a 40+-method API that we don't want to hand-stub. The listener only
- * consumes [DeviceAssignmentRepository.findAllByActiveTrue], so a focused
+ * consumes [DeviceAssignmentRepositoryPort.findAllByActiveTrue], so a focused
  * stub via `when(...).thenReturn(...)` is the lightest-weight way to
  * assert the fan-out behavior.
  */
@@ -36,14 +51,14 @@ class PlaylistUpdatedSseListenerTest {
 
     private lateinit var registry: SseEmitterRegistry
     private lateinit var publisher: PlaylistEventPublisher
-    private lateinit var assignmentRepo: DeviceAssignmentRepository
+    private lateinit var assignmentRepo: DeviceAssignmentRepositoryPort
     private lateinit var listener: PlaylistUpdatedSseListener
 
     @BeforeEach
     fun setup() {
         registry = SseEmitterRegistry()
         publisher = PlaylistEventPublisher(registry)
-        assignmentRepo = mock(DeviceAssignmentRepository::class.java)
+        assignmentRepo = mock(DeviceAssignmentRepositoryPort::class.java)
         listener = PlaylistUpdatedSseListener(publisher, assignmentRepo)
     }
 

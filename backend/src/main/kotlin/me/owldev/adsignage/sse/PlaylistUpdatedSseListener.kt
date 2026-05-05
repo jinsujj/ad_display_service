@@ -1,6 +1,6 @@
 package me.owldev.adsignage.sse
 
-import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
+import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.DeviceAssignmentRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.transaction.event.TransactionPhase
@@ -75,7 +75,7 @@ import org.springframework.transaction.event.TransactionalEventListener
 @Component
 class PlaylistUpdatedSseListener(
     private val publisher: PlaylistEventPublisher,
-    private val assignmentRepository: DeviceAssignmentRepository,
+    private val assignmentRepository: DeviceAssignmentRepositoryPort,
 ) {
 
     private val log = LoggerFactory.getLogger(PlaylistUpdatedSseListener::class.java)

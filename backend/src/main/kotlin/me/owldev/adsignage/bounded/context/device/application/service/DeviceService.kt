@@ -12,7 +12,7 @@ import me.owldev.adsignage.bounded.context.device.domain.model.Device
 import me.owldev.adsignage.bounded.context.restaurant.application.port.out.database.RestaurantRepositoryPort
 import me.owldev.adsignage.bounded.context.ad.application.port.out.database.AdRepositoryPort
 import me.owldev.adsignage.bounded.context.ad.domain.model.AdStatus
-import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
+import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.DeviceAssignmentRepositoryPort
 import me.owldev.adsignage.bounded.context.playevent.application.port.out.database.PlayEventRepositoryPort
 import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEventType
 import me.owldev.adsignage.bounded.context.queue.application.port.out.database.DeviceAdQueueRepositoryPort
@@ -36,7 +36,7 @@ import java.time.Instant
 @Service
 class DeviceService(
     private val deviceRepositoryPort: DeviceRepositoryPort,
-    private val assignmentRepository: DeviceAssignmentRepository,
+    private val assignmentRepository: DeviceAssignmentRepositoryPort,
     private val restaurantRepositoryPort: RestaurantRepositoryPort,
     private val queueRepository: DeviceAdQueueRepositoryPort,
     private val adRepositoryPort: AdRepositoryPort,

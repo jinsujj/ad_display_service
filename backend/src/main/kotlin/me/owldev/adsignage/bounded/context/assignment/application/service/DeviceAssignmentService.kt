@@ -1,5 +1,12 @@
-package me.owldev.adsignage.domain.assignment
+package me.owldev.adsignage.bounded.context.assignment.application.service
 
+import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.DeviceAssignmentRepositoryPort
+import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.DeviceLookupPort
+import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.RestaurantLookupPort
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.AssignmentNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.DeviceNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.RestaurantNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.model.DeviceAssignment
 import me.owldev.adsignage.sse.DeviceMappingChangedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
@@ -9,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional
 /**
  * 디바이스 → 음식점 할당 라이프사이클을 소유하는 서비스.
  *
- * Sub-AC 2 범위:
  *  - [createAssignment] — 디바이스에 대해 첫 번째/유일한 활성 할당을 생성.
  *  - [updateAssignment] — 디바이스를 다른 음식점으로 원자적으로 리매핑.
  *  - [getCurrentAssignment] — 현재 활성 할당을 가져옴.
@@ -30,9 +36,9 @@ import org.springframework.transaction.annotation.Transactional
  */
 @Service
 class DeviceAssignmentService(
-    private val assignmentRepository: DeviceAssignmentRepository,
-    private val deviceLookup: DeviceLookup,
-    private val restaurantLookup: RestaurantLookup,
+    private val assignmentRepositoryPort: DeviceAssignmentRepositoryPort,
+    private val deviceLookupPort: DeviceLookupPort,
+    private val restaurantLookupPort: RestaurantLookupPort,
     private val eventPublisher: ApplicationEventPublisher,
 ) {
 
@@ -44,25 +50,22 @@ class DeviceAssignmentService(
      * 디바이스가 이미 활성 할당을 가지고 있으면 [updateAssignment](비활성화 후
      * 삽입)에 위임하여 호출자가 이 메서드를 멱등적인 "현재 할당 설정" 진입점으로
      * 사용할 수 있게 함.
-     *
-     * @throws DeviceNotFoundException     `devices`에서 [deviceId]에 해당하는 행이 없을 때
-     * @throws RestaurantNotFoundException `restaurants`에서 [restaurantId]에 해당하는 행이 없을 때
      */
     @Transactional
     fun createAssignment(deviceId: String, restaurantId: String): DeviceAssignment {
         validateReferencesExist(deviceId, restaurantId)
 
-        val existing = assignmentRepository.findByDeviceIdAndActiveTrue(deviceId)
-        if (existing.isPresent) {
+        val existing = assignmentRepositoryPort.findByDeviceIdAndActiveTrue(deviceId)
+        if (existing != null) {
             log.info(
                 "createAssignment: device {} already has active assignment {} → delegating to updateAssignment",
                 deviceId,
-                existing.get().id,
+                existing.id,
             )
             return updateAssignmentInternal(deviceId, restaurantId)
         }
 
-        val saved = assignmentRepository.save(
+        val saved = assignmentRepositoryPort.save(
             DeviceAssignment(deviceId = deviceId, restaurantId = restaurantId),
         )
         log.info(
@@ -76,11 +79,6 @@ class DeviceAssignmentService(
     /**
      * [deviceId]를 [newRestaurantId]로 리매핑. 같은 트랜잭션에서 기존 활성
      * 행(있다면)을 비활성화하고 새 활성 행을 삽입.
-     *
-     * 새로 생성된 활성 [DeviceAssignment]를 반환.
-     *
-     * @throws DeviceNotFoundException     `devices`에서 [deviceId]에 해당하는 행이 없을 때
-     * @throws RestaurantNotFoundException `restaurants`에서 [newRestaurantId]에 해당하는 행이 없을 때
      */
     @Transactional
     fun updateAssignment(deviceId: String, newRestaurantId: String): DeviceAssignment {
@@ -90,13 +88,11 @@ class DeviceAssignmentService(
 
     /**
      * [deviceId]에 대한 현재 활성 할당을 반환.
-     *
-     * @throws AssignmentNotFoundException 디바이스에 활성 할당이 없을 때
      */
     @Transactional(readOnly = true)
     fun getCurrentAssignment(deviceId: String): DeviceAssignment =
-        assignmentRepository.findByDeviceIdAndActiveTrue(deviceId)
-            .orElseThrow { AssignmentNotFoundException(deviceId) }
+        assignmentRepositoryPort.findByDeviceIdAndActiveTrue(deviceId)
+            ?: throw AssignmentNotFoundException(deviceId)
 
     /**
      * [deviceId]에 대한 현재 활성 할당을 반환하거나, 디바이스가 현재
@@ -104,17 +100,13 @@ class DeviceAssignmentService(
      */
     @Transactional(readOnly = true)
     fun findCurrentAssignment(deviceId: String): DeviceAssignment? =
-        assignmentRepository.findByDeviceIdAndActiveTrue(deviceId).orElse(null)
-
-    // -------------------------------------------------------------------------
-    // 내부 구현
-    // -------------------------------------------------------------------------
+        assignmentRepositoryPort.findByDeviceIdAndActiveTrue(deviceId)
 
     private fun validateReferencesExist(deviceId: String, restaurantId: String) {
         require(deviceId.isNotBlank()) { "deviceId must not be blank" }
         require(restaurantId.isNotBlank()) { "restaurantId must not be blank" }
-        if (!deviceLookup.exists(deviceId)) throw DeviceNotFoundException(deviceId)
-        if (!restaurantLookup.exists(restaurantId)) throw RestaurantNotFoundException(restaurantId)
+        if (!deviceLookupPort.exists(deviceId)) throw DeviceNotFoundException(deviceId)
+        if (!restaurantLookupPort.exists(restaurantId)) throw RestaurantNotFoundException(restaurantId)
     }
 
     /**
@@ -122,11 +114,8 @@ class DeviceAssignmentService(
      * 존재함을 이미 검증한 책임을 짐.
      */
     private fun updateAssignmentInternal(deviceId: String, newRestaurantId: String): DeviceAssignment {
-        val deactivated = assignmentRepository.deactivateCurrentForDevice(deviceId)
-        // saveAndFlush를 통한 플러시는 엄격히 필요하지 않음 — @Modifying
-        // 쿼리가 이미 DB에 대해 실행됨; 다만 전체 쌍을 원자적으로 만들기
-        // 위해 트랜잭션 경계에 의존함.
-        val saved = assignmentRepository.save(
+        val deactivated = assignmentRepositoryPort.deactivateCurrentForDevice(deviceId)
+        val saved = assignmentRepositoryPort.save(
             DeviceAssignment(deviceId = deviceId, restaurantId = newRestaurantId),
         )
         log.info(
@@ -138,23 +127,9 @@ class DeviceAssignmentService(
     }
 
     /**
-     * SSE 브리지가 수신하는 [DeviceMappingChangedEvent]를 발행. publish 호출은
-     * `@Transactional` 메서드 내부에서 이루어지지만, 리스너
-     * ([me.owldev.adsignage.sse.DeviceMappingChangedSseListener])는
-     * `@TransactionalEventListener`를 통해
-     * [org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT]에
-     * 바인딩되어 있어 SSE 브로드캐스트는 할당 행이 데이터베이스에 영구적으로
-     * 커밋된 이후에만 실행됨.
-     *
-     * Sub-AC 50102.2 계약:
-     *  - 구독자는 **DB 업데이트가 커밋된 이후에** 리매핑 이벤트를 받음
-     *    — 이전이 아님, 롤백된 쓰기에서도 아님.
-     *
-     * 리스너 내부의 실패가 할당 자체에 영향을 주지 않아야 함. 리스너가
-     * 커밋 후 발생하므로 브로드캐스트 실행 시 트랜잭션은 이미 닫혀 있지만,
-     * 향후 AC가 같은 이벤트 타입에 붙일 수 있는 pre-commit 리스너에 대비한
-     * 안전 장치(belt-and-braces)로 아래의 publish 호출은 여전히 try/catch로
-     * 감쌈.
+     * SSE 브리지가 수신하는 [DeviceMappingChangedEvent]를 발행. 리스너는
+     * AFTER_COMMIT에 바인딩되어 있어 SSE 브로드캐스트는 할당 행이 데이터베이스에
+     * 영구적으로 커밋된 이후에만 실행됨.
      */
     private fun publishMappingChanged(saved: DeviceAssignment) {
         try {

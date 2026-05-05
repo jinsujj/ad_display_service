@@ -3,7 +3,7 @@ package me.owldev.adsignage.domain.playlist
 import com.fasterxml.jackson.annotation.JsonFormat
 import me.owldev.adsignage.bounded.context.ad.application.port.out.database.AdRepositoryPort
 import me.owldev.adsignage.bounded.context.ad.domain.model.AdStatus
-import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
+import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.DeviceAssignmentRepositoryPort
 import me.owldev.adsignage.bounded.context.queue.application.port.out.database.DeviceAdQueueRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
@@ -36,7 +36,7 @@ import java.time.LocalTime
 @RestController
 class PlaylistController(
     private val adRepository: AdRepositoryPort,
-    private val assignmentRepository: DeviceAssignmentRepository,
+    private val assignmentRepository: DeviceAssignmentRepositoryPort,
     private val queueRepository: DeviceAdQueueRepositoryPort,
 ) {
     private val log = LoggerFactory.getLogger(PlaylistController::class.java)
@@ -48,7 +48,7 @@ class PlaylistController(
     @Transactional(readOnly = true)
     fun getPlaylist(@PathVariable deviceId: String): ResponseEntity<DevicePlaylistResponse> {
         val now = Instant.now()
-        val assignment = assignmentRepository.findByDeviceIdAndActiveTrue(deviceId).orElse(null)
+        val assignment = assignmentRepository.findByDeviceIdAndActiveTrue(deviceId)
         val restaurantId = assignment?.restaurantId
 
         val queueRows = queueRepository.findAllByIdDeviceIdOrderByAddedAtDesc(deviceId)

@@ -5,10 +5,10 @@ import me.owldev.adsignage.auth.DuplicateEmailException
 import me.owldev.adsignage.auth.InvalidCredentialsException
 import me.owldev.adsignage.bounded.context.ad.domain.exception.AdNotFoundException
 import me.owldev.adsignage.bounded.context.ad.domain.exception.InvalidScheduleException
-import me.owldev.adsignage.domain.assignment.AssignmentNotFoundException
-import me.owldev.adsignage.domain.assignment.DeviceFieldUnsupportedException
-import me.owldev.adsignage.domain.assignment.DeviceNotFoundException
-import me.owldev.adsignage.domain.assignment.RestaurantNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.AssignmentNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.DeviceFieldUnsupportedException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.DeviceNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.RestaurantNotFoundException
 import me.owldev.adsignage.domain.video.streaming.UnsatisfiableRangeException
 import me.owldev.adsignage.domain.video.streaming.VideoNotFoundException
 import me.owldev.adsignage.domain.video.upload.EmptyVideoUploadException

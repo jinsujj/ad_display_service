@@ -1,5 +1,22 @@
 package me.owldev.adsignage.domain.assignment
 
+import me.owldev.adsignage.bounded.context.assignment.application.service.DeviceAssignmentService
+import me.owldev.adsignage.bounded.context.assignment.adapter.out.database.DeviceAssignmentRepository
+import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.DeviceLookupPort
+import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.RestaurantLookupPort
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.AssignmentNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.DeviceNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.RestaurantNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.DeviceFieldUnsupportedException
+import me.owldev.adsignage.bounded.context.assignment.domain.model.DeviceAssignment
+import me.owldev.adsignage.bounded.context.assignment.domain.dto.AssignmentResponse
+import me.owldev.adsignage.bounded.context.assignment.domain.dto.CreateAssignmentRequest
+import me.owldev.adsignage.bounded.context.assignment.domain.dto.UpdateAssignmentRequest
+import me.owldev.adsignage.bounded.context.assignment.domain.dto.UpdateDeviceRestaurantRequest
+import me.owldev.adsignage.bounded.context.device.domain.dto.UpdateDeviceRequest
+import me.owldev.adsignage.bounded.context.device.domain.dto.UpdateDeviceResponse
+import me.owldev.adsignage.bounded.context.device.application.service.DeviceUpdateService
+import me.owldev.adsignage.bounded.context.device.adapter.`in`.api.DeviceUpdateController
 import me.owldev.adsignage.sse.DeviceMappingChangedEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -206,11 +223,11 @@ class DeviceAssignmentServiceTest {
     // fakes
     // -------------------------------------------------------------------------
 
-    private class FakeDeviceLookup(private val known: Set<String>) : DeviceLookup {
+    private class FakeDeviceLookup(private val known: Set<String>) : DeviceLookupPort {
         override fun exists(deviceId: String): Boolean = deviceId in known
     }
 
-    private class FakeRestaurantLookup(private val known: Set<String>) : RestaurantLookup {
+    private class FakeRestaurantLookup(private val known: Set<String>) : RestaurantLookupPort {
         override fun exists(restaurantId: String): Boolean = restaurantId in known
     }
 
@@ -233,16 +250,20 @@ class DeviceAssignmentServiceTest {
     }
 
     /**
-     * Minimal in-memory implementation of the methods that
-     * [DeviceAssignmentService] actually uses. JpaRepository inherits a large
-     * surface area, but the service only touches a small subset; the unused
-     * methods throw [UnsupportedOperationException] to surface accidental use.
+     * 인메모리 fake — 새 헥사고날 port 인터페이스(DeviceAssignmentRepositoryPort)
+     * 구현. JpaRepository surface 전체가 아닌 port 가 노출하는 메서드만.
      */
-    private class InMemoryAssignmentRepository : DeviceAssignmentRepository {
+    private class InMemoryAssignmentRepository :
+        me.owldev.adsignage.bounded.context.assignment.application.port.out.database.DeviceAssignmentRepositoryPort {
         private val store = LinkedHashMap<String, DeviceAssignment>()
 
-        override fun findByDeviceIdAndActiveTrue(deviceId: String): Optional<DeviceAssignment> =
-            Optional.ofNullable(store.values.firstOrNull { it.deviceId == deviceId && it.active })
+        override fun save(assignment: DeviceAssignment): DeviceAssignment {
+            store[assignment.id] = assignment
+            return assignment
+        }
+
+        override fun findByDeviceIdAndActiveTrue(deviceId: String): DeviceAssignment? =
+            store.values.firstOrNull { it.deviceId == deviceId && it.active }
 
         override fun findAllByActiveTrue(): List<DeviceAssignment> =
             store.values.filter { it.active }
@@ -266,43 +287,8 @@ class DeviceAssignmentServiceTest {
             return toRemove.size
         }
 
-        override fun <S : DeviceAssignment> save(entity: S): S {
-            store[entity.id] = entity
-            return entity
-        }
-
-        override fun count(): Long = store.size.toLong()
-        override fun findAll(): List<DeviceAssignment> = store.values.toList()
-        override fun findById(id: String): Optional<DeviceAssignment> = Optional.ofNullable(store[id])
-        override fun existsById(id: String): Boolean = store.containsKey(id)
-        override fun deleteAll() { store.clear() }
-
-        // --- unused JpaRepository surface ---
-        override fun <S : DeviceAssignment> saveAll(entities: Iterable<S>): MutableList<S> = unsupported()
-        override fun <S : DeviceAssignment> saveAndFlush(entity: S): S = unsupported()
-        override fun <S : DeviceAssignment> saveAllAndFlush(entities: Iterable<S>): MutableList<S> = unsupported()
-        override fun flush() {}
-        override fun deleteAllInBatch() = unsupported()
-        override fun deleteAllInBatch(entities: Iterable<DeviceAssignment>) = unsupported()
-        override fun deleteAllByIdInBatch(ids: Iterable<String>) = unsupported()
-        override fun getOne(id: String): DeviceAssignment = unsupported()
-        override fun getById(id: String): DeviceAssignment = unsupported()
-        override fun getReferenceById(id: String): DeviceAssignment = unsupported()
-        override fun findAll(sort: org.springframework.data.domain.Sort): List<DeviceAssignment> = findAll()
-        override fun findAll(pageable: org.springframework.data.domain.Pageable): org.springframework.data.domain.Page<DeviceAssignment> = unsupported()
-        override fun findAllById(ids: Iterable<String>): List<DeviceAssignment> = ids.mapNotNull { store[it] }
-        override fun deleteById(id: String) { store.remove(id) }
-        override fun delete(entity: DeviceAssignment) { store.remove(entity.id) }
-        override fun deleteAllById(ids: Iterable<String>) = ids.forEach { store.remove(it) }
-        override fun deleteAll(entities: Iterable<DeviceAssignment>) = entities.forEach { store.remove(it.id) }
-        override fun <S : DeviceAssignment> findOne(example: org.springframework.data.domain.Example<S>): Optional<S> = unsupported()
-        override fun <S : DeviceAssignment> findAll(example: org.springframework.data.domain.Example<S>): List<S> = unsupported()
-        override fun <S : DeviceAssignment> findAll(example: org.springframework.data.domain.Example<S>, sort: org.springframework.data.domain.Sort): List<S> = unsupported()
-        override fun <S : DeviceAssignment> findAll(example: org.springframework.data.domain.Example<S>, pageable: org.springframework.data.domain.Pageable): org.springframework.data.domain.Page<S> = unsupported()
-        override fun <S : DeviceAssignment> count(example: org.springframework.data.domain.Example<S>): Long = unsupported()
-        override fun <S : DeviceAssignment> exists(example: org.springframework.data.domain.Example<S>): Boolean = unsupported()
-        override fun <S : DeviceAssignment, R : Any> findBy(example: org.springframework.data.domain.Example<S>, queryFunction: java.util.function.Function<org.springframework.data.repository.query.FluentQuery.FetchableFluentQuery<S>, R>): R = unsupported()
-
-        private fun unsupported(): Nothing = throw UnsupportedOperationException("not implemented in fake")
+        // -- 테스트 헬퍼: 기존 단언이 사용하는 read 들 (port 외부 추가 표면) --
+        fun count(): Long = store.size.toLong()
+        fun findAll(): List<DeviceAssignment> = store.values.toList()
     }
 }

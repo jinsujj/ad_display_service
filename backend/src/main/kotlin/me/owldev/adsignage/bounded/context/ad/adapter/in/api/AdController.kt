@@ -13,7 +13,7 @@ import me.owldev.adsignage.bounded.context.playevent.application.port.out.databa
 import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEventType
 import me.owldev.adsignage.bounded.context.queue.application.port.out.database.DeviceAdQueueRepositoryPort
 import me.owldev.adsignage.bounded.context.restaurant.application.port.out.database.RestaurantRepositoryPort
-import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
+import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.DeviceAssignmentRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -58,7 +58,7 @@ class AdController(
      */
     private val queueRepositoryPort: DeviceAdQueueRepositoryPort,
     private val deviceRepositoryPort: DeviceRepositoryPort,
-    private val assignmentRepository: DeviceAssignmentRepository,
+    private val assignmentRepository: DeviceAssignmentRepositoryPort,
     private val restaurantRepositoryPort: RestaurantRepositoryPort,
     private val playEventRepositoryPort: PlayEventRepositoryPort,
     @Suppress("unused") private val adRepositoryPort: AdRepositoryPort,

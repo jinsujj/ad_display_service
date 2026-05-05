@@ -1,9 +1,22 @@
 package me.owldev.adsignage.sse
 
-import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
-import me.owldev.adsignage.domain.assignment.DeviceAssignmentService
-import me.owldev.adsignage.domain.assignment.DeviceLookup
-import me.owldev.adsignage.domain.assignment.RestaurantLookup
+import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.DeviceLookupPort
+import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.RestaurantLookupPort
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.AssignmentNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.DeviceNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.RestaurantNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.DeviceFieldUnsupportedException
+import me.owldev.adsignage.bounded.context.assignment.domain.model.DeviceAssignment
+import me.owldev.adsignage.bounded.context.assignment.domain.dto.AssignmentResponse
+import me.owldev.adsignage.bounded.context.assignment.domain.dto.CreateAssignmentRequest
+import me.owldev.adsignage.bounded.context.assignment.domain.dto.UpdateAssignmentRequest
+import me.owldev.adsignage.bounded.context.assignment.domain.dto.UpdateDeviceRestaurantRequest
+import me.owldev.adsignage.bounded.context.device.domain.dto.UpdateDeviceRequest
+import me.owldev.adsignage.bounded.context.device.domain.dto.UpdateDeviceResponse
+import me.owldev.adsignage.bounded.context.device.application.service.DeviceUpdateService
+import me.owldev.adsignage.bounded.context.device.adapter.`in`.api.DeviceUpdateController
+import me.owldev.adsignage.bounded.context.assignment.adapter.out.database.DeviceAssignmentRepository
+import me.owldev.adsignage.bounded.context.assignment.application.service.DeviceAssignmentService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -72,7 +85,7 @@ import java.util.concurrent.atomic.AtomicReference
  * Each of those would still pass every other test in the suite while busting
  * the AC 10 budget on the real demo. Only this test catches them.
  *
- * # Why fakes for [DeviceLookup] / [RestaurantLookup]
+ * # Why fakes for [DeviceLookupPort] / [RestaurantLookupPort]
  *   Same reason as in [DeviceMappingChangedAfterCommitTest] and
  *   [DeviceControllerTest]: the parent `devices` / `restaurants` tables are
  *   owned by sibling sub-ACs. Replacing the JDBC-backed lookups with an
@@ -109,8 +122,8 @@ class RemapEndToEndTimingTest {
 
     @Autowired lateinit var assignmentService: DeviceAssignmentService
     @Autowired lateinit var assignmentRepository: DeviceAssignmentRepository
-    @Autowired lateinit var devices: DeviceLookup
-    @Autowired lateinit var restaurants: RestaurantLookup
+    @Autowired lateinit var devices: DeviceLookupPort
+    @Autowired lateinit var restaurants: RestaurantLookupPort
 
     // Keep IDs ≤ 36 chars to fit DeviceAssignment's column length constraint.
     private val deviceId = "dev-${UUID.randomUUID().toString().take(8)}"
@@ -313,13 +326,13 @@ class RemapEndToEndTimingTest {
         fun set(ids: Set<String>)
     }
 
-    private class FakeDeviceLookup : DeviceLookup, MutableLookup {
+    private class FakeDeviceLookup : DeviceLookupPort, MutableLookup {
         @Volatile private var known: Set<String> = emptySet()
         override fun exists(deviceId: String): Boolean = deviceId in known
         override fun set(ids: Set<String>) { this.known = ids }
     }
 
-    private class FakeRestaurantLookup : RestaurantLookup, MutableLookup {
+    private class FakeRestaurantLookup : RestaurantLookupPort, MutableLookup {
         @Volatile private var known: Set<String> = emptySet()
         override fun exists(restaurantId: String): Boolean = restaurantId in known
         override fun set(ids: Set<String>) { this.known = ids }
@@ -329,10 +342,10 @@ class RemapEndToEndTimingTest {
     class FakeLookupsConfig {
         @Bean
         @Primary
-        fun deviceLookup(): DeviceLookup = FakeDeviceLookup()
+        fun deviceLookup(): DeviceLookupPort = FakeDeviceLookup()
 
         @Bean
         @Primary
-        fun restaurantLookup(): RestaurantLookup = FakeRestaurantLookup()
+        fun restaurantLookup(): RestaurantLookupPort = FakeRestaurantLookup()
     }
 }

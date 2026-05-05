@@ -11,4 +11,5 @@ import me.owldev.adsignage.bounded.context.restaurant.domain.model.Restaurant
 interface RestaurantRepositoryPort {
     fun findAll(): List<Restaurant>
     fun findAllByOrderByName(): List<Restaurant>
+    fun existsById(restaurantId: String): Boolean
 }

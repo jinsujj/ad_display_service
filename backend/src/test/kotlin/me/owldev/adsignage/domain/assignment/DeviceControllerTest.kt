@@ -1,8 +1,23 @@
 package me.owldev.adsignage.domain.assignment
 
+import me.owldev.adsignage.bounded.context.assignment.application.service.DeviceAssignmentService
+import me.owldev.adsignage.bounded.context.assignment.adapter.out.database.DeviceAssignmentRepository
+import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.DeviceLookupPort
+import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.RestaurantLookupPort
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.AssignmentNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.DeviceNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.RestaurantNotFoundException
+import me.owldev.adsignage.bounded.context.assignment.domain.exception.DeviceFieldUnsupportedException
+import me.owldev.adsignage.bounded.context.assignment.domain.model.DeviceAssignment
+import me.owldev.adsignage.bounded.context.assignment.domain.dto.AssignmentResponse
+import me.owldev.adsignage.bounded.context.assignment.domain.dto.UpdateAssignmentRequest
+import me.owldev.adsignage.bounded.context.assignment.domain.dto.UpdateDeviceRestaurantRequest
+import me.owldev.adsignage.bounded.context.device.domain.dto.UpdateDeviceRequest
+import me.owldev.adsignage.bounded.context.device.domain.dto.UpdateDeviceResponse
+import me.owldev.adsignage.bounded.context.device.application.service.DeviceUpdateService
+import me.owldev.adsignage.bounded.context.device.adapter.`in`.api.DeviceUpdateController
 import com.fasterxml.jackson.databind.ObjectMapper
-import me.owldev.adsignage.domain.assignment.dto.CreateAssignmentRequest
-import me.owldev.adsignage.domain.assignment.dto.UpdateDeviceRequest
+import me.owldev.adsignage.bounded.context.assignment.domain.dto.CreateAssignmentRequest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -54,8 +69,8 @@ class DeviceControllerTest {
     @Autowired lateinit var mockMvc: MockMvc
     @Autowired lateinit var mapper: ObjectMapper
     @Autowired lateinit var repository: DeviceAssignmentRepository
-    @Autowired lateinit var devices: DeviceLookup
-    @Autowired lateinit var restaurants: RestaurantLookup
+    @Autowired lateinit var devices: DeviceLookupPort
+    @Autowired lateinit var restaurants: RestaurantLookupPort
 
     private val deviceId = "device-001"
     private val restaurantA = "restaurant-A"
@@ -201,13 +216,13 @@ class DeviceControllerTest {
         fun set(ids: Set<String>)
     }
 
-    private class FakeDeviceLookup : DeviceLookup, MutableLookup {
+    private class FakeDeviceLookup : DeviceLookupPort, MutableLookup {
         @Volatile private var known: Set<String> = emptySet()
         override fun exists(deviceId: String): Boolean = deviceId in known
         override fun set(ids: Set<String>) { this.known = ids }
     }
 
-    private class FakeRestaurantLookup : RestaurantLookup, MutableLookup {
+    private class FakeRestaurantLookup : RestaurantLookupPort, MutableLookup {
         @Volatile private var known: Set<String> = emptySet()
         override fun exists(restaurantId: String): Boolean = restaurantId in known
         override fun set(ids: Set<String>) { this.known = ids }
@@ -217,10 +232,10 @@ class DeviceControllerTest {
     class FakeLookupsConfig {
         @Bean
         @Primary
-        fun deviceLookup(): DeviceLookup = FakeDeviceLookup()
+        fun deviceLookup(): DeviceLookupPort = FakeDeviceLookup()
 
         @Bean
         @Primary
-        fun restaurantLookup(): RestaurantLookup = FakeRestaurantLookup()
+        fun restaurantLookup(): RestaurantLookupPort = FakeRestaurantLookup()
     }
 }
