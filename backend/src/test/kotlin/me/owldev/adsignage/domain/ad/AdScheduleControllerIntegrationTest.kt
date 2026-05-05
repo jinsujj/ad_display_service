@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.LocalDate
 import java.time.LocalTime
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -121,6 +122,11 @@ class AdScheduleControllerIntegrationTest {
             ),
         )
 
+        // 캠페인 기간은 오늘을 포함하도록 어제 ~ 1년 뒤로 설정 — 테스트가 어떤
+        // 날짜에 돌아도 ACTIVE 윈도우 안에 있어 스케줄 검증 로직만 단독 검증된다.
+        val campaignStart = LocalDate.now().minusDays(1)
+        val campaignEnd = LocalDate.now().plusYears(1)
+
         ownerAd = adRepository.save(
             Ad(
                 advertiserId = ownerAdvertiser.id,
@@ -129,6 +135,8 @@ class AdScheduleControllerIntegrationTest {
                 startTime = LocalTime.of(9, 0),
                 endTime = LocalTime.of(17, 0),
                 dailyPlayCount = 50,
+                campaignStartDate = campaignStart,
+                campaignEndDate = campaignEnd,
             ),
         )
         otherAd = adRepository.save(
@@ -139,6 +147,8 @@ class AdScheduleControllerIntegrationTest {
                 startTime = LocalTime.of(10, 0),
                 endTime = LocalTime.of(20, 0),
                 dailyPlayCount = 100,
+                campaignStartDate = campaignStart,
+                campaignEndDate = campaignEnd,
             ),
         )
 

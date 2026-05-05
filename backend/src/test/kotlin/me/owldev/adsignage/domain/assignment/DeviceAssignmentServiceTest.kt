@@ -260,6 +260,12 @@ class DeviceAssignmentServiceTest {
             return active.size
         }
 
+        override fun deleteAllByDeviceId(deviceId: String): Int {
+            val toRemove = store.values.filter { it.deviceId == deviceId }.map { it.id }
+            toRemove.forEach { store.remove(it) }
+            return toRemove.size
+        }
+
         override fun <S : DeviceAssignment> save(entity: S): S {
             store[entity.id] = entity
             return entity
