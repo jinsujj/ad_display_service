@@ -1,7 +1,10 @@
 package me.owldev.adsignage.domain.assignment
 
+import org.springframework.security.test.context.support.WithMockUser
 import me.owldev.adsignage.bounded.context.assignment.application.service.DeviceAssignmentService
 import me.owldev.adsignage.bounded.context.assignment.adapter.out.database.DeviceAssignmentRepository
+import me.owldev.adsignage.bounded.context.device.adapter.out.database.DeviceRepository as DeviceJpa
+import me.owldev.adsignage.bounded.context.device.domain.model.Device
 import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.DeviceLookupPort
 import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.RestaurantLookupPort
 import me.owldev.adsignage.bounded.context.assignment.domain.exception.AssignmentNotFoundException
@@ -64,6 +67,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
         "spring.datasource.url=jdbc:h2:mem:device-controller-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
     ]
 )
+@WithMockUser(roles = ["OPERATOR"])
 class DeviceControllerTest {
 
     @Autowired lateinit var mockMvc: MockMvc
@@ -71,6 +75,7 @@ class DeviceControllerTest {
     @Autowired lateinit var repository: DeviceAssignmentRepository
     @Autowired lateinit var devices: DeviceLookupPort
     @Autowired lateinit var restaurants: RestaurantLookupPort
+    @Autowired lateinit var deviceJpa: DeviceJpa
 
     private val deviceId = "device-001"
     private val restaurantA = "restaurant-A"
@@ -79,6 +84,11 @@ class DeviceControllerTest {
     @BeforeEach
     fun reset() {
         repository.deleteAll()
+        deviceJpa.deleteAll()
+        // DeviceUpdateService 가 device 컨텍스트의 진짜 DeviceRepositoryPort.existsById
+        // 를 거치므로 in-memory lookup fake 만으로는 부족 — 진짜 devices 행을 삽입.
+        deviceJpa.save(Device(deviceId = deviceId, deviceName = "Test 1"))
+        deviceJpa.save(Device(deviceId = "device-002", deviceName = "Test 2"))
         (devices as MutableLookup).set(setOf(deviceId, "device-002"))
         (restaurants as MutableLookup).set(setOf(restaurantA, restaurantB))
     }

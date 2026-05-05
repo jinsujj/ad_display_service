@@ -1,5 +1,6 @@
 package me.owldev.adsignage.sse
 
+import org.springframework.security.test.context.support.WithMockUser
 import me.owldev.adsignage.bounded.context.device.adapter.`in`.sse.SseEmitterRegistry
 import me.owldev.adsignage.bounded.context.device.adapter.`in`.sse.DeviceSseRegistry
 import me.owldev.adsignage.bounded.context.device.adapter.`in`.sse.DeviceSseController
@@ -128,6 +129,7 @@ import java.util.concurrent.atomic.AtomicReference
         "logging.level.org.springframework.web=WARN",
     ],
 )
+@WithMockUser(roles = ["OPERATOR"])
 class RemapEndToEndTimingTest {
 
     @LocalServerPort
@@ -137,6 +139,8 @@ class RemapEndToEndTimingTest {
     @Autowired lateinit var assignmentRepository: DeviceAssignmentRepository
     @Autowired lateinit var devices: DeviceLookupPort
     @Autowired lateinit var restaurants: RestaurantLookupPort
+    @Autowired lateinit var deviceJpa: me.owldev.adsignage.bounded.context.device.adapter.out.database.DeviceRepository
+    @Autowired lateinit var jwtService: me.owldev.adsignage.auth.jwt.JwtService
 
     // Keep IDs ≤ 36 chars to fit DeviceAssignment's column length constraint.
     private val deviceId = "dev-${UUID.randomUUID().toString().take(8)}"
@@ -146,6 +150,14 @@ class RemapEndToEndTimingTest {
     @BeforeEach
     fun reset() {
         assignmentRepository.deleteAll()
+        deviceJpa.deleteAll()
+        // DeviceUpdateService.applyPatch 가 진짜 devices 테이블을 조회하므로 row 삽입.
+        deviceJpa.save(
+            me.owldev.adsignage.bounded.context.device.domain.model.Device(
+                deviceId = deviceId,
+                deviceName = "Remap test",
+            ),
+        )
         (devices as MutableLookup).set(setOf(deviceId))
         (restaurants as MutableLookup).set(setOf(restaurantA, restaurantB))
         // Seed the device with restaurantA so the PATCH below is a *remap*
@@ -267,11 +279,20 @@ class RemapEndToEndTimingTest {
             // network handoff time is included in the budget — the AC's
             // intent is the *operator's* perception of latency, not just
             // the server-internal pub/sub gap.
+            // OPERATOR JWT — RBAC 가드(`/api/devices/*` PATCH는 hasRole("OPERATOR"))
+            // 를 통과하기 위해 진짜 토큰을 발급해 헤더에 첨부.
+            val operatorToken = jwtService.issueToken(
+                advertiserId = "test-operator",
+                email = "operator@test.local",
+                role = me.owldev.adsignage.bounded.context.advertiser.domain.model.AdvertiserRole.OPERATOR,
+            ).token
+
             val patchBody = """{"restaurantId":"$restaurantB"}"""
             val patchRequest = HttpRequest.newBuilder()
                 .uri(URI.create(patchUrl))
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
+                .header("Authorization", "Bearer $operatorToken")
                 .method("PATCH", HttpRequest.BodyPublishers.ofString(patchBody))
                 .timeout(Duration.ofSeconds(5))
                 .build()

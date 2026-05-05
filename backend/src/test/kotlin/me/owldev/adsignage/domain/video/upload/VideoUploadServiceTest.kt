@@ -19,7 +19,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.Mockito.any
+import org.mockito.kotlin.any
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
@@ -69,7 +69,7 @@ class VideoUploadServiceTest {
         // The save mock just echoes its argument back, the way the real
         // JpaRepository.save() does for a transient entity with an
         // already-set id (Video assigns its UUID in the field initializer).
-        `when`(repo.save(any(Video::class.java))).thenAnswer { it.arguments[0] as Video }
+        `when`(repo.save(any<Video>())).thenAnswer { it.arguments[0] as Video }
 
         properties = VideoStorageProperties(
             videoStoragePath = "/tmp/test-not-actually-used",
@@ -96,7 +96,7 @@ class VideoUploadServiceTest {
         assertThat(storage.calls.single()).isSameAs(multipart)
 
         // Repository was asked to persist a Video with the storage-side metadata.
-        verify(repo).save(any(Video::class.java))
+        verify(repo).save(any<Video>())
         assertThat(saved.originalName).isEqualTo("promo.mp4")
         assertThat(saved.mimeType).isEqualTo("video/mp4")
         assertThat(saved.sizeBytes).isEqualTo(bytes.size.toLong())
@@ -149,7 +149,7 @@ class VideoUploadServiceTest {
 
         assertThrows<EmptyVideoUploadException> { service.upload(multipart, ADVERTISER_ID) }
         assertThat(storage.calls).isEmpty()
-        verify(repo, never()).save(any(Video::class.java))
+        verify(repo, never()).save(any<Video>())
     }
 
     @Test

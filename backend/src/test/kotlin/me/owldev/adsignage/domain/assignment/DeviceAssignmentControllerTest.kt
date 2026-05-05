@@ -1,5 +1,6 @@
 package me.owldev.adsignage.domain.assignment
 
+import org.springframework.security.test.context.support.WithMockUser
 import me.owldev.adsignage.bounded.context.assignment.application.service.DeviceAssignmentService
 import me.owldev.adsignage.bounded.context.assignment.adapter.out.database.DeviceAssignmentRepository
 import me.owldev.adsignage.bounded.context.assignment.application.port.out.database.DeviceLookupPort
@@ -59,6 +60,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
         "spring.datasource.url=jdbc:h2:mem:assignment-controller-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
     ]
 )
+@WithMockUser(roles = ["OPERATOR"])
 class DeviceAssignmentControllerTest {
 
     @Autowired lateinit var mockMvc: MockMvc
