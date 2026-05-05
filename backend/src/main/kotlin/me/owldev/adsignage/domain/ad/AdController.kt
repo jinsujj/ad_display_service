@@ -10,7 +10,7 @@ import me.owldev.adsignage.domain.device.DeviceRepository
 import me.owldev.adsignage.domain.playevent.PlayEventRepository
 import me.owldev.adsignage.domain.playevent.PlayEventType
 import me.owldev.adsignage.domain.queue.DeviceAdQueueRepository
-import me.owldev.adsignage.domain.restaurant.RestaurantRepository
+import me.owldev.adsignage.bounded.context.restaurant.application.port.out.database.RestaurantRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -67,7 +67,7 @@ class AdController(
     private val queueRepository: DeviceAdQueueRepository,
     private val deviceRepository: DeviceRepository,
     private val assignmentRepository: DeviceAssignmentRepository,
-    private val restaurantRepository: RestaurantRepository,
+    private val restaurantRepository: RestaurantRepositoryPort,
     private val playEventRepository: PlayEventRepository,
 ) {
 

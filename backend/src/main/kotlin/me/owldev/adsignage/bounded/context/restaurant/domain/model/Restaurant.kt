@@ -1,4 +1,4 @@
-package me.owldev.adsignage.domain.restaurant
+package me.owldev.adsignage.bounded.context.restaurant.domain.model
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
