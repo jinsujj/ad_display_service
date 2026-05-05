@@ -53,12 +53,10 @@ export function ConsoleHome() {
           desc="등록된 광고판을 음식점에 매핑·재할당합니다. 변경은 SSE로 즉시 푸시됩니다."
         />
         <ConsoleCard
-          href="https://stream-backend.owl-dev.me/swagger-ui/index.html"
-          step="API"
-          title="Swagger UI"
-          desc="REST API 명세를 대화형으로 호출해 봅니다. 우상단 Authorize에 JWT를 입력하세요."
-          external
-          muted
+          href="/profile"
+          step="04"
+          title="프로필"
+          desc="광고주 계정 정보와 비밀번호를 관리합니다."
         />
       </div>
     </section>

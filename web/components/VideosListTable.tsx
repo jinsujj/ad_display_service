@@ -1,14 +1,14 @@
 /**
  * 업로드된 영상 목록.
  *
- * 데스크탑(>=md)은 7컬럼 테이블, 모바일(<md)은 카드 리스트로 자동 전환.
- * 서버 컴포넌트 — 부모(서버) 가 GET /api/videos 를 fetch 해 행을 넘긴다.
+ * 데스크탑(>=md)은 테이블, 모바일(<md)은 카드 리스트로 자동 전환.
+ * 광고주(B2B 고객) 대상이라 내부 식별자(저장 파일명, 영상 UUID) 는 노출하지
+ * 않음 — 원본 파일명·크기·업로드 시각 같은 광고주가 신경 쓸 정보만 표시.
  */
 
 import Link from "next/link";
 
 import { apiUrl } from "@/lib/api";
-import { shortId } from "@/lib/format";
 import { formatBytes, type VideoListItem } from "@/lib/videos";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,44 +27,23 @@ interface VideosListTableProps {
 export function VideosListTable({ videos }: VideosListTableProps) {
   return (
     <>
-      {/* 데스크탑 — 7컬럼 테이블 */}
+      {/* 데스크탑 */}
       <div className="hidden md:block w-full overflow-x-auto rounded-lg border border-border bg-card">
         <Table aria-label="업로드된 영상 목록">
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[200px]">원본 파일명</TableHead>
-              <TableHead className="w-[220px]">저장 파일명</TableHead>
-              <TableHead className="w-[92px]">타입</TableHead>
-              <TableHead className="w-[92px]">크기</TableHead>
-              <TableHead className="w-[160px]">업로드</TableHead>
-              <TableHead className="w-[80px]">미리보기</TableHead>
-              <TableHead className="w-[140px] text-right">액션</TableHead>
+              <TableHead className="min-w-[260px]">파일명</TableHead>
+              <TableHead className="w-[100px]">크기</TableHead>
+              <TableHead className="w-[180px]">업로드</TableHead>
+              <TableHead className="w-[90px]">미리보기</TableHead>
+              <TableHead className="w-[150px] text-right">액션</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {videos.map((video) => (
               <TableRow key={video.id || video.filename}>
-                <TableCell>
-                  <div className="font-semibold">
-                    {video.originalName || "—"}
-                  </div>
-                  {video.id && (
-                    <div
-                      className="mt-1 truncate text-[11px] text-muted-foreground"
-                      title={video.id}
-                    >
-                      ID <code className="font-mono">{shortId(video.id)}</code>
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell
-                  className="font-mono text-xs"
-                  title={video.filename || ""}
-                >
-                  {video.filename || "—"}
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {video.mimeType || "—"}
+                <TableCell className="font-semibold">
+                  {video.originalName || "이름 없음"}
                 </TableCell>
                 <TableCell>{formatBytes(video.sizeBytes)}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">
@@ -122,23 +101,11 @@ export function VideosListTable({ videos }: VideosListTableProps) {
             key={video.id || video.filename}
             className="rounded-lg border border-border bg-card p-3"
           >
-            <div className="font-semibold">{video.originalName || "—"}</div>
-            {video.filename && (
-              <div
-                className="mt-0.5 truncate font-mono text-xs text-muted-foreground"
-                title={video.filename}
-              >
-                {video.filename}
-              </div>
-            )}
-            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-              {video.id && (
-                <span title={video.id}>
-                  ID <code className="font-mono">{shortId(video.id)}</code>
-                </span>
-              )}
+            <div className="font-semibold">
+              {video.originalName || "이름 없음"}
+            </div>
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span>{formatBytes(video.sizeBytes)}</span>
-              {video.mimeType && <span>{video.mimeType}</span>}
               <span>{formatUploadedAt(video.uploadedAt)}</span>
             </div>
             <div className="mt-3 flex gap-2">

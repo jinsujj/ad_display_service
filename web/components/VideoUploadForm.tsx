@@ -10,7 +10,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import { apiUrl } from "@/lib/api";
-import { shortId } from "@/lib/format";
 import {
   MAX_UPLOAD_SIZE_BYTES,
   VideoUploadError,
@@ -224,9 +223,8 @@ export function VideoUploadForm() {
             {state.kind === "succeeded" && (
               <Alert variant="ok">
                 <AlertDescription>
-                  <strong>업로드 완료.</strong> 저장 파일명{" "}
-                  <code className="font-mono">{state.result.filename}</code> (
-                  {formatBytes(state.result.sizeBytes)}).
+                  <strong>업로드 완료.</strong>{" "}
+                  {formatBytes(state.result.sizeBytes)} 저장.
                   <div className="mt-1.5">
                     <a
                       href={apiUrl(state.result.url)}
@@ -236,13 +234,6 @@ export function VideoUploadForm() {
                     >
                       브라우저에서 재생 ↗
                     </a>
-                    {"  ·  "}
-                    <span title={state.result.id}>
-                      ID{" "}
-                      <code className="font-mono">
-                        {shortId(state.result.id)}
-                      </code>
-                    </span>
                   </div>
                 </AlertDescription>
               </Alert>

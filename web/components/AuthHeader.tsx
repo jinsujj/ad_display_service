@@ -73,11 +73,12 @@ export function AuthHeader({ variant = "inline", className }: AuthHeaderProps) {
     }
     return (
       <div className={cn("flex flex-col gap-2", className)}>
-        <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm">
-          <span
-            className="truncate font-medium text-foreground"
-            title={user.advertiserId}
-          >
+        <a
+          href="/profile"
+          className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:border-accent/40"
+          title="프로필 설정"
+        >
+          <span className="truncate font-medium text-foreground">
             {user.email}
           </span>
           {user.role === "OPERATOR" && (
@@ -85,7 +86,7 @@ export function AuthHeader({ variant = "inline", className }: AuthHeaderProps) {
               OPERATOR
             </Badge>
           )}
-        </div>
+        </a>
         <Button variant="outline" onClick={onLogout} className="justify-center">
           로그아웃
         </Button>
@@ -115,12 +116,13 @@ export function AuthHeader({ variant = "inline", className }: AuthHeaderProps) {
 
   return (
     <div className={cn("flex items-center gap-2 text-sm", className)}>
-      <span
-        className="max-w-[180px] truncate text-foreground/85"
-        title={user.advertiserId}
+      <a
+        href="/profile"
+        className="max-w-[180px] truncate rounded-md px-2 py-1 text-foreground/85 hover:bg-accent/15 hover:text-foreground"
+        title="프로필 설정"
       >
         {user.email}
-      </span>
+      </a>
       {user.role === "OPERATOR" && (
         <Badge variant="ok" title="플랫폼 운영자 — 디바이스/큐 관리 권한">
           OPERATOR

@@ -49,13 +49,6 @@ export default function VideosPage() {
             시 위 목록에 반영됩니다.
           </p>
           <VideoUploadForm />
-          <p className="mt-6 text-xs text-muted-foreground">
-            업로드는 <code className="font-mono">POST /api/videos</code>,
-            목록은 <code className="font-mono">GET /api/videos</code> (둘 다
-            stream-backend.owl-dev.me)로 호출됩니다. 파일은 호스트의{" "}
-            <code className="font-mono">/var/lib/adsignage/videos</code> 에
-            저장됩니다.
-          </p>
         </section>
       </section>
     </AuthGuard>

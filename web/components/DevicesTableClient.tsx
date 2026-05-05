@@ -172,15 +172,15 @@ export function DevicesTableClient(props: DevicesTableClientProps) {
         {isRefreshing ? "목록 새로고침 중…" : `디바이스 ${devices.length}개`}
       </div>
 
-      {/* 데스크탑 — 6컬럼 테이블. md 미만에서 hidden 으로 카드에 양보. */}
+      {/* 데스크탑 — 디바이스 ID 컬럼은 광고주에게 의미 없으므로 숨김.
+          디바이스명 자체가 상세 페이지로 가는 링크 역할. */}
       <div className="hidden md:block w-full overflow-x-auto rounded-lg border border-border bg-card">
         <Table aria-label="디바이스">
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[160px]">디바이스</TableHead>
-              <TableHead className="w-[180px]">디바이스 ID</TableHead>
+              <TableHead className="min-w-[200px]">디바이스</TableHead>
               <TableHead className="w-[140px]">등록일</TableHead>
-              <TableHead className="min-w-[180px]">현재 음식점</TableHead>
+              <TableHead className="min-w-[200px]">현재 음식점</TableHead>
               <TableHead className="w-[140px]">매핑 시각</TableHead>
               <TableHead className="w-[200px] text-right">액션</TableHead>
             </TableRow>
@@ -285,15 +285,11 @@ function DeviceRow({
     <>
       <TableRow>
         <TableCell>
-          <strong>{device.deviceName || "(이름 없음)"}</strong>
-        </TableCell>
-        <TableCell className="font-mono text-xs">
           <Link
             href={`/devices/${encodeURIComponent(device.deviceId)}`}
-            title={device.deviceId}
-            className="text-foreground/85 hover:text-accent"
+            className="font-semibold text-foreground hover:text-accent hover:underline underline-offset-4"
           >
-            {shortId(device.deviceId)}
+            {device.deviceName || "(이름 없음)"}
           </Link>
         </TableCell>
         <TableCell className="text-xs text-muted-foreground">
@@ -353,7 +349,7 @@ function DeviceRow({
       </TableRow>
       {submit.kind === "success" && (
         <TableRow>
-          <TableCell colSpan={6} className="p-0">
+          <TableCell colSpan={5} className="p-0">
             <div className="m-2 flex items-center justify-between gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
               <span>매핑이 업데이트되었습니다.</span>
               <Button
@@ -370,7 +366,7 @@ function DeviceRow({
       )}
       {submit.kind === "error" && (
         <TableRow>
-          <TableCell colSpan={6} className="p-0">
+          <TableCell colSpan={5} className="p-0">
             <Alert variant="destructive" className="m-2">
               <AlertDescription>{submit.message}</AlertDescription>
             </Alert>
@@ -405,25 +401,17 @@ function DeviceCard({
 
   return (
     <li className="rounded-lg border border-border bg-card p-3 text-card-foreground">
-      <div className="flex items-baseline justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-2">
-            <strong className="truncate">
-              {device.deviceName || "(이름 없음)"}
-            </strong>
-            <Link
-              href={`/devices/${encodeURIComponent(device.deviceId)}`}
-              className="font-mono text-xs text-muted-foreground hover:text-accent"
-              title={device.deviceId}
-            >
-              {shortId(device.deviceId)}
-            </Link>
-          </div>
-          <div className="mt-0.5 text-xs text-muted-foreground">
-            등록 {formatDate(device.registeredAt)}
-          </div>
+      <Link
+        href={`/devices/${encodeURIComponent(device.deviceId)}`}
+        className="block"
+      >
+        <strong className="block truncate text-base text-foreground hover:text-accent">
+          {device.deviceName || "(이름 없음)"}
+        </strong>
+        <div className="mt-0.5 text-xs text-muted-foreground">
+          등록 {formatDate(device.registeredAt)}
         </div>
-      </div>
+      </Link>
 
       <div className="mt-3 space-y-1 text-sm">
         {current ? (
@@ -509,12 +497,6 @@ function buildOptimisticAssignment(
     address: meta?.address ?? null,
     assignedAt: result.assignedAt ?? new Date().toISOString(),
   };
-}
-
-function shortId(id: string | undefined | null): string {
-  if (!id) return "—";
-  if (id.length <= 12) return id;
-  return `${id.slice(0, 8)}…${id.slice(-4)}`;
 }
 
 function formatDate(iso: string | undefined | null): string {
