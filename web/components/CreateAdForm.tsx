@@ -3,30 +3,36 @@
 /**
  * 광고 생성 폼 (POST /api/ads).
  *
- * 폼은 URL 쿼리 `?videoFilename=…&originalName=…&title=…` 로 미리 채울 수
- * 있어, /videos 페이지에서 "광고 만들기"를 누르면 영상이 자동 선택된다.
- *
- * 검증 로직은 그대로, shadcn 프리미티브로 갈음. 시각·날짜 페어는 md:
- * 2컬럼, 모바일은 1컬럼.
+ * 광고주는 자기 영상 목록에서 골라 담는다 — 내부 저장 파일명(UUID) 은 절대
+ * 노출되지 않고, 운영자가 선택한 영상의 friendly originalName 만 보인다.
+ * 폼은 URL 쿼리 `?videoFilename=…&title=…` 로 미리 채울 수 있어 /videos
+ * 페이지의 "광고 만들기" 버튼에서 영상이 자동 선택된다.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 import { ApiError } from "@/lib/api";
-import { shortId } from "@/lib/format";
 import {
   DAILY_PLAY_COUNT_MAX,
   DAILY_PLAY_COUNT_MIN,
   type AdResponse,
   createAd,
 } from "@/lib/ads";
+import { formatBytes, listVideos, type VideoListItem } from "@/lib/videos";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type State =
   | { kind: "idle" }
@@ -43,12 +49,12 @@ const HHMM = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 
 export function CreateAdForm() {
   const searchParams = useSearchParams();
+  const seedVideoFilename = searchParams.get("videoFilename") ?? "";
 
   const [title, setTitle] = useState(searchParams.get("title") ?? "");
-  const [videoFilename, setVideoFilename] = useState(
-    searchParams.get("videoFilename") ?? "",
-  );
-  const seedOriginalName = searchParams.get("originalName") ?? "";
+  // videoFilename 은 사용자에게 보이지 않는 internal id. Select 의 value 로만
+  // 관리되며 어떤 텍스트 input 으로도 노출하지 않는다.
+  const [videoFilename, setVideoFilename] = useState(seedVideoFilename);
   const [startTime, setStartTime] = useState("11:00");
   const [endTime, setEndTime] = useState("23:00");
   const [countStr, setCountStr] = useState("30");
@@ -63,6 +69,57 @@ export function CreateAdForm() {
   const [state, setState] = useState<State>({ kind: "idle" });
   const submitting = state.kind === "submitting";
 
+  // 영상 선택 드롭다운용 — 마운트 시 목록 fetch.
+  type VideosState =
+    | { kind: "loading" }
+    | { kind: "ready"; videos: VideoListItem[] }
+    | { kind: "error"; message: string };
+  const [videos, setVideos] = useState<VideosState>({ kind: "loading" });
+
+  useEffect(() => {
+    let cancelled = false;
+    listVideos()
+      .then((rows) => {
+        if (!cancelled) setVideos({ kind: "ready", videos: rows });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const msg =
+          err instanceof ApiError
+            ? `HTTP ${err.status}`
+            : err instanceof Error
+              ? err.message
+              : "알 수 없는 오류";
+        setVideos({ kind: "error", message: msg });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // 쿼리 파라미터로 미리 정해진 videoFilename 이 있으면 영상 목록 도착 시
+  // 매칭되는 항목으로 잠금. 매칭 실패하면 사용자에게 직접 고르도록 빈 상태.
+  useEffect(() => {
+    if (videos.kind !== "ready") return;
+    if (!videoFilename) return;
+    const match = videos.videos.find((v) => v.filename === videoFilename);
+    if (!match) {
+      setVideoFilename("");
+    }
+  }, [videos, videoFilename]);
+
+  // 제목 자동 채움 — 쿼리에 title 이 없는데 영상이 처음 선택되는 순간
+  // 그 영상의 originalName(확장자 제외) 으로 기본 제목 제안.
+  useEffect(() => {
+    if (title) return;
+    if (videos.kind !== "ready") return;
+    if (!videoFilename) return;
+    const v = videos.videos.find((x) => x.filename === videoFilename);
+    if (v?.originalName) {
+      setTitle(v.originalName.replace(/\.[^.]+$/, ""));
+    }
+  }, [videos, videoFilename, title]);
+
   const dailyCount = useMemo(() => {
     const n = Number(countStr);
     return Number.isFinite(n) ? n : NaN;
@@ -75,8 +132,7 @@ export function CreateAdForm() {
 
       const errs: Record<string, string> = {};
       if (!title.trim()) errs.title = "광고 제목을 입력해 주세요.";
-      if (!videoFilename.trim())
-        errs.videoFilename = "영상 파일명을 입력해 주세요.";
+      if (!videoFilename) errs.videoFilename = "광고 영상을 선택해 주세요.";
       if (!HHMM.test(startTime)) errs.startTime = "HH:mm 형식이어야 합니다.";
       if (!HHMM.test(endTime)) errs.endTime = "HH:mm 형식이어야 합니다.";
       if (!errs.startTime && !errs.endTime && endTime <= startTime) {
@@ -113,7 +169,7 @@ export function CreateAdForm() {
       try {
         const result = await createAd({
           title: title.trim(),
-          videoFilename: videoFilename.trim(),
+          videoFilename,
           startTime,
           endTime,
           dailyPlayCount: dailyCount,
@@ -166,6 +222,74 @@ export function CreateAdForm() {
       <CardContent>
         <form className="space-y-4" onSubmit={handleSubmit} noValidate>
           <fieldset className="space-y-4" disabled={submitting}>
+            {/* 영상 선택 — 사용자에겐 originalName 만 보임. */}
+            <div className="space-y-1.5">
+              <Label htmlFor="ad-video-select">광고 영상</Label>
+              {videos.kind === "loading" && (
+                <div className="text-sm text-muted-foreground">
+                  영상 목록을 불러오는 중…
+                </div>
+              )}
+              {videos.kind === "error" && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    영상 목록을 불러오지 못했습니다: {videos.message}
+                  </AlertDescription>
+                </Alert>
+              )}
+              {videos.kind === "ready" && videos.videos.length === 0 && (
+                <Alert>
+                  <AlertDescription>
+                    아직 업로드한 영상이 없습니다.{" "}
+                    <Link
+                      href="/videos"
+                      className="text-accent underline-offset-4 hover:underline"
+                    >
+                      영상 페이지
+                    </Link>
+                    에서 MP4 를 먼저 올려 주세요.
+                  </AlertDescription>
+                </Alert>
+              )}
+              {videos.kind === "ready" && videos.videos.length > 0 && (
+                <Select
+                  value={videoFilename}
+                  onValueChange={(v) => setVideoFilename(v)}
+                >
+                  <SelectTrigger
+                    id="ad-video-select"
+                    aria-invalid={
+                      Boolean(fieldErrors.videoFilename) || undefined
+                    }
+                  >
+                    <SelectValue placeholder="업로드한 영상 중 하나를 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {videos.videos.map((v) => (
+                      <SelectItem
+                        key={v.filename}
+                        value={v.filename}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {v.originalName || "이름 없음"}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatBytes(v.sizeBytes)}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {fieldErrors.videoFilename && (
+                <p className="text-xs text-destructive" role="alert">
+                  {fieldErrors.videoFilename}
+                </p>
+              )}
+            </div>
+
             <Field id="ad-title" label="광고 제목" error={fieldErrors.title}>
               <Input
                 id="ad-title"
@@ -174,33 +298,6 @@ export function CreateAdForm() {
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="예: 진로하이트 5월 캠페인"
                 required
-              />
-            </Field>
-
-            <Field
-              id="ad-video-filename"
-              label={
-                <>
-                  영상 파일명{" "}
-                  {seedOriginalName && (
-                    <span className="text-xs font-normal text-muted-foreground">
-                      · 원본: {seedOriginalName}
-                    </span>
-                  )}
-                </>
-              }
-              error={fieldErrors.videoFilename}
-            >
-              <Input
-                id="ad-video-filename"
-                type="text"
-                value={videoFilename}
-                onChange={(e) => setVideoFilename(e.target.value)}
-                placeholder="62e970f5-...mp4 (어드민 영상 페이지에서 복사)"
-                required
-                spellCheck={false}
-                autoComplete="off"
-                className="font-mono"
               />
             </Field>
 
@@ -306,15 +403,6 @@ export function CreateAdForm() {
                 <AlertDescription>
                   <strong>광고가 생성되었습니다.</strong>
                   <div className="mt-1.5">
-                    광고 ID:{" "}
-                    <code
-                      className="select-all font-mono text-sm"
-                      title={state.result.id}
-                    >
-                      {shortId(state.result.id)}
-                    </code>
-                  </div>
-                  <div className="mt-1.5">
                     <Link
                       href={`/ads/${state.result.id}`}
                       className="text-emerald-300 underline-offset-4 hover:underline"
@@ -336,7 +424,11 @@ export function CreateAdForm() {
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
               <Button
                 type="submit"
-                disabled={submitting}
+                disabled={
+                  submitting ||
+                  videos.kind === "loading" ||
+                  (videos.kind === "ready" && videos.videos.length === 0)
+                }
                 aria-busy={submitting}
                 className="w-full sm:w-auto"
               >

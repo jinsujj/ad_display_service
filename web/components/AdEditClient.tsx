@@ -21,7 +21,6 @@ import {
   type AdResponse,
 } from "@/lib/ads";
 import { useDataChanged } from "@/lib/dataEvents";
-import { shortId } from "@/lib/format";
 import { AdScheduleForm } from "./AdScheduleForm";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -127,18 +126,6 @@ export function AdEditClient({ adId }: Props) {
             </Badge>
           </div>
           <dl className="mt-2 space-y-1 text-xs text-muted-foreground">
-            <div>
-              광고 ID{" "}
-              <code className="font-mono" title={ad.id}>
-                {shortId(ad.id)}
-              </code>
-            </div>
-            <div>
-              영상 파일명{" "}
-              <code className="font-mono" title={ad.videoFilename}>
-                {shortId(ad.videoFilename)}
-              </code>
-            </div>
             <div>
               현재 스케줄: {ad.startTime} ~ {ad.endTime} · 일일{" "}
               {ad.dailyPlayCount}회

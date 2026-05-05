@@ -23,7 +23,6 @@ import {
   type AdStatus,
 } from "@/lib/ads";
 import { useDataChanged } from "@/lib/dataEvents";
-import { shortId, SHORT_ID_TITLE_HINT } from "@/lib/format";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -130,8 +129,7 @@ export function MyAdsList() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[92px]">상태</TableHead>
-              <TableHead className="min-w-[200px]">제목</TableHead>
-              <TableHead className="w-[180px]">광고 ID</TableHead>
+              <TableHead className="min-w-[240px]">제목</TableHead>
               <TableHead className="w-[150px]">일일 시간</TableHead>
               <TableHead className="w-[92px]">일일 횟수</TableHead>
               <TableHead className="w-[160px]">캠페인 기간</TableHead>
@@ -149,19 +147,12 @@ export function MyAdsList() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="font-semibold">{ad.title}</div>
-                    <div
-                      className="mt-1 truncate font-mono text-xs text-muted-foreground"
-                      title={ad.videoFilename}
+                    <Link
+                      href={`/ads/${ad.id}`}
+                      className="font-semibold hover:text-accent hover:underline underline-offset-4"
                     >
-                      {ad.videoFilename}
-                    </div>
-                  </TableCell>
-                  <TableCell
-                    className="font-mono text-xs"
-                    title={`${ad.id} — ${SHORT_ID_TITLE_HINT}`}
-                  >
-                    <code>{shortId(ad.id)}</code>
+                      {ad.title}
+                    </Link>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
                     {ad.startTime} ~ {ad.endTime}
@@ -214,23 +205,16 @@ export function MyAdsList() {
               key={ad.id}
               className="rounded-lg border border-border bg-card p-3"
             >
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex items-baseline justify-between gap-2">
+                <Link
+                  href={`/ads/${ad.id}`}
+                  className="truncate font-semibold hover:text-accent"
+                >
+                  {ad.title}
+                </Link>
                 <Badge variant={statusBadgeVariant(ad.status)}>
                   {AD_STATUS_LABEL[ad.status]}
                 </Badge>
-                <code
-                  className="font-mono text-[11px] text-muted-foreground"
-                  title={`${ad.id} — ${SHORT_ID_TITLE_HINT}`}
-                >
-                  {shortId(ad.id)}
-                </code>
-              </div>
-              <div className="mt-2 font-semibold">{ad.title}</div>
-              <div
-                className="mt-0.5 truncate font-mono text-xs text-muted-foreground"
-                title={ad.videoFilename}
-              >
-                {ad.videoFilename}
               </div>
               <div className="mt-2 text-sm">
                 일일 {ad.startTime}~{ad.endTime} · {ad.dailyPlayCount}회
