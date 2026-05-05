@@ -8,21 +8,22 @@
  * 3. How  — 1·2·3 step
  * 4. Final CTA
  *
- * Mock device: 쇼케이스 냉장고 위에 광고 패널이 거치된 모습.
- * - 상단 광고 패널: 16:9 가로 디스플레이에 진로 광고(YouTube 임베드) 자동
- *   재생. mute=1 로 모바일 자동재생 정책 준수. loop+playlist 트릭으로 무한
- *   반복.
- * - 하단 쇼케이스 냉장고: 글라스 도어 안 3 단 선반에 소주(녹색)·맥주(갈색)
- *   병이 진열된 비주얼.
- * - 영상 교체: NEXT_PUBLIC_LANDING_VIDEO_ID 에 YouTube ID.
+ * 디자인은 어드민과 같은 토큰(앰버 + 다크). styled-jsx 에서 Tailwind 로 전환.
+ *
+ * Mock device 영상: 하이트진로 공식 유튜브 채널의 "진로 CF : 꺼비월드 편"
+ * 을 iframe 으로 임베드(자동재생 + mute + loop). 모바일 브라우저 정책상
+ * mute 가 자동재생 필수 조건. 다른 광고로 교체하려면 환경변수
+ * `NEXT_PUBLIC_LANDING_VIDEO_ID` 에 YouTube video ID 만 넣으면 됨.
+ *
+ * 16:9 광고 영상이 9:16 세로 mock 안에 letterbox(상하 검은 띠) 되는데,
+ * 실제 디지털 사이니지가 다른 비율 콘텐츠를 보여주는 인상과 잘 맞음.
  */
 
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
-// 하이트진로 공식 채널 "진로 CF : 꺼비월드 편(15초)" 기본값.
+// 하이트진로 공식 채널의 "진로 CF : 꺼비월드 편(15초)" 기본값.
 const LANDING_VIDEO_ID =
   process.env.NEXT_PUBLIC_LANDING_VIDEO_ID || "aWBIufbD6aE";
 
@@ -71,8 +72,50 @@ export function Landing() {
           </ul>
         </div>
 
-        {/* 쇼케이스 냉장고 + 상단 광고 패널 모형 */}
-        <FridgeWithAdPanel />
+        {/* 광고판 모형 — 미세 펄스 인디케이터 */}
+        <div
+          className="flex flex-col items-center gap-3"
+          aria-hidden="true"
+        >
+          <div className="relative aspect-[9/16] w-[min(280px,100%)] overflow-hidden rounded-2xl border border-border bg-black shadow-[0_30px_60px_-20px_rgba(0,0,0,0.6)] ring-1 ring-accent/10">
+            {/* 실제 진로 광고 — 하이트진로 공식 채널 YouTube 임베드.
+                autoplay 는 mute=1 일 때만 모바일에서 허용. loop=1 + playlist
+                동일 ID 트릭으로 무한 반복. */}
+            <iframe
+              title="진로 소주 광고 — 하이트진로 공식 채널"
+              src={`https://www.youtube-nocookie.com/embed/${LANDING_VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${LANDING_VIDEO_ID}&controls=0&modestbranding=1&rel=0&playsinline=1&iv_load_policy=3&disablekb=1`}
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowFullScreen={false}
+              className="absolute inset-0 h-full w-full border-0"
+            />
+            {/* 가장자리 글로우 오버레이 — 광고판 빛 인상 */}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-2 rounded-xl bg-[radial-gradient(ellipse_at_50%_0%,rgba(245,176,66,0.08),transparent_60%)]"
+            />
+            {/* ON AIR 배지 */}
+            <div className="absolute left-3.5 top-3.5 z-10 inline-flex items-center gap-1.5 rounded-full border border-rose-400/35 bg-rose-400/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-rose-300 backdrop-blur-sm">
+              <span className="size-1.5 animate-pill-pulse rounded-full bg-rose-400 shadow-[0_0_0_4px_rgba(255,107,107,0.18)]" />
+              ON&nbsp;AIR
+            </div>
+            {/* 영상 위 하단 캡션 */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 text-center">
+              <div className="text-base font-extrabold tracking-tight text-white">
+                진로하이트
+              </div>
+              <div className="mt-0.5 text-[11px] text-white/75">
+                5월 캠페인 · 11:00 ~ 23:00
+              </div>
+            </div>
+            <span
+              aria-hidden="true"
+              className="absolute -bottom-2.5 left-1/2 z-10 h-1.5 w-3/5 -translate-x-1/2 rounded-b-md border-t border-border bg-gradient-to-b from-[#1f242c] to-[#0b0d10]"
+            />
+          </div>
+          <div className="text-xs text-muted-foreground">
+            냉장고 상단 거치 · 10–15&quot; 세로 FHD
+          </div>
+        </div>
       </section>
 
       {/* ========== Why ========== */}
@@ -141,155 +184,6 @@ export function Landing() {
     </div>
   );
 }
-
-/* ========== 쇼케이스 냉장고 + 상단 광고 패널 ========================== */
-
-function FridgeWithAdPanel() {
-  return (
-    <div
-      className="mx-auto flex w-[min(300px,100%)] flex-col items-stretch"
-      aria-hidden="true"
-    >
-      {/* 광고 패널 — 16:9 디지털 사이니지, 베젤·플라스틱 케이스 인상 */}
-      <div className="relative aspect-video w-full overflow-hidden rounded-md border border-black/40 bg-black p-[3px] shadow-[0_18px_30px_-18px_rgba(0,0,0,0.7)] ring-1 ring-accent/15">
-        {/* 패널 화면 */}
-        <div className="relative h-full w-full overflow-hidden rounded-sm bg-black">
-          <iframe
-            title="진로 소주 광고 — 하이트진로 공식 채널"
-            src={`https://www.youtube-nocookie.com/embed/${LANDING_VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${LANDING_VIDEO_ID}&controls=0&modestbranding=1&rel=0&playsinline=1&iv_load_policy=3&disablekb=1`}
-            allow="autoplay; encrypted-media; picture-in-picture"
-            allowFullScreen={false}
-            className="absolute inset-0 h-full w-full border-0"
-          />
-          {/* ON AIR 배지 */}
-          <div className="absolute left-2 top-2 z-10 inline-flex items-center gap-1.5 rounded-full border border-rose-400/40 bg-rose-500/25 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-rose-100 backdrop-blur-sm">
-            <span className="size-1.5 animate-pill-pulse rounded-full bg-rose-400 shadow-[0_0_0_3px_rgba(255,107,107,0.2)]" />
-            ON&nbsp;AIR
-          </div>
-          {/* 광고판 빛 글로우 */}
-          <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_-20%,rgba(245,176,66,0.16),transparent_60%)]" />
-        </div>
-      </div>
-
-      {/* 마운팅 브래킷 — 광고 패널이 냉장고 위에 거치된 인상 */}
-      <div className="mx-auto -mt-px flex w-[28%] justify-center">
-        <span className="block h-2 w-full rounded-b-sm border-x border-b border-black/50 bg-gradient-to-b from-[#2a2e36] to-[#13161a] shadow-[inset_0_-1px_0_rgba(255,255,255,0.04)]" />
-      </div>
-
-      {/* 쇼케이스 냉장고 — 글라스 도어 + 3단 선반 + 술병들 + 브랜드 타이틀 */}
-      <div className="relative mt-2 aspect-[10/13] w-full overflow-hidden rounded-md border border-[#1a1d22] bg-gradient-to-b from-[#0d1218] via-[#101820] to-[#080c11] shadow-[0_24px_40px_-24px_rgba(0,0,0,0.8)]">
-        {/* 상단 헤더 — 냉장고 타이틀(브랜드 라이트박스 느낌) */}
-        <div className="absolute inset-x-0 top-0 flex items-center justify-center border-b border-black/60 bg-gradient-to-b from-[#1a1f26] to-[#0e1217] py-1.5 text-[10px] font-bold tracking-[0.25em] text-amber-300/80 [text-shadow:0_0_8px_rgba(245,176,66,0.4)]">
-          쇼케이스 냉장고
-        </div>
-
-        {/* 측면 크롬 트림 */}
-        <span className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-r from-[#2a2e36] via-[#1a1d22] to-transparent" />
-        <span className="absolute inset-y-0 right-0 w-1.5 bg-gradient-to-l from-[#2a2e36] via-[#1a1d22] to-transparent" />
-
-        {/* 글라스 도어 내부 — 차가운 푸른빛 + 미세 반사 */}
-        <div className="absolute inset-x-1.5 inset-y-[26px] overflow-hidden rounded-sm bg-[linear-gradient(180deg,rgba(96,165,250,0.10)_0%,rgba(56,89,140,0.18)_45%,rgba(15,30,50,0.35)_100%)]">
-          {/* 글라스 반사 — 좌상단 사선 하이라이트 */}
-          <span className="pointer-events-none absolute -left-2 -top-2 h-[60%] w-[55%] rotate-[-18deg] bg-[linear-gradient(110deg,rgba(255,255,255,0.10)_0%,rgba(255,255,255,0.04)_30%,transparent_60%)]" />
-          {/* 안쪽 LED 백라이트 글로우 */}
-          <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_15%,rgba(173,216,255,0.10),transparent_55%)]" />
-
-          {/* 3 단 선반 + 술병 */}
-          <Shelf top="14%" bottles={["green", "green", "green", "green", "green", "green"]} />
-          <Shelf top="44%" bottles={["green", "brown", "green", "brown", "green", "brown"]} />
-          <Shelf top="74%" bottles={["clear", "clear", "green", "green", "brown", "brown"]} />
-        </div>
-
-        {/* 도어 손잡이 (오른쪽 세로 바) */}
-        <span className="absolute right-2 top-1/2 h-[55%] w-1 -translate-y-1/2 rounded-full bg-gradient-to-b from-[#3a3f48] via-[#2a2e36] to-[#15181d] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]" />
-
-        {/* 하단 베이스 / 다리 */}
-        <span className="absolute inset-x-0 bottom-0 h-2.5 bg-gradient-to-t from-black to-[#0d1218]" />
-      </div>
-
-      <div className="mt-3 text-center text-xs text-muted-foreground">
-        쇼케이스 냉장고 상단 광고 패널 · 10–15&quot; 디지털 사이니지
-      </div>
-    </div>
-  );
-}
-
-/* ----- 선반 한 줄 + 그 위 술병들 ------------------------------------- */
-
-type BottleColor = "green" | "brown" | "clear";
-
-function Shelf({
-  top,
-  bottles,
-}: {
-  top: string;
-  bottles: BottleColor[];
-}) {
-  return (
-    <>
-      {/* 술병들 — 선반 윗면에 늘어선 모습 */}
-      <div
-        className="absolute inset-x-2 flex items-end justify-around"
-        style={{ top: `calc(${top} - 22px)`, height: 22 }}
-      >
-        {bottles.map((c, i) => (
-          <Bottle key={i} color={c} />
-        ))}
-      </div>
-      {/* 금속 선반 라인 */}
-      <span
-        className="absolute inset-x-1 h-[2px] rounded-sm bg-gradient-to-b from-[#3a4250] to-[#1d2230] shadow-[0_1px_0_rgba(0,0,0,0.6)]"
-        style={{ top }}
-      />
-    </>
-  );
-}
-
-function Bottle({ color }: { color: BottleColor }) {
-  const bodyTint = cn(
-    color === "green" &&
-      "bg-[linear-gradient(180deg,#1d4d36_0%,#2a7a4f_35%,#1f5c3a_70%,#0e2a1c_100%)]",
-    color === "brown" &&
-      "bg-[linear-gradient(180deg,#3d220e_0%,#7a4922_35%,#5c3617_70%,#1f1108_100%)]",
-    color === "clear" &&
-      "bg-[linear-gradient(180deg,rgba(220,235,240,0.5)_0%,rgba(160,190,210,0.55)_35%,rgba(110,140,160,0.45)_70%,rgba(40,60,80,0.5)_100%)]",
-  );
-  // 미세 좌측 하이라이트로 유리 질감
-  const highlight =
-    "before:content-[''] before:absolute before:inset-y-1 before:left-[1.5px] before:w-[1.5px] before:rounded-full before:bg-white/15";
-  return (
-    <span className="relative flex flex-col items-center">
-      {/* 마개 / 캡 */}
-      <span
-        className={cn(
-          "block h-1 w-[5px] rounded-t-[1px]",
-          color === "green" && "bg-rose-700/80",
-          color === "brown" && "bg-yellow-200/70",
-          color === "clear" && "bg-amber-300/70",
-        )}
-      />
-      {/* 목 */}
-      <span
-        className={cn(
-          "block h-[3px] w-[3px]",
-          color === "green" && "bg-emerald-900",
-          color === "brown" && "bg-amber-950",
-          color === "clear" && "bg-slate-500/60",
-        )}
-      />
-      {/* 어깨 + 몸통 */}
-      <span
-        className={cn(
-          "relative block h-[14px] w-[8px] rounded-t-[3px] rounded-b-[1px]",
-          bodyTint,
-          highlight,
-        )}
-      />
-    </span>
-  );
-}
-
-/* ========== 마케팅 카드 / 단계 ============================ */
 
 function WhyCard({ title, body }: { title: string; body: string }) {
   return (
