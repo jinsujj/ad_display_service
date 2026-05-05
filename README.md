@@ -154,6 +154,124 @@ flowchart LR
 > [Android]/[브라우저] → nginx → Next.js :3000  + Spring Boot :8080 → PostgreSQL + /var/lib/adsignage/videos
 > ```
 
+### 역할별 워크플로
+
+#### 1. 광고주(ADVERTISER) — "내 광고 올리고 송출 결과 보기"
+
+자기 영상·광고만 보이고, 디바이스 매핑·큐 관리는 권한이 없다 (운영자에게 매칭 요청).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Adv as 광고주<br/>(test@naver.com)
+    participant Web as 어드민 웹
+    participant API as Spring Boot
+    participant Player as 디바이스
+
+    Adv->>Web: 회원가입 / 로그인
+    Web->>API: POST /api/auth/signup → /login
+    API-->>Web: JWT (role=ADVERTISER)
+
+    Adv->>Web: 영상 업로드 (.mp4)
+    Web->>API: POST /api/videos (multipart)
+    API-->>Web: 업로드 완료
+
+    Adv->>Web: 광고 만들기<br/>(영상 select + 제목 + 시간/일일횟수 + 캠페인 기간)
+    Web->>API: POST /api/ads
+    API-->>Web: 201 광고 생성
+
+    Adv->>Web: 광고 편집 페이지<br/>/ads/{id}
+    Web->>API: GET /api/ads/{id}<br/>GET /api/ads/{id}/deployments (2초 폴링)
+    API-->>Web: 송출 디바이스 목록 + LIVE 상태 + startedAt
+    Note over Web,Adv: LIVE 카드는 디바이스가 실제로 송출 중인<br/>영상을 muted/loop 로 미러 재생
+    Player->>API: play-event STARTED
+    API-->>Web: deployments 다음 폴링 시 LIVE 로 갱신
+
+    Adv->>Web: 스케줄 변경 (PUT)
+    Web->>API: PUT /api/ads/{id}/schedule
+    API-->>Player: SSE PLAYLIST_UPDATE
+    Player->>API: 새 플레이리스트 fetch
+```
+
+#### 2. 관리자(OPERATOR) — "디바이스 큐 짜고 매핑 관리"
+
+광고주 권한에 더해 모든 광고 풀에서 디바이스 큐를 구성하고, 디바이스↔음식점 매핑을 통제한다.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Op as 운영자<br/>(OPERATOR)
+    participant Web as 어드민 웹
+    participant API as Spring Boot
+    participant Player as 디바이스
+
+    Op->>Web: 로그인 → 디바이스 탭
+    Web->>API: GET /api/devices (1.5초 폴링)
+    API-->>Web: 디바이스 목록 + 매핑 + 큐 + LIVE 상태
+
+    Note over Web: 모니터 wall 에 각 디바이스의<br/>실제 송출 영상 미러 표시
+
+    Op->>Web: 디바이스 클릭 → 상세
+    Web->>API: GET /api/devices/{id}
+    API-->>Web: 큐 + 매핑 이력
+
+    Op->>Web: "+ 광고 추가" → picker
+    Web->>API: GET /api/ads (role=OPERATOR → 모든 광고주 풀)
+    API-->>Web: 전체 광고 목록 (다른 광고주 광고 포함)
+    Op->>Web: 광고 선택
+    Web->>API: POST /api/devices/{id}/queue
+    API-->>Player: SSE PLAYLIST_UPDATE
+    Player->>API: 새 플레이리스트 fetch
+
+    Op->>Web: 재할당 (Edit modal)
+    Web->>API: PATCH /api/devices/{id} {restaurantId}
+    API-->>Player: SSE MAPPING_CHANGED
+    Player->>API: 새 플레이리스트 fetch (+ 음식점 컨텍스트 갱신)
+
+    Op->>Web: 디바이스 별칭 편집 / 삭제
+    Web->>API: PATCH /api/devices/{id} {deviceName}<br/>DELETE /api/devices/{id}
+```
+
+#### 3. 디바이스(Android WebView Player) — "켜지면 송출, 꺼지면 신고"
+
+JWT 없이 작동(공개 엔드포인트만 사용). 부팅 직후 등록 → SSE 구독 → 라운드 로빈 재생.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Boot
+
+    Boot --> Registered: POST /api/devices/register
+    Registered --> SseConnected: GET /api/devices/&#123;id&#125;/stream
+    Note right of SseConnected: SSE keepalive 10초 마다<br/>: comment 수신 →<br/>TCP dead 감지 즉시
+
+    SseConnected --> PlaylistFetched: GET /api/playlist?deviceId=...
+    PlaylistFetched --> Playing: 큐에 ACTIVE 광고 1+
+    PlaylistFetched --> Idle: 큐 비었거나 시간 윈도우 밖
+
+    Playing --> Playing: 다음 광고 (라운드 로빈)<br/>POST play-event STARTED + FINISHED<br/>(자연 heartbeat — lastSeenAt 갱신)
+    Playing --> PlaylistFetched: SSE MAPPING_CHANGED<br/>또는 PLAYLIST_UPDATE
+
+    Idle --> PlaylistFetched: SSE PLAYLIST_UPDATE<br/>(운영자가 큐에 광고 추가)
+    Idle --> Playing: 시간 윈도우 진입
+
+    Playing --> Offline: WebView pagehide<br/>POST /api/devices/&#123;id&#125;/offline (sendBeacon)
+    SseConnected --> Offline: 네트워크 단절<br/>SSE keepalive 실패 → emitter unregister
+    Offline --> [*]
+```
+
+#### 권한 매트릭스
+
+| 액션 | 광고주 | 운영자 | 디바이스 |
+|---|---|---|---|
+| 영상 업로드/조회 (자기 것) | ✓ | ✓ | — |
+| 광고 CRUD (자기 것) | ✓ | ✓ | — |
+| 다른 광고주 광고 조회 | ✗ | ✓ (큐 picker) | — |
+| 디바이스 매핑/재할당 | ✗ | ✓ | — |
+| 디바이스 큐 관리 | ✗ | ✓ | — |
+| 디바이스 등록·play-event·offline | — | — | ✓ (JWT 없음) |
+| MP4 스트리밍 (`GET /api/videos/{file}`) | ✓ | ✓ | ✓ (인증 없음) |
+| Profile 본인 정보 | ✓ | ✓ | — |
+
 ## 컴포넌트
 
 | 디렉토리 | 역할 | 빌드 |
