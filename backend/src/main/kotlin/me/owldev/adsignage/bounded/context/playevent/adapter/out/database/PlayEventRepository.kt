@@ -1,5 +1,7 @@
-package me.owldev.adsignage.domain.playevent
+package me.owldev.adsignage.bounded.context.playevent.adapter.out.database
 
+import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEvent
+import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEventType
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param

@@ -13,8 +13,8 @@ import me.owldev.adsignage.bounded.context.restaurant.application.port.out.datab
 import me.owldev.adsignage.domain.ad.AdRepository
 import me.owldev.adsignage.domain.ad.AdStatus
 import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
-import me.owldev.adsignage.domain.playevent.PlayEventRepository
-import me.owldev.adsignage.domain.playevent.PlayEventType
+import me.owldev.adsignage.bounded.context.playevent.application.port.out.database.PlayEventRepositoryPort
+import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEventType
 import me.owldev.adsignage.domain.queue.DeviceAdQueueRepository
 import me.owldev.adsignage.sse.SseEmitterRegistry
 import org.slf4j.LoggerFactory
@@ -40,7 +40,7 @@ class DeviceService(
     private val restaurantRepositoryPort: RestaurantRepositoryPort,
     private val queueRepository: DeviceAdQueueRepository,
     private val adRepository: AdRepository,
-    private val playEventRepository: PlayEventRepository,
+    private val playEventRepository: PlayEventRepositoryPort,
     private val sseRegistry: SseEmitterRegistry,
 ) {
     private val log = LoggerFactory.getLogger(DeviceService::class.java)

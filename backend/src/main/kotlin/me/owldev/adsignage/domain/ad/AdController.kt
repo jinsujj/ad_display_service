@@ -7,8 +7,8 @@ import me.owldev.adsignage.domain.ad.dto.CreateAdRequest
 import me.owldev.adsignage.domain.ad.dto.UpdateAdScheduleRequest
 import me.owldev.adsignage.domain.assignment.DeviceAssignmentRepository
 import me.owldev.adsignage.bounded.context.device.application.port.out.database.DeviceRepositoryPort
-import me.owldev.adsignage.domain.playevent.PlayEventRepository
-import me.owldev.adsignage.domain.playevent.PlayEventType
+import me.owldev.adsignage.bounded.context.playevent.application.port.out.database.PlayEventRepositoryPort
+import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEventType
 import me.owldev.adsignage.domain.queue.DeviceAdQueueRepository
 import me.owldev.adsignage.bounded.context.restaurant.application.port.out.database.RestaurantRepositoryPort
 import org.slf4j.LoggerFactory
@@ -68,7 +68,7 @@ class AdController(
     private val deviceRepository: DeviceRepositoryPort,
     private val assignmentRepository: DeviceAssignmentRepository,
     private val restaurantRepository: RestaurantRepositoryPort,
-    private val playEventRepository: PlayEventRepository,
+    private val playEventRepository: PlayEventRepositoryPort,
 ) {
 
     private val log = LoggerFactory.getLogger(AdController::class.java)

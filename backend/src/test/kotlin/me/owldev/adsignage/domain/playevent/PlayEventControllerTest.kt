@@ -1,7 +1,10 @@
 package me.owldev.adsignage.domain.playevent
 
+import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEventType
+import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEvent
+import me.owldev.adsignage.bounded.context.playevent.adapter.out.database.PlayEventRepository
 import com.fasterxml.jackson.databind.ObjectMapper
-import me.owldev.adsignage.domain.playevent.dto.CreatePlayEventRequest
+import me.owldev.adsignage.bounded.context.playevent.domain.dto.CreatePlayEventRequest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

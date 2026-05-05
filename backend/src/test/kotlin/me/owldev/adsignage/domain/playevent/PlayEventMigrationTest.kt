@@ -1,5 +1,8 @@
 package me.owldev.adsignage.domain.playevent
 
+import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEventType
+import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEvent
+import me.owldev.adsignage.bounded.context.playevent.adapter.out.database.PlayEventRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.sql.Connection

@@ -1,10 +1,10 @@
-package me.owldev.adsignage.domain.playevent.dto
+package me.owldev.adsignage.bounded.context.playevent.domain.dto
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
-import me.owldev.adsignage.domain.playevent.PlayEvent
-import me.owldev.adsignage.domain.playevent.PlayEventType
+import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEvent
+import me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEventType
 import java.time.Instant
 
 /**
@@ -22,7 +22,7 @@ import java.time.Instant
  * 검증 선택:
  *  - `adId` — 비어있지 않은 UUID. 텔레메트리는 광고 삭제보다 오래
  *    살아남아야 하므로 `ads` 테이블에 대해 FK 검증을 하지 않는다
- *    ([me.owldev.adsignage.domain.playevent.PlayEvent] 문서 참조).
+ *    ([me.owldev.adsignage.bounded.context.playevent.domain.model.PlayEvent] 문서 참조).
  *  - `eventType` — Jackson이 JSON 문자열을 [PlayEventType]으로 자동 변환 —
  *    [NotNull] 가드는 누락된 필드를 API의 다른 부분과 동일한 필드-오류
  *    맵 형태로 잡아낸다.
@@ -88,7 +88,7 @@ data class PlayEventResponse(
          * 영속화된 엔터티와 서버의 권위 있는 일일 카운트로 응답을 구성한다.
          * 카운트는 (여기서 계산하는 대신) 호출자가 공급하는데, 카운트 read
          * 가 write와 같은 트랜잭션 안에서 일어나야 하기 때문 —
-         * [me.owldev.adsignage.domain.playevent.PlayEventService.record] 참조.
+         * [me.owldev.adsignage.bounded.context.playevent.application.service.PlayEventService.record] 참조.
          */
         fun from(entity: PlayEvent, serverDailyCount: Long): PlayEventResponse = PlayEventResponse(
             id = entity.id,

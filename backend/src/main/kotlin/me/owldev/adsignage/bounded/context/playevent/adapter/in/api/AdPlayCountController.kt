@@ -1,6 +1,7 @@
-package me.owldev.adsignage.domain.playevent
+package me.owldev.adsignage.bounded.context.playevent.adapter.`in`.api
 
-import me.owldev.adsignage.domain.playevent.dto.DailyPlayCountResponse
+import me.owldev.adsignage.bounded.context.playevent.application.service.PlayEventService
+import me.owldev.adsignage.bounded.context.playevent.domain.dto.DailyPlayCountResponse
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
@@ -32,30 +33,16 @@ import java.time.ZoneId
  * 디바이스 경로 아래가 아닌):
  *
  *  - 일일 cap은 **캠페인 전반**, 디바이스별이 아님. 광고주는 "200회 재생/일"
- *    을 구매 — 광고를 실행하는 모든 스크린에 걸쳐. `/api/ads` 아래에
- *    읽기를 마운트하면 리소스 계보가 시맨틱과 일치 — 어느 단일 디바이스의
- *    속성이 아닌 *광고*의 속성.
- *  - 처음에 cap을 설정한 형제 관리자 라우트인 `/api/ads/{id}/schedule`과
- *    정렬. 운영자는 광고를 열고 자신이 설정한 cap을 보고, 카운트는 동일한
- *    계층에서 발사됨.
- *  - 기존 `/api/ads/{ANY}` 보안 규칙
- *    ([me.owldev.adsignage.config.SecurityConfig]의 `.authenticated()`)을
- *    상속하므로 이 엔드포인트는 기본적으로 JWT 게이트됨 — 보안 예외 불필요.
- *    광고 CRUD에 광고주 소유권 필터링을 추가하는 auth-and-isolation 패스가
- *    이 라우트를 무료로 가져갈 것.
- *
- * **왜 (아직) `?date=` 쿼리 파라미터가 없는가**: 플레이어와 대시보드 둘 다
- * "오늘"을 요청 — 현재 UI에는 과거 재생 표면이 없음. UI 소비자 없이 날짜
- * 산술을 추가하는 것은 낭비된 표면; [PlayEventService.dailyFinishedCount]
- * 내부의 헬퍼가 이미 [Instant]를 받으므로 대시보드가 날짜 선택기를
- * 갖게 되면 `?date=YYYY-MM-DD` 파라미터가 한 메서드에 도착할 수 있음.
+ *    을 구매 — 광고를 실행하는 모든 스크린에 걸쳐.
+ *  - 처음에 cap을 설정한 형제 관리자 라우트인 `/api/ads/{id}/schedule`과 정렬.
+ *  - 기존 `/api/ads/{ANY}` 보안 규칙(.authenticated())을 상속하므로 이
+ *    엔드포인트는 기본적으로 JWT 게이트됨.
  *
  * **왜 알려지지 않은 adId가 404가 아닌 `count=0`으로 200을 반환하는가**:
  * 대시보드는 광고 생성 직후 — 어떤 재생도 도착하기 전 — 이 엔드포인트를
  * 폴링하며, 거기서 404를 표면화하면 데이터가 아직 없는 새로 생성된 광고에
- * "로딩 중…" 상태를 강제하게 됨. "그 id에 대한 재생 없음" 시맨틱은
- * `web/lib/dailyCount.ts`가 누락된 키를 처리하는 방식에 맞춰 0 카운트로
- * 인코딩됨.
+ * "로딩 중…" 상태를 강제하게 됨. "그 id에 대한 재생 없음" 시맨틱은 0
+ * 카운트로 인코딩됨.
  */
 @RestController
 @RequestMapping("/api/ads/{adId}/play-events")

@@ -1,4 +1,4 @@
-package me.owldev.adsignage.domain.playevent
+package me.owldev.adsignage.bounded.context.playevent.domain.model
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -82,7 +82,7 @@ class PlayEvent(
     /**
      * 플레이어가 이벤트가 발생했다고 믿는 벽시계 타임스탬프.
      * 플레이어 제공; 신뢰하되 검증. 클라이언트가 생략하면 [receivedAt]으로
-     * 폴백([PlayEventService.record] 참조).
+     * 폴백([me.owldev.adsignage.bounded.context.playevent.application.service.PlayEventService.record] 참조).
      */
     @Column(name = "occurred_at", nullable = false, updatable = false)
     val occurredAt: Instant,
